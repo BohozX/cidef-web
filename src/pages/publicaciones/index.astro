@@ -1,0 +1,419 @@
+---
+import { withBase, withBaseSrcset } from '../../lib/url';
+import { getCollection } from 'astro:content';
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import PageHero from '../../components/PageHero.astro';
+import { covers } from '../../site.config';
+import Newsletter from '../../components/Newsletter.astro';
+import { authorList, longDate } from '../../lib/format';
+
+const items = (await getCollection('publicaciones')).sort(
+  (a, b) => b.data.date.getTime() - a.data.date.getTime(),
+);
+
+/* Las nueve familias editoriales del centro, en orden de jerarquía y no
+   alfabético. Se muestran las que tengan al menos un documento: una viñeta
+   que siempre devuelve una lista vacía no es un filtro, es un callejón. */
+const FAMILIAS = [
+  'Informe',
+  'Reporte',
+  'Working Paper',
+  'Boletín',
+  'Nota técnica',
+  'Policy Brief',
+  'Memoria institucional',
+  'Estudio especial',
+  'Documento metodológico',
+] as const;
+
+/* La viñeta nombra la familia entera, así que va en plural; el valor con el
+   que filtra sigue siendo el tipo tal cual lo declara cada documento. */
+const PLURAL: Record<(typeof FAMILIAS)[number], string> = {
+  Informe: 'Informes',
+  Reporte: 'Reportes',
+  'Working Paper': 'Working Papers',
+  Boletín: 'Boletines',
+  'Nota técnica': 'Notas técnicas',
+  'Policy Brief': 'Policy Briefs',
+  'Memoria institucional': 'Memorias institucionales',
+  'Estudio especial': 'Estudios especiales',
+  'Documento metodológico': 'Documentos metodológicos',
+};
+
+const cuenta = new Map<string, number>();
+for (const i of items) cuenta.set(i.data.type, (cuenta.get(i.data.type) ?? 0) + 1);
+
+const familias = FAMILIAS.filter((f) => (cuenta.get(f) ?? 0) > 0).map((f) => ({
+  tipo: f,
+  label: PLURAL[f],
+  total: cuenta.get(f) ?? 0,
+}));
+
+/* Una sola cifra en la cabecera. El desglose por familia está en las viñetas
+   del listado, que es donde sirve para algo. */
+const facts = [{ label: 'Investigaciones realizadas', value: String(items.length) }];
+---
+
+<BaseLayout
+  title="Publicaciones"
+  description="Informes, reportes, working papers, boletines, notas técnicas, policy briefs, memorias, estudios especiales y documentos metodológicos del Centro de Inteligencia en Desarrollo Económico y Financiero."
+  bleed
+>
+  <PageHero
+    eyebrow="Publicaciones"
+    title="La producción intelectual del centro"
+    lede="Informes, reportes, working papers, boletines, notas técnicas, policy briefs, memorias institucionales, estudios especiales y documentos metodológicos."
+    facts={facts}
+    cover={covers.publicaciones}
+  />
+
+  <section class="surface-light section" aria-label="Listado de publicaciones">
+    <div class="wrap">
+      <!-- Buscador: lupa y barra, sin más -->
+      <form class="pub-buscar no-print" role="search" data-reveal>
+        <svg viewBox="0 0 20 20" width="17" height="17" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.6">
+          <circle cx="8.6" cy="8.6" r="5.4" />
+          <path d="M12.6 12.6 17 17" stroke-linecap="round" />
+        </svg>
+        <label class="sr-only" for="pub-q">Buscar en las publicaciones</label>
+        <input
+          id="pub-q"
+          type="search"
+          class="pub-buscar-campo"
+          placeholder="Buscar por título, autor o tema…"
+          autocomplete="off"
+          data-pub-query
+        />
+      </form>
+
+      <!-- Viñetas por familia de documento -->
+      <div class="pub-familias no-print" role="group" aria-label="Familia de documento" data-reveal>
+        <button type="button" class="pub-familia is-on" data-familia="" aria-pressed="true">
+          Todas
+        </button>
+        {
+          familias.map((f) => (
+            <button type="button" class="pub-familia" data-familia={f.tipo} aria-pressed="false">
+              {f.label}
+            </button>
+          ))
+        }
+      </div>
+
+      {/* Sin cifra a la vista: la rejilla ya muestra cuánto hay. Se conserva
+          para lectores de pantalla, que sí necesitan que se les diga cuántos
+          documentos quedaron tras filtrar. */}
+      <p class="sr-only" data-pub-count aria-live="polite">
+        {items.length} documentos
+      </p>
+
+      <ul class="pub-rejilla" data-reveal-group data-reveal-stagger="0.05">
+        {
+          items.map((item) => (
+            <li
+              class="pub-item"
+              data-reveal
+              data-familia={item.data.type}
+              data-haystack={`${item.data.title} ${item.data.authors.join(' ')} ${item.data.topics.join(' ')} ${item.data.keywords.join(' ')} ${item.data.abstract}`.toLowerCase()}
+            >
+              <a href={withBase(`/publicaciones/${item.id}`)} class="pub-link">
+                <span class="pub-portada" data-tilt>
+                  <picture>
+                    <source type="image/webp" srcset={withBase(`/media/portadas/${item.id}.webp`)} />
+                    <img
+                      src={withBase(`/media/portadas/${item.id}.jpg`)}
+                      alt={`Portada de ${item.data.title}`}
+                      width="760"
+                      height="1074"
+                      loading="lazy"
+                      decoding="async"
+                    />
+                  </picture>
+                </span>
+
+                <span class="pub-kicker">
+                  <span class="pub-tipo">{item.data.type}</span>
+                  {item.data.serial && <span class="pub-serial">{item.data.serial}</span>}
+                </span>
+                <span class="pub-titulo">{item.data.title}</span>
+                <span class="pub-meta">
+                  {authorList(item.data.authors)} · {longDate(item.data.date.toISOString())}
+                </span>
+              </a>
+            </li>
+          ))
+        }
+      </ul>
+
+      <p class="pub-vacio muted" data-pub-empty hidden>
+        Ningún documento coincide con la búsqueda.
+      </p>
+    </div>
+  </section>
+
+  <Newsletter />
+</BaseLayout>
+
+<script>
+  /* --- filtro por familia y búsqueda ---------------------------------- */
+  const query = document.querySelector<HTMLInputElement>('[data-pub-query]');
+  const cuenta = document.querySelector<HTMLElement>('[data-pub-count]');
+  const vacio = document.querySelector<HTMLElement>('[data-pub-empty]');
+  const botones = Array.from(document.querySelectorAll<HTMLButtonElement>('[data-familia]'));
+  const items = Array.from(document.querySelectorAll<HTMLElement>('.pub-item'));
+
+  if (query && cuenta && vacio && items.length > 0) {
+    let familia = '';
+
+    const limpiar = (s: string): string =>
+      s.toLowerCase().normalize('NFD').replace(/\p{Diacritic}/gu, '');
+
+    const aplicar = (): void => {
+      const q = limpiar(query.value.trim());
+      let visibles = 0;
+
+      for (const el of items) {
+        const hay = limpiar(el.dataset.haystack ?? '');
+        const ok =
+          (q.length === 0 || q.split(/\s+/).every((t) => hay.includes(t))) &&
+          (familia === '' || el.dataset.familia === familia);
+        el.hidden = !ok;
+        if (ok) visibles += 1;
+      }
+
+      cuenta.textContent = visibles === 1 ? '1 documento' : `${visibles} documentos`;
+      vacio.hidden = visibles > 0;
+    };
+
+    query.addEventListener('input', aplicar);
+    query.closest('form')?.addEventListener('submit', (e) => e.preventDefault());
+
+    botones.forEach((b) =>
+      b.addEventListener('click', () => {
+        familia = b.dataset.familia ?? '';
+        botones.forEach((otro) => {
+          const activo = otro === b;
+          otro.classList.toggle('is-on', activo);
+          otro.setAttribute('aria-pressed', String(activo));
+        });
+        aplicar();
+      }),
+    );
+  }
+
+  /* --- las portadas siguen al cursor ---------------------------------- */
+  /* Mismo gesto que la ficha rotativa de la portada: el documento gira hacia
+     el ratón y su sombra cae al lado contrario. El script solo escribe la
+     posición; el resto lo resuelve el CSS. */
+  const fino = window.matchMedia('(hover: hover) and (pointer: fine)').matches;
+  const reducido = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  if (fino && !reducido) {
+    document.querySelectorAll<HTMLElement>('[data-tilt]').forEach((portada) => {
+      let caja: DOMRect | null = null;
+      let frame = 0;
+
+      const seguir = (e: PointerEvent): void => {
+        if (frame) return;
+        frame = requestAnimationFrame(() => {
+          frame = 0;
+          if (!caja) caja = portada.getBoundingClientRect();
+          const lim = (v: number): number => Math.max(-1, Math.min(1, v));
+          const mx = lim(((e.clientX - caja.left) / caja.width) * 2 - 1);
+          const my = lim(((e.clientY - caja.top) / caja.height) * 2 - 1);
+          portada.style.setProperty('--mx', mx.toFixed(3));
+          portada.style.setProperty('--my', my.toFixed(3));
+        });
+      };
+
+      const soltar = (): void => {
+        if (frame) cancelAnimationFrame(frame);
+        frame = 0;
+        caja = null;
+        portada.classList.remove('is-tracking');
+        portada.style.setProperty('--mx', '0');
+        portada.style.setProperty('--my', '0');
+      };
+
+      portada.addEventListener('pointerenter', () => {
+        caja = portada.getBoundingClientRect();
+        portada.classList.add('is-tracking');
+      });
+      portada.addEventListener('pointermove', seguir);
+      portada.addEventListener('pointerleave', soltar);
+      window.addEventListener('scroll', () => { caja = null; }, { passive: true });
+    });
+  }
+</script>
+
+<style>
+  /* --- buscador -------------------------------------------------------
+     Discreto: una línea de texto con su lupa. Aquí quien manda son las
+     viñetas y las portadas; el buscador es la salida de emergencia. */
+  .pub-buscar {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    max-width: 420px;
+    padding-bottom: 9px;
+    border-bottom: 1px solid var(--line, var(--line-light));
+    color: var(--muted);
+    transition: border-color 220ms ease, color 220ms ease;
+  }
+  .pub-buscar:focus-within {
+    border-color: var(--color-gold);
+    color: var(--color-gold);
+  }
+  .pub-buscar-campo {
+    flex: 1;
+    background: transparent;
+    border: 0;
+    padding: 0;
+    color: var(--color-ink);
+    font-size: 14px;
+  }
+  .pub-buscar-campo::placeholder { color: var(--muted); }
+  .pub-buscar-campo:focus { outline: none; }
+  .pub-buscar-campo::-webkit-search-cancel-button { display: none; }
+
+  /* --- viñetas de familia ---------------------------------------------
+     Redondas y sin caja rígida: son una elección, no un formulario. La
+     activa se invierte en tinta, que es el único cambio de peso que hace
+     falta para saber dónde estás. */
+  /* Las diez caben en un renglón. Si la pantalla no da, el renglón se
+     desplaza de lado en vez de partirse en dos: una fila rota se lee como
+     dos grupos distintos de filtros. */
+  .pub-familias {
+    display: flex;
+    flex-wrap: nowrap;
+    /* Repartidas de margen a margen: la fila arranca y termina con la
+       rejilla de portadas de abajo, que es lo que la hace verse cuadrada. */
+    justify-content: space-between;
+    gap: 5px;
+    margin-top: 22px;
+    overflow-x: auto;
+    scrollbar-width: none;
+    /* Sitio para el levantamiento y su sombra, que si no se recortan. */
+    padding: 6px 2px 10px;
+    margin-inline: -2px;
+  }
+  .pub-familias::-webkit-scrollbar { width: 0; height: 0; }
+
+  .pub-familia {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    flex: 0 0 auto;
+    padding: 7px 14px;
+    border: 1px solid var(--line, var(--line-light));
+    border-radius: 999px;
+    background: transparent;
+    color: inherit;
+    font-size: 12px;
+    font-weight: 500;
+    white-space: nowrap;
+    cursor: pointer;
+    transition: transform 260ms cubic-bezier(0.22, 0.61, 0.36, 1),
+      border-color 220ms ease, background-color 220ms ease, color 220ms ease,
+      box-shadow 260ms ease;
+  }
+  .pub-familia:hover,
+  .pub-familia:focus-visible {
+    transform: translateY(-2px);
+    border-color: var(--color-gold);
+    box-shadow: 0 10px 20px -12px rgb(3 26 36 / 0.4);
+  }
+  .pub-familia:active { transform: translateY(0); }
+
+  .pub-familia.is-on {
+    background: var(--color-ink);
+    border-color: var(--color-ink);
+    color: var(--color-paper);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .pub-familia:hover, .pub-familia:focus-visible { transform: none; }
+  }
+
+  /* --- rejilla de portadas --------------------------------------------- */
+  .pub-rejilla {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+    gap: clamp(28px, 3vw, 44px) clamp(20px, 2.4vw, 34px);
+    list-style: none;
+    margin: 26px 0 0;
+    padding: 0;
+  }
+  .pub-link { display: grid; }
+
+  /* La portada gira hacia el cursor y la sombra cae al lado contrario. */
+  .pub-portada {
+    display: block;
+    position: relative;
+    overflow: hidden;
+    aspect-ratio: 760 / 1074;
+    border-radius: 3px 16px 3px 3px;
+    background: var(--color-ink);
+    transform: perspective(1200px)
+      rotateY(calc(var(--mx, 0) * 9deg))
+      rotateX(calc(var(--my, 0) * -7deg));
+    box-shadow:
+      calc(var(--mx, 0) * -6px) 10px 22px rgb(3 26 36 / 0.14),
+      calc(var(--mx, 0) * -14px) 24px 48px rgb(3 26 36 / 0.18);
+    transition: transform 620ms cubic-bezier(0.22, 0.61, 0.36, 1), box-shadow 620ms ease;
+  }
+  .pub-portada.is-tracking { transition-duration: 150ms; }
+  .pub-portada img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 900ms cubic-bezier(0.22, 0.61, 0.36, 1);
+  }
+  .pub-link:hover .pub-portada img { transform: scale(1.03); }
+
+  .pub-kicker {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 6px 12px;
+    margin-top: 16px;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+  }
+  .pub-tipo { color: var(--color-teal-600); }
+  .pub-serial { color: var(--muted); font-variant-numeric: tabular-nums; }
+
+  .pub-titulo {
+    display: -webkit-box;
+    -webkit-line-clamp: 4;
+    line-clamp: 4;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    margin-top: 9px;
+    font-size: 15px;
+    font-weight: 600;
+    line-height: 1.3;
+    letter-spacing: -0.012em;
+    /* Justificado, con partición: en columnas estrechas y sin guiones, el
+       castellano abre calles enormes entre palabras. */
+    text-align: justify;
+    hyphens: auto;
+    -webkit-hyphens: auto;
+    transition: color 220ms ease;
+  }
+  .pub-link:hover .pub-titulo { color: var(--color-gold); }
+
+  .pub-meta {
+    margin-top: 8px;
+    font-size: 12px;
+    line-height: 1.55;
+    color: var(--muted);
+    text-align: justify;
+    hyphens: auto;
+    -webkit-hyphens: auto;
+  }
+
+  .pub-vacio { margin-top: 28px; }
+</style>

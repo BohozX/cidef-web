@@ -124,3 +124,22 @@ export function slugify(text: string): string {
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-+|-+$/g, '');
 }
+
+/**
+ * Período de referencia del dato, según la frecuencia de la serie.
+ *
+ * «Inflación 6,64 %» no informa de nada si no se sabe de qué mes es, y una
+ * serie trimestral fechada al 1 de abril no es «1 de abril»: es el segundo
+ * trimestre.
+ */
+const ROMANOS = ['I', 'II', 'III', 'IV'];
+
+export function periodoRef(iso: string, frecuencia: string): string {
+  const d = parseISO(iso);
+  const mes = d.getUTCMonth();
+  const anio = d.getUTCFullYear();
+  if (frecuencia === 'Anual') return String(anio);
+  if (frecuencia === 'Trimestral') return `${ROMANOS[Math.floor(mes / 3)]} trimestre ${anio}`;
+  if (frecuencia === 'Diaria' || frecuencia === 'Semanal') return longDate(iso);
+  return `${MONTHS[mes]} de ${anio}`;
+}

@@ -69,7 +69,6 @@ const initial = partners.slice(0, visible);
 ---
 
 <div class="partners" data-partners data-pool={JSON.stringify(partners)}>
-  <div class="rule rule-draw"></div>
 
   <div class="partners-inner">
     <p class="partners-label">
@@ -350,10 +349,11 @@ const initial = partners.slice(0, visible);
 <style>
   .partners { margin-top: 0; }
 
+  /* Sin relleno propio: el aire lo pone la sección, y así queda el mismo
+     arriba que abajo. */
   .partners-inner {
     display: grid;
-    gap: clamp(24px, 3vw, 34px);
-    padding-top: clamp(26px, 3vw, 36px);
+    gap: clamp(20px, 2.4vw, 28px);
   }
 
   .partners-label {
@@ -363,8 +363,8 @@ const initial = partners.slice(0, visible);
     color: var(--color-teal-600);
     white-space: nowrap;
   }
-  .surface-dark .partners-label,
-  .surface-deep .partners-label { color: var(--color-teal-300); }
+  :global(.surface-dark) .partners-label,
+  :global(.surface-deep) .partners-label { color: var(--color-teal-300); }
 
   .partners-list {
     list-style: none;
@@ -418,6 +418,6 @@ const initial = partners.slice(0, visible);
     letter-spacing: 0.07em;
     color: var(--color-teal-600);
   }
-  .surface-dark .partner-initials,
-  .surface-deep .partner-initials { color: var(--color-teal-300); }
+  :global(.surface-dark) .partner-initials,
+  :global(.surface-deep) .partner-initials { color: var(--color-teal-300); }
 </style>

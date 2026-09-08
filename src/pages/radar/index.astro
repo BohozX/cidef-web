@@ -1,11 +1,39 @@
 ---
+import { withBase, withBaseSrcset } from '../../lib/url';
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import PageHero from '../../components/PageHero.astro';
-import IndicatorCard from '../../components/IndicatorCard.astro';
-import OwnIndicatorSpotlight from '../../components/OwnIndicatorSpotlight.astro';
 import Newsletter from '../../components/Newsletter.astro';
 import { categories, featured, indicators, lastUpdated } from '../../lib/indicators';
-import { shortDate } from '../../lib/format';
+import { shortDate, num } from '../../lib/format';
+import Tableros from '../../components/Tableros.astro';
+import LeyendaSellos from '../../components/LeyendaSellos.astro';
+import { atajos, categories as todasCategorias, SECTORES, higherIsBetter } from '../../lib/indicators';
+
+/* La tira de la cabecera: lo que se mira cada mañana. Cada atajo dice qué
+   mide y de cuándo es el dato: «inflación» a secas no informa de nada si no
+   se sabe si es mensual o interanual, ni de qué mes. */
+const MESES = [
+  'enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio',
+  'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre',
+];
+const ROMANOS = ['I', 'II', 'III', 'IV'];
+
+const periodo = (iso: string, frecuencia: string): string => {
+  const f = new Date(iso);
+  const mes = f.getUTCMonth();
+  const anio = f.getUTCFullYear();
+  if (frecuencia === 'Trimestral') return `${ROMANOS[Math.floor(mes / 3)]} trimestre ${anio}`;
+  if (frecuencia === 'Diaria') return `${f.getUTCDate()} de ${MESES[mes]} de ${anio}`;
+  return `${MESES[mes]} de ${anio}`;
+};
+
+const tira = atajos().map((i) => ({ i, periodo: periodo(i.date, i.frequency) }));
+
+/* Los sectores, en el orden en que se recorren. */
+const sectores = SECTORES.map((id) => todasCategorias.find((c) => c.id === id)).filter(
+  (c): c is NonNullable<typeof c> => Boolean(c),
+);
+import { covers } from '../../site.config';
 
 const panorama = featured();
 const updated = shortDate(lastUpdated());
@@ -28,140 +56,127 @@ const facts = [
 
 <BaseLayout
   title="Radar Económico"
-  description="Plataforma de indicadores de la economía boliviana: precios, actividad, sector externo, monetario, fiscal, mercado laboral, comercio y estimaciones propias del CIDEF."
+  description="Plataforma de indicadores de la economía boliviana: actividad, precios, monetario y financiero, mercado cambiario, sector externo, fiscal, empleo, indicadores sociales, economía internacional y estimaciones propias del CIDEF."
+  bleed
 >
   <PageHero
     eyebrow="Radar Económico"
-    title="La economía boliviana, en un tablero."
-    lede="Indicadores de fuentes oficiales y estimaciones propias del centro, con su serie histórica, su metodología y su descarga. Cada ficha declara de dónde viene el dato."
-    facts={facts}
-  />
+    title="La economía boliviana, en un tablero"
+    lede="Explora los principales indicadores macroeconómicos, financieros y sectoriales de Bolivia, junto con las estimaciones, índices y proyecciones que elabora el centro."
+    cover={covers.radar}
+  >
+    <div slot="actions" class="radar-acciones" data-hero-item>
+      {/* Atajos: qué mide, cuánto y de cuándo. Sin cinta de bolsa: seis
+          series, y cada una dice su período de referencia. */}
+      <ul class="radar-tira">
+        {tira.map(({ i, periodo: p }) => {
+          const sube = i.change >= 0;
+          const bueno = sube === higherIsBetter(i.id);
+          return (
+            <li>
+              <a href={withBase(`/radar/${i.id}`)}>
+                <span class="tira-nombre">{i.name}</span>
+                <span class="tira-linea">
+                  <span class="tira-valor tnum">{num(i.value, i.decimals)}</span>
+                  <span class="tira-unidad">{i.unit}</span>
+                  <span class:list={['tira-var', 'tnum', bueno ? 'es-bueno' : 'es-malo']}>
+                    {sube ? '▲' : '▼'} {num(Math.abs(i.change), i.decimals)} {i.changeUnit}
+                  </span>
+                </span>
+                <span class="tira-periodo">{p}</span>
+              </a>
+            </li>
+          );
+        })}
+      </ul>
+    </div>
+  </PageHero>
 
-  <!-- PANORAMA GENERAL ---------------------------------------------------- -->
-  <section class="surface-deep section" aria-labelledby="panorama">
+  <!-- LOS TABLEROS ---------------------------------------------------------- -->
+  <section class="surface-light section" aria-labelledby="panorama">
     <div class="wrap">
       <div class="radar-sec-head">
         <div>
-          <p class="eyebrow eyebrow-gold" data-reveal>Panorama general</p>
+          <p class="eyebrow eyebrow-gold" data-reveal>Panorama económico</p>
           <h2 id="panorama" class="display-3 radar-sec-title" data-reveal>
-            Lectura transversal de la economía.
+            Qué está pasando en la economía boliviana
           </h2>
         </div>
         <p class="radar-sec-note muted" data-reveal>
-          Los seis indicadores que el centro considera mínimos para una lectura
-          de coyuntura. Series de demostración.
+          Cada pieza usa el gráfico que su dato pide: el crecimiento en barras,
+          el tipo de cambio en línea, las reservas en área y el saldo comercial
+          a ambos lados del cero. Series de demostración.
         </p>
       </div>
 
-      <div class="ind-grid" data-reveal-group data-reveal-stagger="0.06">
-        {panorama.map((ind) => <IndicatorCard indicator={ind} />)}
+      <Tableros />
+
+      <LeyendaSellos />
+
+      <div class="radar-mas" data-reveal>
+        <p class="radar-mas-texto">
+          Cada tablero muestra una selección de su sector. El catálogo completo
+          —todas las series, con su frecuencia, su fuente y su histórico— está en
+          la Base de Datos Profesional.
+        </p>
+        <a href={withBase('/base')} class="btn btn-solid">
+          Ver más datos
+          <svg class="arw" viewBox="0 0 16 16" width="13" height="13" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8">
+            <path d="M2 8h11M9 4l4 4-4 4" stroke-linecap="round" stroke-linejoin="round" />
+          </svg>
+        </a>
       </div>
     </div>
   </section>
 
-  <!-- ESTIMACIÓN DESTACADA DEL CENTRO -------------------------------------- -->
-  <OwnIndicatorSpotlight id="nowcast-pib" />
-
-  <!-- BUSCADOR Y CATEGORÍAS ----------------------------------------------- -->
-  <section class="surface-light section" aria-label="Todos los indicadores">
+  <!-- HACIA LA BASE DE DATOS ------------------------------------------------ -->
+  <section class="surface-mist section edge-tr" aria-labelledby="mas-alla">
     <div class="wrap">
-      <form class="radar-filters no-print" role="search" data-reveal>
-        <div class="radar-search">
-          <svg viewBox="0 0 20 20" width="16" height="16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.6">
-            <circle cx="8.6" cy="8.6" r="5.4" />
-            <path d="M12.6 12.6 17 17" stroke-linecap="round" />
-          </svg>
-          <label class="sr-only" for="rd-q">Buscar indicador</label>
-          <input
-            id="rd-q"
-            type="search"
-            class="radar-input"
-            placeholder="Buscar indicador…"
-            autocomplete="off"
-            data-rd-query
-          />
+      <div class="base-grid">
+        <div>
+          <p class="eyebrow base-eyebrow" data-reveal>Base de Datos Profesional</p>
+          <h2 id="mas-alla" class="display-2 base-title" data-reveal>Más allá del dato visible</h2>
+          <p class="base-text" data-reveal>
+            El centro desarrolla y mantiene una base de datos económica que integra
+            estadísticas oficiales, series históricas, indicadores derivados,
+            estimaciones propias, proyecciones y resultados construidos a partir de
+            nuestras investigaciones.
+          </p>
+
+          <div class="base-acciones no-print" data-reveal>
+            <a href={withBase('/base')} class="btn btn-solid">
+              Explorar la Base de Datos
+              <svg class="arw" viewBox="0 0 16 16" width="13" height="13" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8">
+                <path d="M2 8h11M9 4l4 4-4 4" stroke-linecap="round" stroke-linejoin="round" />
+              </svg>
+            </a>
+            <a href={withBase('/base#proximo')} class="btn btn-outline">Qué abre la cuenta</a>
+          </div>
         </div>
 
-        <div class="radar-selects">
-          <label class="sr-only" for="rd-cat">Categoría</label>
-          <select id="rd-cat" class="field" data-rd-cat>
-            <option value="">Todas las categorías</option>
-            {sections.map((c) => <option value={c.id}>{c.name}</option>)}
-          </select>
-
-          <label class="sr-only" for="rd-freq">Frecuencia</label>
-          <select id="rd-freq" class="field" data-rd-freq>
-            <option value="">Toda frecuencia</option>
-            {frequencies.map((f) => <option value={f}>{f}</option>)}
-          </select>
-
-          <label class="sr-only" for="rd-src">Fuente</label>
-          <select id="rd-src" class="field" data-rd-src>
-            <option value="">Todas las fuentes</option>
-            {sources.map((s) => <option value={s}>{s}</option>)}
-          </select>
+        <div>
+          <h3 class="eyebrow muted base-h" data-reveal>Qué incluye</h3>
+          <ul class="base-lista" data-reveal-group data-reveal-stagger="0.04">
+            {
+              [
+                'Histórico completo y series armonizadas',
+                'Mayor frecuencia, hasta datos diarios',
+                'Indicadores propios y variables no observables',
+                'Proyecciones con intervalos de confianza',
+                'Historial de versiones de cada estimación',
+                'Descarga en CSV y XLSX, y acceso por API',
+                'Comparación y transformación entre series',
+                'Metadatos y metodología completos',
+              ].map((t) => <li data-reveal>{t}</li>)
+            }
+          </ul>
         </div>
-      </form>
+      </div>
 
-      <nav class="cat-nav no-print" aria-label="Ir a categoría" data-reveal>
-        {sections.map((c) => <a href={`#${c.id}`} class="cat-chip">{c.name}</a>)}
-      </nav>
-
-      <p class="radar-count muted" data-rd-count aria-live="polite">
-        {indicators.length} indicadores
-      </p>
-
-      {
-        sections.map((c) => (
-          <section
-            id={c.id}
-            class:list={['cat-section', c.id === 'centro' && 'is-own']}
-            data-rd-section={c.id}
-            aria-labelledby={`h-${c.id}`}
-          >
-            <div class="rule rule-draw"></div>
-
-            <header class="cat-head">
-              <div>
-                <h2 id={`h-${c.id}`} class="cat-title" data-reveal>
-                  {c.name}
-                  {c.id === 'centro' && <span class="chip chip-gold cat-badge">Estimaciones propias</span>}
-                </h2>
-                <p class="cat-desc muted" data-reveal>{c.description}</p>
-              </div>
-              <p class="cat-count tnum muted" data-reveal>
-                {c.items.length} {c.items.length === 1 ? 'indicador' : 'indicadores'}
-              </p>
-            </header>
-
-            {c.id === 'centro' && (
-              <p class="own-note" data-reveal>
-                Estos indicadores <strong>no son cifras oficiales</strong>: son
-                estimaciones producidas por el centro. Cada ficha publica su
-                metodología, su versión, sus autores y —cuando corresponde— su
-                intervalo de confianza y el historial de revisiones.
-              </p>
-            )}
-
-            <div class="ind-grid" data-reveal-group data-reveal-stagger="0.05">
-              {c.items.map((ind) => (
-                <div
-                  class="ind-entry"
-                  data-cat={ind.category}
-                  data-freq={ind.frequency}
-                  data-src={ind.source}
-                  data-haystack={`${ind.name} ${ind.shortName} ${ind.source} ${ind.frequency} ${ind.description}`.toLowerCase()}
-                >
-                  <IndicatorCard indicator={ind} />
-                </div>
-              ))}
-            </div>
-          </section>
-        ))
-      }
-
-      <p class="radar-empty muted" data-rd-empty hidden>
-        Ningún indicador coincide con la búsqueda.
+      <p class="base-nota muted" data-reveal>
+        El Radar sirve para <strong>descubrir, visualizar y entender</strong>. La base
+        profesional, para <strong>investigar, comparar, transformar y modelar</strong>.
+        Lo que se ve aquí seguirá siendo público y actualizado.
       </p>
     </div>
   </section>
@@ -169,63 +184,139 @@ const facts = [
   <Newsletter />
 </BaseLayout>
 
-<script>
-  const query = document.querySelector<HTMLInputElement>('[data-rd-query]');
-  const selCat = document.querySelector<HTMLSelectElement>('[data-rd-cat]');
-  const selFreq = document.querySelector<HTMLSelectElement>('[data-rd-freq]');
-  const selSrc = document.querySelector<HTMLSelectElement>('[data-rd-src]');
-  const count = document.querySelector<HTMLElement>('[data-rd-count]');
-  const empty = document.querySelector<HTMLElement>('[data-rd-empty]');
-
-  if (query && selCat && selFreq && selSrc && count && empty) {
-    const entries = Array.from(document.querySelectorAll<HTMLElement>('.ind-entry'));
-    const sections = Array.from(document.querySelectorAll<HTMLElement>('[data-rd-section]'));
-
-    const normalize = (s: string): string =>
-      s.toLowerCase().normalize('NFD').replace(/\p{Diacritic}/gu, '');
-
-    const apply = (): void => {
-      const q = normalize(query.value.trim());
-      let visible = 0;
-
-      for (const el of entries) {
-        const hay = normalize(el.dataset.haystack ?? '');
-        const ok =
-          (q.length === 0 || q.split(/\s+/).every((t) => hay.includes(t))) &&
-          (selCat.value === '' || el.dataset.cat === selCat.value) &&
-          (selFreq.value === '' || el.dataset.freq === selFreq.value) &&
-          (selSrc.value === '' || el.dataset.src === selSrc.value);
-        el.hidden = !ok;
-        if (ok) visible += 1;
-      }
-
-      // Una categoría sin resultados se oculta por completo.
-      for (const section of sections) {
-        const any = Array.from(section.querySelectorAll<HTMLElement>('.ind-entry')).some(
-          (el) => !el.hidden,
-        );
-        section.hidden = !any;
-      }
-
-      count.textContent = visible === 1 ? '1 indicador' : `${visible} indicadores`;
-      empty.hidden = visible > 0;
-    };
-
-    query.addEventListener('input', apply);
-    [selCat, selFreq, selSrc].forEach((el) => el.addEventListener('change', apply));
-    query.closest('form')?.addEventListener('submit', (e) => e.preventDefault());
-
-    // Enlace directo: /radar?cat=centro
-    const requested = new URLSearchParams(window.location.search).get('cat');
-    if (requested && Array.from(selCat.options).some((o) => o.value === requested)) {
-      selCat.value = requested;
-      apply();
-      document.getElementById(requested)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }
-  }
-</script>
-
 <style>
+  /* --- hacia la base profesional ---------------------------------------- */
+  .base-grid {
+    display: grid;
+    gap: clamp(30px, 4vw, 64px);
+  }
+  @media (min-width: 900px) {
+    .base-grid { grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); align-items: start; }
+  }
+  .base-title { margin-top: 14px; max-width: 16ch; }
+  .base-text { margin-top: 20px; font-size: 15px; line-height: 1.72; }
+  .base-acciones { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 28px; }
+
+  /* Sobre plomo el dorado gritaba. El acento pasa al verde del centro, que
+     es el color con el que se lee todo lo demás del Radar. */
+  .base-eyebrow { color: var(--color-teal-600); }
+  .base-h { display: block; margin-bottom: 16px; }
+  .base-lista { list-style: none; margin: 0; padding: 0; }
+  .base-lista li {
+    position: relative;
+    padding: 11px 0 11px 22px;
+    border-top: 1px solid var(--line, var(--line-dark));
+    font-size: 13.5px;
+  }
+  .base-lista li:last-child { border-bottom: 1px solid var(--line, var(--line-dark)); }
+  .base-lista li::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 1.35em;
+    width: 8px;
+    height: 1px;
+    background: var(--color-teal);
+  }
+
+  .base-nota {
+    margin-top: clamp(28px, 3.5vw, 46px);
+    font-size: 13px;
+    max-width: 76ch;
+  }
+  .base-nota strong { color: var(--color-teal-600); font-weight: 600; }
+
+  /* --- cabecera del Radar ---------------------------------------------- */
+  .radar-acciones {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 22px;
+    margin-top: 30px;
+    width: 100%;
+  }
+
+  /* Cada atajo es una ficha mínima: qué mide, cuánto, y de qué período. */
+  /* Las seis en un renglón: repartidas por ancho disponible se partían en
+     cinco y una, y la huérfana parecía un dato de otra categoría. */
+  .radar-tira {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 18px clamp(14px, 2.2vw, 32px);
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    max-width: 1180px;
+  }
+  @media (min-width: 640px) { .radar-tira { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+  @media (min-width: 1040px) { .radar-tira { grid-template-columns: repeat(6, minmax(0, 1fr)); } }
+
+  .radar-tira a {
+    display: grid;
+    align-content: start;
+    gap: 5px;
+    text-align: center;
+    transition: color 200ms ease;
+  }
+  .radar-tira a:hover { color: var(--color-gold); }
+
+  /* Dos líneas reservadas para el nombre: con nombres de largo distinto, las
+     cifras se descolocaban unas respecto de otras. */
+  .tira-nombre {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 2.5em;
+    font-size: 9.5px;
+    font-weight: 700;
+    letter-spacing: 0.13em;
+    line-height: 1.25;
+    text-transform: uppercase;
+    color: color-mix(in srgb, #f5f3ed 62%, transparent);
+  }
+  .tira-linea {
+    display: flex;
+    align-items: baseline;
+    justify-content: center;
+    gap: 6px;
+  }
+  .tira-valor { font-size: 17px; font-weight: 600; letter-spacing: -0.02em; }
+  .tira-unidad { font-size: 10px; color: color-mix(in srgb, #f5f3ed 55%, transparent); }
+  .tira-var { font-size: 10.5px; }
+  .tira-var.es-bueno { color: var(--color-teal-300); }
+  .tira-var.es-malo { color: #e0a06a; }
+  .tira-periodo {
+    font-size: 10.5px;
+    color: color-mix(in srgb, #f5f3ed 52%, transparent);
+  }
+
+  /* --- sectores --------------------------------------------------------- */
+  .radar-sectores {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: clamp(26px, 3vw, 40px);
+  }
+  .radar-sector {
+    padding: 8px 16px;
+    border: 1px solid var(--line, var(--line-light));
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 500;
+    white-space: nowrap;
+    transition: transform 260ms cubic-bezier(0.22, 0.61, 0.36, 1),
+      border-color 220ms ease, color 220ms ease;
+  }
+  .radar-sector:hover {
+    transform: translateY(-2px);
+    border-color: var(--color-gold);
+    color: var(--color-gold);
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .radar-sector:hover { transform: none; }
+  }
+
   .radar-sec-head {
     display: grid;
     gap: 18px;
@@ -239,6 +330,25 @@ const facts = [
     }
   }
   .radar-sec-title { margin-top: 14px; max-width: 20ch; }
+
+  /* La puerta a la base profesional: cierra el tablero y explica por qué hay
+     más al otro lado, en vez de un botón suelto sin motivo. */
+  .radar-mas {
+    display: grid;
+    gap: 16px;
+    justify-items: start;
+    margin-top: clamp(30px, 3.6vw, 48px);
+    padding-top: clamp(24px, 3vw, 34px);
+    border-top: 1px solid var(--line, var(--line-light));
+  }
+  @media (min-width: 860px) {
+    .radar-mas {
+      grid-template-columns: minmax(0, 1fr) auto;
+      align-items: center;
+      gap: 34px;
+    }
+  }
+  .radar-mas-texto { font-size: 13px; max-width: 72ch; }
   .radar-sec-note { font-size: 13px; max-width: 42ch; }
 
   .ind-grid {
@@ -294,7 +404,7 @@ const facts = [
 
   .radar-count {
     font-size: 11.5px;
-    font-weight: 600;
+    font-weight: 700;
     letter-spacing: 0.13em;
     text-transform: uppercase;
     padding-bottom: 8px;
@@ -328,7 +438,7 @@ const facts = [
   .cat-desc { margin-top: 8px; font-size: 13.5px; max-width: 60ch; }
   .cat-count {
     font-size: 11px;
-    font-weight: 600;
+    font-weight: 700;
     letter-spacing: 0.13em;
     text-transform: uppercase;
   }

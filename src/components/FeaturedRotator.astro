@@ -5,7 +5,7 @@ import { slugify } from '../lib/format';
  * Ficha destacada rotativa.
  *
  * Muestra una sola pieza a la vez —portada grande, resumen y datos— y cambia
- * sola cada 40 segundos. Todas las fichas se renderizan en el servidor y
+ * sola cada ocho segundos. Todas las fichas se renderizan en el servidor y
  * ocupan la misma celda de la cuadrícula, así que la altura no salta al
  * cambiar y el contenido es indexable aunque no se ejecute JS.
  *
@@ -23,13 +23,21 @@ export type RotatorSlide = {
   coverAlt: string;
   kicker: string;
   serial?: string;
-  demo?: boolean;
   flag?: string;
   title: string;
   meta: string;
   summary: string;
-  /** Clasificaciones en columna: temas, códigos JEL, extensión, precio… */
-  facts?: { label: string; value: string }[];
+  /**
+   * Clasificaciones del documento. Se componen como hoja de características:
+   * el rótulo encima del valor, a dos columnas. `wide` ocupa el ancho
+   * entero —para las listas largas—, `mono` marca lo que es cifra o código.
+   */
+  facts?: {
+    label: string;
+    value: string | string[];
+    wide?: boolean;
+    mono?: boolean;
+  }[];
   cta: string;
 };
 
@@ -42,7 +50,7 @@ export interface Props {
   label: string;
 }
 
-const { slides, interval = 120000, side = 'start', label } = Astro.props;
+const { slides, interval = 8000, side = 'start', label } = Astro.props;
 const uid = slugify(label) || 'rot';
 ---
 
@@ -55,6 +63,24 @@ const uid = slugify(label) || 'rot';
   aria-roledescription="carrusel"
   aria-label={label}
 >
+  {/* Zonas de paso: viven en el margen de la página, fuera del texto, y
+      solo asoman una flecha al pasar el cursor. */}
+  <button type="button" class="rot-edge is-prev no-print" data-prev aria-label="Ficha anterior">
+    <span class="rot-edge-icon" aria-hidden="true">
+      <svg viewBox="0 0 16 16" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.7">
+        <path d="M14 8H3M7 4L3 8l4 4" stroke-linecap="round" stroke-linejoin="round" />
+      </svg>
+    </span>
+  </button>
+
+  <button type="button" class="rot-edge is-next no-print" data-next aria-label="Ficha siguiente">
+    <span class="rot-edge-icon" aria-hidden="true">
+      <svg viewBox="0 0 16 16" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.7">
+        <path d="M2 8h11M9 4l4 4-4 4" stroke-linecap="round" stroke-linejoin="round" />
+      </svg>
+    </span>
+  </button>
+
   <div class="rot-stage">
     {
       slides.map((s, i) => (
@@ -81,10 +107,9 @@ const uid = slugify(label) || 'rot';
 
             <span class="rot-body">
               <span class="rot-kicker">
-                <span class="chip chip-teal">{s.kicker}</span>
+                <span class="rot-tipo">{s.kicker}</span>
                 {s.serial && <span class="rot-serial">{s.serial}</span>}
-                {s.flag && <span class="chip chip-gold">{s.flag}</span>}
-                {s.demo && <span class="chip chip-demo">Ejemplo</span>}
+                {s.flag && <span class="rot-flag">{s.flag}</span>}
               </span>
 
               <span class="rot-title">{s.title}</span>
@@ -93,9 +118,18 @@ const uid = slugify(label) || 'rot';
               {s.facts && s.facts.length > 0 && (
                 <span class="rot-facts">
                   {s.facts.map((f) => (
-                    <span class="rot-fact">
+                    <span class:list={['rot-fact', f.wide && 'is-wide']}>
                       <span class="rot-fact-label">{f.label}</span>
-                      <span class="rot-fact-value">{f.value}</span>
+                      <span class:list={['rot-fact-value', f.mono && 'is-dato']}>
+                        {Array.isArray(f.value)
+                          ? f.value.map((v, i) => (
+                              <>
+                                {i > 0 && <span class="rot-sep" aria-hidden="true"> · </span>}
+                                {v}
+                              </>
+                            ))
+                          : f.value}
+                      </span>
                     </span>
                   ))}
                 </span>
@@ -138,19 +172,6 @@ const uid = slugify(label) || 'rot';
         ))
       }
     </ol>
-
-    <div class="rot-nav">
-      <button type="button" class="rot-btn" data-prev aria-label="Anterior">
-        <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.7">
-          <path d="M14 8H3M7 4L3 8l4 4" stroke-linecap="round" stroke-linejoin="round" />
-        </svg>
-      </button>
-      <button type="button" class="rot-btn" data-next aria-label="Siguiente">
-        <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.7">
-          <path d="M2 8h11M9 4l4 4-4 4" stroke-linecap="round" stroke-linejoin="round" />
-        </svg>
-      </button>
-    </div>
   </div>
 </div>
 
@@ -162,7 +183,7 @@ const uid = slugify(label) || 'rot';
     const dots = Array.from(root.querySelectorAll<HTMLButtonElement>('[data-goto]'));
     if (slides.length === 0) return;
 
-    const interval = Number(root.dataset.interval ?? '120000');
+    const interval = Number(root.dataset.interval ?? '8000');
     let current = 0;
     let timer = 0;
     let paused = false;
@@ -195,6 +216,14 @@ const uid = slugify(label) || 'rot';
     function show(next: number): void {
       const i = (next + slides.length) % slides.length;
       if (i === current) return;
+
+      /* El que sale se marca: así puede apagarse más deprisa que el que
+         entra sin que el cruce parpadee. */
+      const saliente = slides[current];
+      if (saliente && current !== i) {
+        saliente.classList.add('is-leaving');
+        window.setTimeout(() => saliente.classList.remove('is-leaving'), 420);
+      }
 
       slides.forEach((slide, k) => {
         const active = k === i;
@@ -230,10 +259,72 @@ const uid = slugify(label) || 'rot';
     root.addEventListener('focusout', hold(false));
     document.addEventListener('visibilitychange', () => hold(document.hidden)());
 
+    /* La ficha entera es un enlace, pero al ser una pieza editorial no se
+       lee como tal. La primera vez que aparece se anuncia: la portada da un
+       golpe de luz y la llamada se adelanta. Solo una vez, y nunca si el
+       sistema pide menos movimiento. */
+    let announced = reduced;
+    const announce = (): void => {
+      if (announced) return;
+      announced = true;
+      root.classList.add('is-hint');
+      window.setTimeout(() => root.classList.remove('is-hint'), 3400);
+    };
+
     new IntersectionObserver(
-      (entries) => entries.forEach((e) => hold(!e.isIntersecting)()),
+      (entries) =>
+        entries.forEach((e) => {
+          hold(!e.isIntersecting)();
+          if (e.isIntersecting) announce();
+        }),
       { threshold: 0.2 },
     ).observe(root);
+
+    /* --- la portada sigue al cursor ---------------------------------- */
+    const fino = window.matchMedia('(hover: hover) and (pointer: fine)').matches;
+    const stage = root.querySelector<HTMLElement>('.rot-stage');
+
+    if (fino && !reduced && stage) {
+      /* Base de la sombra: en el bloque espejado cae al otro lado. */
+      const base = root.classList.contains('is-mirrored') ? 1 : -1;
+      let caja: DOMRect | null = null;
+      let frame = 0;
+
+      const seguir = (e: PointerEvent): void => {
+        if (frame) return;
+        frame = requestAnimationFrame(() => {
+          frame = 0;
+          if (!caja) caja = stage.getBoundingClientRect();
+          const lim = (v: number): number => Math.max(-1, Math.min(1, v));
+          const mx = lim(((e.clientX - caja.left) / caja.width) * 2 - 1);
+          const my = lim(((e.clientY - caja.top) / caja.height) * 2 - 1);
+          root.style.setProperty('--mx', mx.toFixed(3));
+          root.style.setProperty('--my', my.toFixed(3));
+          root.style.setProperty('--shx', (base - mx * 1.15).toFixed(3));
+          root.style.setProperty('--shy', (1 - my * 0.65).toFixed(3));
+        });
+      };
+
+      const soltar = (): void => {
+        if (frame) cancelAnimationFrame(frame);
+        frame = 0;
+        caja = null;
+        root.classList.remove('is-tracking');
+        root.style.setProperty('--mx', '0');
+        root.style.setProperty('--my', '0');
+        root.style.setProperty('--shx', String(base));
+        root.style.setProperty('--shy', '1');
+      };
+
+      stage.addEventListener('pointerenter', () => {
+        caja = stage.getBoundingClientRect();
+        root.classList.add('is-tracking');
+      });
+      stage.addEventListener('pointermove', seguir);
+      stage.addEventListener('pointerleave', soltar);
+      window.addEventListener('scroll', () => { caja = null; }, { passive: true });
+      window.addEventListener('resize', soltar);
+    }
 
     restart();
   });
@@ -245,29 +336,79 @@ const uid = slugify(label) || 'rot';
     from { transform: scaleX(0); }
     to { transform: scaleX(1); }
   }
+
+  @keyframes rotHintShine {
+    0% { opacity: 0; transform: translateX(0) skewX(-14deg); }
+    12% { opacity: 1; }
+    78% { opacity: 1; }
+    100% { opacity: 0; transform: translateX(420%) skewX(-14deg); }
+  }
+  @keyframes rotHintCta {
+    0%, 100% { opacity: 1; }
+    40% { opacity: 0.5; }
+  }
+  @keyframes rotHintArrow {
+    0%, 100% { transform: none; }
+    40% { transform: translateX(7px); }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .rot.is-hint .rot-slide .rot-cover::after,
+    .rot.is-hint .rot-slide .rot-cta,
+    .rot.is-hint .rot-slide .rot-cta .arw { animation: none !important; }
+  }
 </style>
 
 <style>
   .rot { position: relative; }
   .rot-stage { display: grid; }
 
-  /* Entra desde la derecha; en el bloque espejado, desde la izquierda. */
+  /* Relevo entre documentos. El que sale se apaga deprisa; el que entra se
+     arma por piezas —portada, antetítulo, título, datos, resumen— con un
+     retardo pequeño entre ellas. Se lee como un documento que reemplaza a
+     otro, no como una diapositiva que se desliza. */
+  .rot { --enter: 26px; }
+  .rot.is-mirrored { --enter: -26px; }
+
   .rot-slide {
     grid-area: 1 / 1;
     opacity: 0;
     visibility: hidden;
-    transform: translate3d(38px, 8px, 0);
-    transition: opacity 340ms ease, transform 440ms cubic-bezier(0.22, 0.61, 0.36, 1),
-      visibility 340ms;
+    transition: opacity 380ms ease, visibility 380ms;
     pointer-events: none;
   }
-  .is-mirrored .rot-slide { transform: translate3d(-38px, 10px, 0); }
-
   .rot-slide.is-active {
     opacity: 1;
     visibility: visible;
-    transform: none;
     pointer-events: auto;
+  }
+  /* Mientras se va sigue siendo visible: si no, el cruce parpadea. */
+  .rot-slide.is-leaving {
+    visibility: visible;
+    transition-duration: 240ms;
+  }
+
+  .rot-body > *,
+  .rot-aside > * {
+    opacity: 0;
+    transform: translate3d(var(--enter), 7px, 0);
+    transition: opacity 460ms ease, transform 640ms cubic-bezier(0.22, 0.61, 0.36, 1);
+  }
+  .rot-slide.is-active .rot-body > *,
+  .rot-slide.is-active .rot-aside > * {
+    opacity: 1;
+    transform: none;
+  }
+  .rot-slide.is-active .rot-body > *:nth-child(1),
+  .rot-slide.is-active .rot-aside > *:nth-child(1) { transition-delay: 90ms; }
+  .rot-slide.is-active .rot-body > *:nth-child(2),
+  .rot-slide.is-active .rot-aside > *:nth-child(2) { transition-delay: 160ms; }
+  .rot-slide.is-active .rot-body > *:nth-child(3) { transition-delay: 230ms; }
+  .rot-slide.is-active .rot-body > *:nth-child(4) { transition-delay: 300ms; }
+
+  @media (prefers-reduced-motion: reduce) {
+    .rot-body > *,
+    .rot-aside > * { transform: none; transition: opacity 200ms ease; }
   }
 
   /* Portada · datos · resumen. En el bloque espejado el orden se invierte
@@ -307,45 +448,64 @@ const uid = slugify(label) || 'rot';
     .is-mirrored .rot-aside { grid-column: 1; grid-row: 1; }
     .is-mirrored .rot-cover { grid-column: 2; grid-row: 1; }
     .is-mirrored .rot-body  { grid-column: 3; grid-row: 1; }
+
+    /* La llamada se ancla en la esquina inferior del costado del resumen: a
+       la derecha en las publicaciones, a la izquierda en los programas. Si
+       fuera pegada al texto, cada ficha la dejaría a una altura distinta y el
+       bloque parecería saltar al cambiar de documento. */
+    /* `.rot-link` delante a propósito: la regla base de `.rot-aside` viene
+       más abajo en la hoja y, a igual peso, ganaría ella. */
+    .rot-link .rot-aside {
+      align-self: stretch;
+      align-content: space-between;
+    }
+    .rot-link .rot-cta { justify-self: end; }
+    .is-mirrored .rot-link .rot-cta { justify-self: start; }
   }
 
   /* Ligero giro en perspectiva y sombra en capas: la portada se lee como un
      documento físico apoyado, no como una imagen pegada. */
+  /* El documento sigue al cursor: gira hacia él y la sombra cae al lado
+     contrario, como si la luz viniera de donde está el ratón. El script solo
+     escribe --mx/--my (posición, de -1 a 1) y --shx/--shy (hacia dónde cae la
+     sombra); el resto lo resuelve el navegador aquí. */
   .rot-cover {
     display: block;
+    position: relative;
     max-width: 300px;
     overflow: hidden;
     border-radius: 3px 22px 3px 3px;
     background: var(--color-ink);
     aspect-ratio: 760 / 1074;
-    transform: perspective(1400px) rotateY(-7deg) rotateX(1.2deg);
+    opacity: 0;
+    --giro-y: -7deg;
+    --sombra-x: -1;
+    transform: perspective(1400px)
+      rotateY(calc(var(--giro-y) + var(--mx, 0) * 7deg))
+      rotateX(calc(1.2deg + var(--my, 0) * -5.5deg))
+      translate3d(0, var(--alza, 0px), 0);
     transform-origin: right center;
     box-shadow:
-      -3px 4px 8px rgb(3 26 36 / 0.10),
-      -12px 18px 30px rgb(3 26 36 / 0.16),
-      -28px 40px 70px rgb(3 26 36 / 0.20);
+      calc(var(--shx, var(--sombra-x)) * 3px) calc(var(--shy, 1) * 4px) 8px rgb(3 26 36 / 0.10),
+      calc(var(--shx, var(--sombra-x)) * 13px) calc(var(--shy, 1) * 19px) 32px rgb(3 26 36 / 0.17),
+      calc(var(--shx, var(--sombra-x)) * 30px) calc(var(--shy, 1) * 43px) 74px rgb(3 26 36 / 0.21);
     transition: transform 700ms cubic-bezier(0.22, 0.61, 0.36, 1),
-      box-shadow 700ms ease;
+      box-shadow 700ms ease, opacity 420ms ease 60ms;
   }
-  .rot-link:hover .rot-cover {
-    transform: perspective(1400px) rotateY(-2.5deg) rotateX(0.4deg) translateY(-4px);
-    box-shadow:
-      -3px 5px 10px rgb(3 26 36 / 0.12),
-      -14px 22px 38px rgb(3 26 36 / 0.20),
-      -32px 50px 84px rgb(3 26 36 / 0.24);
+  .rot-slide.is-active .rot-cover { opacity: 1; }
+
+  /* Con el cursor encima la portada tiene que responder al instante; al
+     soltarla vuelve despacio a su sitio. */
+  .rot.is-tracking .rot-cover {
+    transition-duration: 160ms, 160ms, 420ms;
   }
+  .rot-link:hover .rot-cover { --alza: -7px; }
 
   .is-mirrored .rot-cover {
     border-radius: 22px 3px 3px 3px;
-    transform: perspective(1400px) rotateY(7deg) rotateX(1.2deg);
+    --giro-y: 7deg;
+    --sombra-x: 1;
     transform-origin: left center;
-    box-shadow:
-      3px 4px 8px rgb(3 26 36 / 0.10),
-      12px 18px 30px rgb(3 26 36 / 0.16),
-      28px 40px 70px rgb(3 26 36 / 0.20);
-  }
-  .is-mirrored .rot-link:hover .rot-cover {
-    transform: perspective(1400px) rotateY(2.5deg) rotateX(0.4deg) translateY(-4px);
   }
   @media (min-width: 1100px) { .rot-cover { max-width: none; } }
 
@@ -359,16 +519,32 @@ const uid = slugify(label) || 'rot';
 
   .rot-body { display: grid; align-content: start; }
 
+  /* Sin recuadros: el tipo de documento y el estado se distinguen por color
+     y por caja alta, que ya es suficiente jerarquía sobre un antetítulo. */
   .rot-kicker {
     display: flex;
     flex-wrap: wrap;
     align-items: center;
-    gap: 10px;
+    gap: 8px 16px;
   }
+  .rot-tipo,
+  .rot-flag {
+    font-size: 10.5px;
+    font-weight: 700;
+    letter-spacing: 0.13em;
+    text-transform: uppercase;
+    white-space: nowrap;
+  }
+  .rot-tipo { color: var(--color-teal-600); }
+  :global(.surface-dark) .rot-tipo,
+  :global(.surface-deep) .rot-tipo { color: var(--color-teal-300); }
+  .rot-flag { color: var(--color-gold); }
+
   .rot-serial {
-    font-family: var(--font-mono);
     font-size: 11.5px;
-    letter-spacing: 0.06em;
+    font-weight: 500;
+    letter-spacing: 0.08em;
+    font-variant-numeric: tabular-nums;
     color: var(--muted);
   }
 
@@ -382,9 +558,6 @@ const uid = slugify(label) || 'rot';
     max-width: 22ch;
     transition: color 220ms ease;
   }
-  .rot-link:hover .rot-title { color: var(--color-teal-600); }
-  .surface-dark .rot-link:hover .rot-title,
-  .surface-deep .rot-link:hover .rot-title { color: var(--color-gold); }
 
   .rot-meta {
     display: block;
@@ -395,30 +568,46 @@ const uid = slugify(label) || 'rot';
     color: var(--color-gold);
   }
 
-  /* --- clasificaciones --- */
+  /* --- clasificaciones ---------------------------------------------------
+     Hoja de características, no tabla. Antes cada dato era una fila de
+     etiqueta y valor separadas por un filete: eso se leía como hoja de
+     cálculo y dejaba una calle vacía entre las dos columnas. Ahora el rótulo
+     va encima de su valor y los datos cortos comparten renglón, así el
+     bloque ocupa la mitad de alto y se recorre de un vistazo. */
   .rot-facts {
     display: grid;
-    gap: 0;
-    margin-top: 24px;
-    border-top: 1px solid var(--line, var(--line-light));
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 20px 32px;
+    margin-top: 26px;
   }
-  .rot-fact {
-    display: grid;
-    grid-template-columns: minmax(0, 88px) minmax(0, 1fr);
-    gap: 4px 18px;
-    padding-block: 9px;
-    border-bottom: 1px solid var(--line, var(--line-light));
-    font-size: 13px;
-  }
+  /* Las listas largas —temas, claves— no caben en media columna. */
+  .rot-fact.is-wide { grid-column: 1 / -1; }
+
+  .rot-fact { display: grid; gap: 6px; align-content: start; }
+  /* La monoespaciada daba peso al rótulo por su propia forma; en la de
+     texto hay que pedírselo, o se pierde contra el valor. */
   .rot-fact-label {
     font-size: 10px;
-    font-weight: 600;
-    letter-spacing: 0.13em;
+    font-weight: 700;
+    letter-spacing: 0.15em;
     text-transform: uppercase;
-    color: var(--muted);
-    align-self: center;
+    color: var(--color-teal-600);
   }
-  .rot-fact-value { line-height: 1.45; }
+  :global(.surface-dark) .rot-fact-label,
+  :global(.surface-deep) .rot-fact-label { color: var(--color-teal-300); }
+
+  .rot-fact-value { font-size: 13.5px; line-height: 1.5; }
+
+  /* Con una sola tipografía, lo que distingue a un dato de una frase ya no
+     es la letra sino el ajuste: cifras de ancho fijo y algo más de aire
+     entre caracteres, para que los códigos no se apelmacen. */
+  .rot-fact-value.is-dato {
+    letter-spacing: 0.04em;
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* El separador cede protagonismo a los términos que separa. */
+  .rot-sep { color: color-mix(in srgb, currentColor 34%, transparent); }
 
   /* --- resumen --- */
   .rot-aside {
@@ -448,13 +637,49 @@ const uid = slugify(label) || 'rot';
     gap: 9px;
     margin-top: 22px;
     font-size: 12px;
-    font-weight: 600;
+    font-weight: 700;
     letter-spacing: 0.11em;
     text-transform: uppercase;
     color: var(--color-gold);
   }
   .rot-cta .arw { transition: transform 240ms cubic-bezier(0.22, 0.61, 0.36, 1); }
   .rot-link:hover .rot-cta .arw { transform: translateX(5px); }
+
+  /* --- se puede pulsar ------------------------------------------------ */
+  /* La ficha entera es un enlace, pero se lee como una pieza de revista. Al
+     aparecer se presenta: un reflejo de luz cruza la portada y la llamada
+     avanza. Dos veces y se acabó; después el bloque queda quieto. */
+  .rot-cover::after {
+    content: '';
+    position: absolute;
+    top: -20%;
+    bottom: -20%;
+    left: -60%;
+    width: 45%;
+    pointer-events: none;
+    opacity: 0;
+    transform: skewX(-14deg);
+    background: linear-gradient(
+      90deg,
+      transparent,
+      rgb(255 255 255 / 0.16) 45%,
+      rgb(255 255 255 / 0.26) 55%,
+      transparent
+    );
+  }
+  .rot.is-hint .rot-slide.is-active .rot-cover::after {
+    animation: rotHintShine 1600ms ease-out 2;
+  }
+  .rot.is-hint .rot-slide.is-active .rot-cta {
+    animation: rotHintCta 1600ms ease 2;
+  }
+  .rot.is-hint .rot-slide.is-active .rot-cta .arw {
+    animation: rotHintArrow 1600ms cubic-bezier(0.22, 0.61, 0.36, 1) 2;
+  }
+
+  /* El gesto de pulsar: la ficha cede un poco bajo el cursor. */
+  .rot-link { cursor: pointer; transition: transform 220ms ease; }
+  .rot-link:active { transform: scale(0.994); }
 
   /* --- controles ---------------------------------------------------- */
   .rot-bar {
@@ -505,25 +730,57 @@ const uid = slugify(label) || 'rot';
     transform-origin: left center;
   }
 
-  .rot-nav { display: flex; gap: 6px; flex-shrink: 0; }
-  .rot-btn {
+  /* --- zonas de paso ------------------------------------------------- */
+  /* Ocupan el margen de la página, así que no se cruzan con el enlace de
+     la ficha ni con el texto. Invisibles hasta que el cursor entra. */
+  .rot-edge {
+    position: absolute;
+    top: 0;
+    bottom: 96px;
+    width: 72px;
     display: grid;
     place-items: center;
-    width: 40px;
-    height: 40px;
-    border: 1px solid var(--line, var(--line-light));
-    border-radius: 999px;
+    padding: 0;
+    border: 0;
     background: transparent;
     color: inherit;
     cursor: pointer;
-    transition: border-color 200ms ease, color 200ms ease, transform 200ms ease;
+    z-index: 2;
   }
-  .rot-btn:hover {
+  .rot-edge.is-prev { left: -84px; }
+  .rot-edge.is-next { right: -84px; }
+  .is-mirrored .rot-edge.is-prev { left: -84px; }
+
+  .rot-edge-icon {
+    display: grid;
+    place-items: center;
+    width: 44px;
+    height: 44px;
+    border-radius: 999px;
+    border: 1px solid var(--line, var(--line-light));
+    opacity: 0;
+    transform: scale(0.9);
+    transition: opacity 260ms ease, transform 320ms cubic-bezier(0.22, 0.61, 0.36, 1),
+      border-color 200ms ease, color 200ms ease;
+  }
+  .rot-edge:hover .rot-edge-icon,
+  .rot-edge:focus-visible .rot-edge-icon {
+    opacity: 1;
+    transform: none;
     border-color: var(--color-gold);
     color: var(--color-gold);
-    transform: scale(1.06);
   }
-  .rot-btn:active { transform: scale(0.96); }
+
+  /* Sin margen de página que aprovechar, las zonas se pegan al borde
+     interior y se estrechan para no tapar el contenido. */
+  @media (max-width: 1439px) {
+    .rot-edge { width: 40px; }
+    .rot-edge.is-prev { left: -8px; }
+    .rot-edge.is-next { right: -8px; }
+  }
+  @media (max-width: 760px) {
+    .rot-edge { display: none; }
+  }
 
   @media (prefers-reduced-motion: reduce) {
     .rot-slide { transition: none; }

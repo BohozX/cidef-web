@@ -1,5 +1,18 @@
 ---
+import type { Cover } from '../site.config';
 import { withBase } from '../lib/url';
+
+/**
+ * Cabecera de página.
+ *
+ * Dos registros según lo que se le pase:
+ *
+ *  — Con `cover`, abre como la portada del sitio: imagen a sangre, mensaje
+ *    centrado y el pie curvado. Es el registro de las secciones principales.
+ *  — Sin `cover`, la cabecera sobria alineada a la izquierda. Es la de las
+ *    fichas —un documento, un programa, un evento—, que llevan título largo
+ *    y migas de pan y no deben competir con la sección que las contiene.
+ */
 
 export interface Props {
   eyebrow: string;
@@ -9,13 +22,54 @@ export interface Props {
   parent?: { label: string; href: string };
   /** Datos de cabecera: pares etiqueta / valor. */
   facts?: { label: string; value: string }[];
+  /** Imagen a sangre. Su ausencia deja la cabecera sobria. */
+  cover?: Cover;
+  /**
+   * La curva del pie descubre el papel de la sección siguiente. Cuando esa
+   * sección también es oscura no hay nada que descubrir y el recorte deja una
+   * franja clara suelta: ahí conviene apagarla.
+   */
+  curve?: boolean;
 }
 
-const { eyebrow, title, lede, parent, facts = [] } = Astro.props;
+const { eyebrow, title, lede, parent, facts = [], cover, curve = true } = Astro.props;
 ---
 
-<section class="surface-deep page-hero">
-  <div class="wrap">
+<section
+  class:list={[
+    'page-hero',
+    cover ? 'has-cover' : 'surface-deep',
+    cover && !curve && 'is-flush',
+    /* Con migas de pan es una ficha, no una sección: abre más corta para que
+       el contenido no quede a una pantalla entera de distancia. */
+    cover && parent && 'is-ficha',
+  ]}
+  data-parallax-scope={cover ? '' : undefined}
+>
+  {
+    cover && (
+      <div class="cover-media">
+        <picture class="cover-pic" data-parallax="4">
+          <source type="image/avif" srcset={cover.srcset.avif} sizes="100vw" />
+          <source type="image/webp" srcset={cover.srcset.webp} sizes="100vw" />
+          <img
+            src={cover.src}
+            srcset={cover.srcset.jpg}
+            sizes="100vw"
+            alt={cover.alt}
+            class="cover-img"
+            fetchpriority="high"
+            decoding="async"
+            width={cover.width}
+            height={cover.height}
+          />
+        </picture>
+        <div class="cover-veil" aria-hidden="true" />
+      </div>
+    )
+  }
+
+  <div class="wrap page-hero-inner">
     {
       parent && (
         <nav class="page-crumb" aria-label="Ruta de navegación">
@@ -47,8 +101,6 @@ const { eyebrow, title, lede, parent, facts = [] } = Astro.props;
         </dl>
       )
     }
-
-    <div class="rule page-rule"></div>
   </div>
 </section>
 
@@ -98,5 +150,96 @@ const { eyebrow, title, lede, parent, facts = [] } = Astro.props;
     letter-spacing: -0.01em;
   }
 
-  .page-rule { margin-top: clamp(40px, 5vw, 64px); }
+  /* --- con imagen a sangre ------------------------------------------------
+     Mismo registro que la portada del sitio: la imagen manda, el texto se
+     apoya abajo sobre la zona tranquila y el bloque se cierra con la curva. */
+  /* El mismo alto que la portada del sitio: las secciones abren con el mismo
+     peso que el inicio y el paso de una a otra no da tumbos. */
+  .has-cover {
+    position: relative;
+    min-height: 94vh;
+    min-height: 94svh;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    padding-bottom: clamp(56px, 8vh, 104px);
+    background: var(--color-ink);
+    color: var(--color-paper);
+    --line: var(--line-dark);
+    --muted: color-mix(in srgb, #f5f3ed 62%, transparent);
+    overflow: clip;
+    border-bottom-left-radius: clamp(48px, 11vw, 168px);
+    border-bottom-right-radius: clamp(48px, 11vw, 168px);
+  }
+  .has-cover.is-ficha {
+    min-height: 68vh;
+    min-height: 68svh;
+    padding-top: clamp(118px, 10vh, 138px);
+    padding-bottom: clamp(44px, 5vh, 72px);
+  }
+  .has-cover.is-flush {
+    border-bottom-left-radius: 0;
+    border-bottom-right-radius: 0;
+    padding-bottom: clamp(48px, 6vh, 84px);
+  }
+  /* Cabecera sobria: todo alineado al margen izquierdo. El centrado es del
+     registro con portada; aquí dejaba el antetítulo y la entradilla flotando
+     sobre un título pegado al margen. */
+  .page-hero:not(.has-cover) .page-hero-inner p { text-align: left; }
+
+  .has-cover .page-hero-inner {
+    position: relative;
+    z-index: 1;
+    text-align: center;
+  }
+  .has-cover .page-title,
+  .has-cover .page-lede {
+    margin-inline: auto;
+  }
+  /* En fila y centradas: con la retícula de cuatro columnas, dos o tres
+     cifras se quedaban apelotonadas a la izquierda. */
+  .has-cover .page-facts {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 22px clamp(36px, 6vw, 84px);
+    margin-inline: auto;
+    text-align: center;
+  }
+  .has-cover .page-crumb { display: flex; justify-content: center; }
+
+  .cover-media { position: absolute; inset: -4% 0; z-index: 0; }
+  .cover-pic,
+  .cover-img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: 50% 30%;
+  }
+
+  /* Solo lo justo para que el blanco se lea: una sombra bajo el texto y otra
+     al pie, donde apoya la curva. La imagen no se tiñe entera. */
+  /* La sombra cubre el bloque entero de texto, antetítulo incluido: estas
+     fotografías tienen zonas claras justo ahí —una pantalla encendida, una
+     pared blanca— y el dorado del antetítulo desaparecía contra ellas. */
+  .cover-veil {
+    position: absolute;
+    inset: 0;
+    background:
+      radial-gradient(
+        64% 46% at 50% 70%,
+        rgba(3, 26, 36, 0.74) 0%,
+        rgba(3, 26, 36, 0.42) 54%,
+        rgba(3, 26, 36, 0) 100%
+      ),
+      linear-gradient(
+        to bottom,
+        rgba(3, 26, 36, 0.86) 0%,
+        rgba(3, 26, 36, 0.44) 22%,
+        rgba(3, 26, 36, 0.18) 40%,
+        rgba(3, 26, 36, 0.58) 84%,
+        rgba(3, 26, 36, 0.9) 100%
+      );
+  }
 </style>

@@ -1,7 +1,7 @@
 ---
+import { withBase } from '../lib/url';
 import type { CollectionEntry } from 'astro:content';
 import { dayMonth, isFuture } from '../lib/format';
-import { withBase } from '../lib/url';
 
 /**
  * Agenda con calendario.
@@ -190,23 +190,13 @@ const list = upcoming.slice(0, 4);
   }
 
   /* Sobre el azul petróleo el calendario se remata en dorado: es la pieza
-     que manda en esa sección y conviene que destaque. */
-  .surface-deep .cal,
-  .surface-dark .cal {
-    border-color: color-mix(in srgb, #d29a28 38%, transparent);
-    background: color-mix(in srgb, #d29a28 5%, transparent);
+     que manda en esa sección y conviene que destaque. Solo el filo exterior;
+     dentro no se toca nada —ni el mes, ni los días, ni las divisiones—, que
+     el dorado repetido apaga el propio marco. */
+  :global(.surface-deep) .cal,
+  :global(.surface-dark) .cal {
+    border-color: var(--color-gold);
   }
-  .surface-deep .cal-head,
-  .surface-dark .cal-head { border-bottom-color: color-mix(in srgb, #d29a28 30%, transparent); }
-
-  .surface-deep .cal-month,
-  .surface-dark .cal-month { color: var(--color-gold-300); }
-
-  .surface-deep .cal-grid th,
-  .surface-dark .cal-grid th { color: color-mix(in srgb, #e5bb6b 76%, transparent); }
-
-  .surface-deep .cal-legend,
-  .surface-dark .cal-legend { border-top-color: color-mix(in srgb, #d29a28 24%, transparent); }
 
   .cal-head {
     display: flex;
@@ -230,7 +220,7 @@ const list = upcoming.slice(0, 4);
   }
   .cal-grid th {
     font-size: 10px;
-    font-weight: 600;
+    font-weight: 700;
     letter-spacing: 0.1em;
     text-transform: uppercase;
     color: var(--muted);
@@ -327,7 +317,7 @@ const list = upcoming.slice(0, 4);
   .entry-month {
     margin-top: 5px;
     font-size: 10px;
-    font-weight: 600;
+    font-weight: 700;
     letter-spacing: 0.14em;
     color: var(--color-gold);
   }

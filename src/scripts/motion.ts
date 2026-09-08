@@ -197,6 +197,30 @@ function init(): void {
         );
       });
 
+      /* La agenda entra por partes: primero la fecha, luego el cuerpo y al
+         final la hora y el enlace. Es una lista larga y de una sola pieza se
+         leía como un bloque que aparece; así se recorre. */
+      gsap.utils.toArray<HTMLElement>('[data-agenda-row]').forEach((fila) => {
+        const partes = gsap.utils.toArray<HTMLElement>(
+          '.agenda-date, .agenda-body, .agenda-side',
+          fila,
+        );
+        if (partes.length === 0) return;
+        gsap.fromTo(
+          partes,
+          { opacity: 0, y: shift, x: (i: number) => (i === 0 ? -14 : 0) },
+          {
+            opacity: 1,
+            y: 0,
+            x: 0,
+            duration: 0.58,
+            ease: EASE,
+            stagger: 0.09,
+            scrollTrigger: { trigger: fila, start: 'top 90%', once: true },
+          },
+        );
+      });
+
       /* Líneas que se dibujan. */
       gsap.utils.toArray<HTMLElement>('.rule-draw').forEach((line) => {
         gsap.to(line, {

@@ -20,7 +20,7 @@ const [publicaciones, eventos, formacion, archivo] = await Promise.all([
 const indexRaw: Entry[] = [
   ...publicaciones.map((p) => ({
     t: p.data.title,
-    u: `/analisis/${p.id}`,
+    u: `/publicaciones/${p.id}`,
     k: p.data.type,
     d: p.data.topics.join(' · '),
   })),
@@ -49,7 +49,7 @@ const indexRaw: Entry[] = [
     d: `${i.frequency} · ${i.source}`,
   })),
   { t: 'Radar Económico', u: '/radar', k: 'Sección', d: 'Indicadores de la economía boliviana' },
-  { t: 'Análisis', u: '/analisis', k: 'Sección', d: 'Working papers, reportes y notas' },
+  { t: 'Publicaciones', u: '/publicaciones', k: 'Sección', d: 'Informes, reportes, working papers, notas y memorias' },
   { t: 'Archivo Vivo', u: '/archivo', k: 'Sección', d: 'Repositorio abierto' },
   { t: 'Formación', u: '/formacion', k: 'Sección', d: 'Diplomados y oferta académica' },
   { t: 'Agenda', u: '/agenda', k: 'Sección', d: 'Seminarios y convocatorias' },
@@ -265,7 +265,7 @@ const index: Entry[] = indexRaw.map((e) => ({ ...e, u: withBase(e.u) }));
   .search-results a:hover { transform: translateX(4px); }
   .search-kind {
     font-size: 10px;
-    font-weight: 600;
+    font-weight: 700;
     letter-spacing: 0.14em;
     text-transform: uppercase;
     color: var(--color-gold);

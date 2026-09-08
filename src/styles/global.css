@@ -21,11 +21,11 @@
   --color-paper-300: #ded9cc;
   --color-carbon: #111111;
 
-  /* Una sola familia en todo el sitio. DM Mono queda solo donde la
-     monoespaciada es funcional: citas BibTeX/RIS y bloques de código. */
+  /* Una sola familia en todo el sitio, sin excepciones: DM Sans. Lo que
+     antes resolvía la monoespaciada —alinear cifras— se pide ahora con
+     `font-variant-numeric: tabular-nums`, que no cambia de letra. */
   --font-display: "DM Sans", ui-sans-serif, "Segoe UI", system-ui, sans-serif;
   --font-sans: "DM Sans", ui-sans-serif, "Segoe UI", system-ui, sans-serif;
-  --font-mono: "DM Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
 
   --radius-xs: 2px;
   --radius-sm: 3px;
@@ -78,7 +78,26 @@
     text-wrap: balance;
   }
 
+  /* Texto corrido justificado, como en un documento. Solo los párrafos: en
+     una viñeta corta o en el valor de un dato, justificar abre calles enormes
+     entre las pocas palabras que hay y el bloque se descuadra.
+     Sin partición automática: Word tampoco parte palabras, y los cortes que
+     salían —«fre-cuencia», «con-testan», «in-gresos»— se leían como erratas. */
+  p, blockquote {
+    text-align: justify;
+    hyphens: manual;
+    -webkit-hyphens: manual;
+  }
   p { text-wrap: pretty; }
+
+  /* Donde el bloque va centrado, manda el centrado. */
+  .hero-inner p,
+  .page-hero-inner p,
+  .sec-head p,
+  .program-title,
+  [class*='-center'] p {
+    text-align: center;
+  }
 
   ::selection { background: var(--color-gold); color: var(--color-ink); }
 
@@ -108,6 +127,7 @@
 
   /* Ritmo vertical corto: las secciones se suceden sin bandas vacías. */
   .section { padding-block: clamp(28px, 3.2vw, 48px); }
+
   .section-tight { padding-block: clamp(22px, 2.4vw, 34px); }
 
   /* --- superficies -------------------------------------------------- */
@@ -159,11 +179,13 @@
 
   .muted { color: var(--muted, color-mix(in srgb, currentColor 62%, transparent)); }
 
-  /* --- recursos editoriales ---------------------------------------- */
+  /* --- recursos editoriales ----------------------------------------
+     Los antetítulos y rótulos van en negrita: a este cuerpo, y con tanto
+     interletrado, el semibold se aguaba y no llegaban a leerse como rótulo. */
   .eyebrow {
     font-family: var(--font-sans);
     font-size: 11px;
-    font-weight: 600;
+    font-weight: 700;
     letter-spacing: 0.16em;
     text-transform: uppercase;
     line-height: 1.2;
@@ -209,34 +231,32 @@
   }
 
   .index-num {
-    font-family: var(--font-mono);
     font-size: 0.78rem;
+    font-weight: 600;
     letter-spacing: 0.04em;
+    font-variant-numeric: tabular-nums;
     color: var(--color-gold);
   }
 
-  /* --- chips / etiquetas ------------------------------------------- */
+  /* --- etiquetas ----------------------------------------------------
+     Sin recuadro: solo la palabra. Los marcos convertían cada dato menor en
+     un botón y llenaban las tarjetas de cajas que no llevan a ningún sitio.
+     Lo que distingue ahora una etiqueta de otra es el color, y del resto del
+     texto, la caja alta y el interletrado. */
   .chip {
     display: inline-flex;
     align-items: center;
     gap: 6px;
-    padding: 3px 9px;
-    border: 1px solid var(--line, var(--line-light));
-    border-radius: var(--radius-xs);
     font-size: 10.5px;
-    font-weight: 600;
-    letter-spacing: 0.11em;
+    font-weight: 700;
+    letter-spacing: 0.13em;
     text-transform: uppercase;
     white-space: nowrap;
   }
-  .chip-gold { border-color: color-mix(in srgb, #d29a28 60%, transparent); color: var(--color-gold); }
-  .chip-teal { border-color: color-mix(in srgb, #008c85 55%, transparent); color: var(--color-teal-600); }
+  .chip-gold { color: var(--color-gold); }
+  .chip-teal { color: var(--color-teal-600); }
   .surface-dark .chip-teal, .surface-deep .chip-teal { color: var(--color-teal-300); }
-  .chip-demo {
-    border-color: color-mix(in srgb, #d29a28 45%, transparent);
-    background: color-mix(in srgb, #d29a28 12%, transparent);
-    color: #8a6415;
-  }
+  .chip-demo { color: #8a6415; }
   .surface-dark .chip-demo, .surface-deep .chip-demo { color: var(--color-gold-300); }
 
   /* --- botones ------------------------------------------------------ */
@@ -277,7 +297,7 @@
     align-items: center;
     gap: 8px;
     font-size: 12px;
-    font-weight: 600;
+    font-weight: 700;
     letter-spacing: 0.11em;
     text-transform: uppercase;
     color: var(--color-gold);
@@ -369,8 +389,7 @@
     font-size: 1.14rem;
   }
   .prose-cidef code {
-    font-family: var(--font-mono);
-    font-size: 0.88em;
+    font-size: 0.9em;
     background: color-mix(in srgb, currentColor 8%, transparent);
     padding: 1px 5px;
     border-radius: 2px;

@@ -1,0 +1,76 @@
+---
+import { ETIQUETA } from '../lib/indicators';
+
+/**
+ * Los tres sellos del dato, explicados una sola vez.
+ *
+ * Es la distinción que sostiene todo el Radar y va donde haya series a la
+ * vista: una estimación del centro no se presenta nunca como estadística
+ * oficial, y quien mira una cifra tiene que poder saber cuál de las tres cosas
+ * está mirando sin abrir la ficha.
+ */
+
+const SELLOS = [
+  {
+    kind: 'oficial' as const,
+    texto: 'Publicado por la fuente que lo produce: INE, BCB, ministerios y organismos internacionales.',
+  },
+  {
+    kind: 'estimacion' as const,
+    texto: 'Calculado por el CIDEF a partir de datos observados, con la metodología publicada.',
+  },
+  {
+    kind: 'proyeccion' as const,
+    texto: 'Valor futuro o aún no publicado, con su intervalo y su historial de revisiones.',
+  },
+];
+---
+
+<ul class="sellos" data-reveal-group data-reveal-stagger="0.05">
+  {
+    SELLOS.map((s) => (
+      <li data-reveal>
+        <span class:list={['sello', `sello-${s.kind}`]}>{ETIQUETA[s.kind]}</span>
+        <span class="sello-texto muted">{s.texto}</span>
+      </li>
+    ))
+  }
+</ul>
+
+<style>
+  .sellos {
+    display: grid;
+    gap: 18px 34px;
+    list-style: none;
+    margin: clamp(26px, 3vw, 38px) 0 0;
+    padding: 0;
+  }
+  @media (min-width: 860px) { .sellos { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+
+  .sellos li {
+    display: grid;
+    gap: 6px;
+    align-content: start;
+    padding-top: 14px;
+    border-top: 1px solid var(--line, var(--line-light));
+  }
+  .sello {
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 0.13em;
+    text-transform: uppercase;
+  }
+  .sello-oficial { color: var(--muted); }
+  .sello-estimacion { color: var(--color-teal-600); }
+  .sello-proyeccion { color: var(--color-gold); }
+  :global(.surface-dark) .sello-estimacion,
+  :global(.surface-deep) .sello-estimacion { color: var(--color-teal-300); }
+
+  .sello-texto {
+    font-size: 12px;
+    line-height: 1.62;
+    text-align: left;
+    hyphens: manual;
+    -webkit-hyphens: manual;
+  }
+</style>

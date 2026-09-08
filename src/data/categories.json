@@ -1,47 +1,176 @@
 [
   {
     "id": "panorama",
-    "name": "Panorama general",
-    "description": "Lectura transversal de la economía boliviana en un solo tablero."
-  },
-  {
-    "id": "precios",
-    "name": "Precios",
-    "description": "Inflación, núcleo, alimentos y expectativas de precios."
+    "name": "Panorama",
+    "pregunta": "¿Cómo va la economía boliviana hoy?",
+    "description": "Lectura transversal: las series que hay que mirar primero, en un solo tablero.",
+    "temas": [
+      "Crecimiento",
+      "Inflación",
+      "Tipo de cambio",
+      "Reservas",
+      "Crédito",
+      "Empleo",
+      "Saldo comercial",
+      "Indicadores propios"
+    ]
   },
   {
     "id": "actividad",
     "name": "Actividad económica",
-    "description": "Producto, índices de actividad y desempeño sectorial."
+    "pregunta": "¿Cuánto se produce y a qué ritmo crece?",
+    "description": "Producto, índices de actividad y desempeño de las ramas que sostienen la economía.",
+    "temas": [
+      "PIB y crecimiento",
+      "Índice de actividad",
+      "Producción sectorial",
+      "Industria y manufactura",
+      "Construcción",
+      "Comercio",
+      "Servicios",
+      "Agricultura y minería"
+    ]
+  },
+  {
+    "id": "precios",
+    "name": "Precios e inflación",
+    "pregunta": "¿A qué velocidad suben los precios y qué los empuja?",
+    "description": "Inflación general, subyacente y por divisiones, junto con las expectativas de precios.",
+    "temas": [
+      "IPC general",
+      "Inflación mensual e interanual",
+      "Inflación por divisiones",
+      "Inflación subyacente",
+      "Precios de alimentos",
+      "Precios mayoristas",
+      "Expectativas de inflación"
+    ]
+  },
+  {
+    "id": "monetario",
+    "name": "Sector monetario y financiero",
+    "pregunta": "¿Cuánto dinero hay y a qué precio se presta?",
+    "description": "Agregados monetarios, crédito, depósitos, tasas y salud del sistema financiero.",
+    "temas": [
+      "Base monetaria",
+      "Agregados M1, M2 y M3",
+      "Crédito",
+      "Depósitos",
+      "Tasas de interés",
+      "Liquidez",
+      "Mora",
+      "Cartera por sector"
+    ]
+  },
+  {
+    "id": "cambiario",
+    "name": "Mercado cambiario",
+    "pregunta": "¿Cuánto cuesta el dólar en cada mercado?",
+    "description": "El tipo de cambio oficial, el paralelo estimado por el centro y la distancia entre ambos.",
+    "temas": [
+      "Tipo de cambio oficial",
+      "Tipo de cambio paralelo",
+      "USDT/BOB",
+      "Brecha cambiaria",
+      "Volumen P2P",
+      "Compra y venta",
+      "Volatilidad"
+    ]
   },
   {
     "id": "externo",
     "name": "Sector externo",
-    "description": "Balanza de pagos, reservas, tipo de cambio y comercio exterior."
-  },
-  {
-    "id": "monetario",
-    "name": "Monetario y financiero",
-    "description": "Agregados monetarios, crédito, depósitos y tasas de interés."
+    "pregunta": "¿Qué entra y qué sale del país?",
+    "description": "Comercio exterior, reservas y las cuentas de Bolivia con el resto del mundo.",
+    "temas": [
+      "Reservas internacionales",
+      "Exportaciones",
+      "Importaciones",
+      "Balanza comercial",
+      "Cuenta corriente",
+      "Balanza de pagos",
+      "Remesas",
+      "Deuda externa",
+      "Términos de intercambio"
+    ]
   },
   {
     "id": "fiscal",
     "name": "Sector fiscal",
-    "description": "Resultado fiscal, deuda pública, ingresos y gasto."
+    "pregunta": "¿Cuánto recauda el Estado, cuánto gasta y cuánto debe?",
+    "description": "Ingresos, gasto, resultado fiscal y deuda pública del sector público.",
+    "temas": [
+      "Ingresos públicos",
+      "Gastos",
+      "Déficit o superávit",
+      "Deuda pública",
+      "Recaudación tributaria",
+      "Gasto de capital",
+      "Transferencias",
+      "Ejecución presupuestaria"
+    ]
   },
   {
     "id": "laboral",
-    "name": "Mercado laboral",
-    "description": "Empleo, desocupación, informalidad e ingresos laborales."
+    "name": "Empleo e ingresos",
+    "pregunta": "¿Quién trabaja, cómo y cuánto gana?",
+    "description": "Ocupación, desempleo, informalidad y la evolución de los ingresos del trabajo.",
+    "temas": [
+      "Desempleo",
+      "Ocupación",
+      "Participación laboral",
+      "Informalidad",
+      "Salarios",
+      "Ingreso laboral",
+      "Salario mínimo",
+      "Empleo por sector"
+    ]
   },
   {
-    "id": "comercio",
-    "name": "Comercio",
-    "description": "Exportaciones, importaciones y saldo comercial por sector."
+    "id": "social",
+    "name": "Indicadores sociales",
+    "pregunta": "¿Cómo se reparte lo que la economía produce?",
+    "description": "Pobreza, desigualdad y condiciones de vida, separados de lo estrictamente macroeconómico.",
+    "temas": [
+      "Pobreza",
+      "Pobreza extrema",
+      "Desigualdad y Gini",
+      "Educación",
+      "Salud",
+      "Vivienda",
+      "Acceso a servicios",
+      "Indicadores departamentales"
+    ]
+  },
+  {
+    "id": "internacional",
+    "name": "Economía internacional",
+    "pregunta": "¿Qué llega desde afuera?",
+    "description": "Los precios y las tasas del exterior que terminan moviendo la economía boliviana.",
+    "temas": [
+      "Petróleo",
+      "Oro",
+      "Gas",
+      "Índice del dólar",
+      "Tasa de la Fed",
+      "Inflación de EE. UU.",
+      "Tasas internacionales",
+      "Riesgo país",
+      "Tipos de cambio regionales"
+    ]
   },
   {
     "id": "centro",
     "name": "Indicadores del Centro",
-    "description": "Estimaciones propias del CIDEF con metodología publicada."
+    "pregunta": "¿Qué mide el CIDEF por su cuenta?",
+    "description": "Estimaciones, índices y proyecciones propias, cada una con su metodología publicada.",
+    "temas": [
+      "Nowcast del PIB",
+      "Índice de incertidumbre",
+      "Inflación esperada",
+      "Tipo de cambio paralelo",
+      "Variables no observables",
+      "Proyecciones con intervalo"
+    ]
   }
 ]

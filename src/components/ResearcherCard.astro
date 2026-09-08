@@ -50,19 +50,18 @@ const links = [
         </ul>
       )
     }
-
-    {d.demo && <p class="researcher-demo"><span class="chip chip-demo">Perfil de ejemplo</span></p>}
   </div>
 </article>
 
 <style>
+  /* La tarjeta ocupa todo el alto de su celda y reparte por dentro: retrato
+     arriba, cuerpo abajo. Así los enlaces de todas las fichas caen al mismo
+     nivel, por larga o corta que sea la reseña. */
   .researcher {
     display: grid;
     grid-template-rows: auto 1fr;
-    /* Sin `start`, las filas automáticas se reparten el espacio sobrante de
-       la cuadrícula y los nombres dejan de alinearse entre tarjetas. */
-    align-content: start;
     gap: 18px;
+    height: 100%;
   }
 
   .portrait {
@@ -115,25 +114,39 @@ const links = [
     font-weight: 500;
     letter-spacing: 0.03em;
   }
+  /* El cuerpo se ordena en filas: la reseña se queda con el hueco sobrante y
+     empuja los enlaces al pie de la tarjeta. */
+  .researcher-body {
+    display: grid;
+    grid-template-rows: auto auto auto 1fr auto;
+    align-content: start;
+  }
+
   .researcher-bio {
     margin-top: 12px;
     font-size: 13.5px;
     line-height: 1.6;
+    /* Cinco líneas como techo: una reseña larga no debe estirar su columna
+       más que las demás. */
+    display: -webkit-box;
+    -webkit-line-clamp: 5;
+    line-clamp: 5;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
   }
 
   .researcher-links {
     display: flex;
     flex-wrap: wrap;
+    align-self: end;
     gap: 6px 16px;
-    margin-top: 14px;
+    margin-top: 16px;
     padding-top: 12px;
     border-top: 1px solid var(--line, var(--line-light));
     list-style: none;
     font-size: 11.5px;
-    font-weight: 600;
+    font-weight: 700;
     letter-spacing: 0.08em;
     text-transform: uppercase;
   }
-
-  .researcher-demo { margin-top: 12px; }
 </style>

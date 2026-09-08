@@ -1,6 +1,6 @@
 ---
 title: "Crédito bancario y actividad económica en Bolivia: evidencia de un VAR estructural"
-type: "Artículo"
+type: "Estudio especial"
 serial: "Nº 006"
 date: 2026-04-08
 authors:

@@ -1,0 +1,331 @@
+---
+import PanelIndicador from './PanelIndicador.astro';
+import PanelDona from './PanelDona.astro';
+import { byId, categories, SECTORES, type Indicator } from '../lib/indicators';
+
+/**
+ * Los tableros del Radar: el panorama y uno por sector.
+ *
+ * Cada tablero está compuesto a mano, no repartido por una regla automática.
+ * Un sector no es una lista de series: tiene una que abre —la que contesta la
+ * pregunta del sector— dos que la matizan, y, donde el dato es un reparto y
+ * no una serie en el tiempo, una dona de composición que cierra el rectángulo.
+ *
+ * Todos se generan al compilar y se alternan ocultando y mostrando: cambiar
+ * de sector no recarga la página ni pide datos.
+ */
+
+type Tamano = 'grande' | 'medio' | 'chico' | 'ancho' | 'tercio' | 'cifra';
+type Pieza = { id: string; size: Tamano };
+
+type Tablero = {
+  id: string;
+  nombre: string;
+  descripcion?: string;
+  piezas: Pieza[];
+  /** Serie cuya composición se muestra en dona, si la tiene. */
+  dona?: string;
+};
+
+const TABLEROS: Tablero[] = [
+  {
+    id: 'panorama',
+    nombre: 'Panorama',
+    piezas: [
+      { id: 'pib-trimestral', size: 'grande' },
+      { id: 'inflacion-interanual', size: 'medio' },
+      { id: 'tipo-cambio', size: 'medio' },
+      { id: 'reservas-internacionales', size: 'chico' },
+      { id: 'credito-privado', size: 'chico' },
+      { id: 'desocupacion', size: 'chico' },
+      { id: 'saldo-comercial', size: 'ancho' },
+      { id: 'nowcast-pib', size: 'tercio' },
+      { id: 'indice-incertidumbre', size: 'tercio' },
+      { id: 'inflacion-esperada', size: 'tercio' },
+    ],
+  },
+  {
+    id: 'actividad',
+    nombre: 'Actividad económica',
+    piezas: [
+      { id: 'imae', size: 'grande' },
+      { id: 'pib-trimestral', size: 'medio' },
+      { id: 'industria', size: 'medio' },
+    ],
+    dona: 'imae',
+  },
+  {
+    id: 'precios',
+    nombre: 'Precios e inflación',
+    piezas: [
+      { id: 'inflacion-interanual', size: 'grande' },
+      { id: 'inflacion-nucleo', size: 'medio' },
+      { id: 'inflacion-alimentos', size: 'medio' },
+    ],
+    dona: 'inflacion-interanual',
+  },
+  {
+    id: 'monetario',
+    nombre: 'Monetario y financiero',
+    piezas: [
+      { id: 'credito-privado', size: 'grande' },
+      { id: 'depositos', size: 'medio' },
+      { id: 'tasa-activa', size: 'medio' },
+    ],
+    dona: 'credito-privado',
+  },
+  {
+    /* El mercado cambiario abre con el paralelo y no con el oficial: es la
+       cotización a la que efectivamente se opera, y la que explica la brecha
+       que va debajo. */
+    id: 'cambiario',
+    nombre: 'Mercado cambiario',
+    piezas: [
+      { id: 'tipo-cambio-paralelo', size: 'grande' },
+      { id: 'tipo-cambio', size: 'medio' },
+      { id: 'brecha-cambiaria', size: 'medio' },
+    ],
+    dona: 'volumen-p2p',
+  },
+  {
+    id: 'externo',
+    nombre: 'Sector externo',
+    piezas: [
+      { id: 'reservas-internacionales', size: 'grande' },
+      { id: 'saldo-comercial', size: 'medio' },
+      { id: 'exportaciones', size: 'medio' },
+    ],
+    dona: 'exportaciones',
+  },
+  {
+    id: 'fiscal',
+    nombre: 'Sector fiscal',
+    piezas: [
+      { id: 'resultado-fiscal', size: 'grande' },
+      { id: 'recaudacion', size: 'medio' },
+      { id: 'deuda-publica', size: 'medio' },
+    ],
+    dona: 'resultado-fiscal',
+  },
+  {
+    id: 'laboral',
+    nombre: 'Empleo e ingresos',
+    piezas: [
+      { id: 'desocupacion', size: 'grande' },
+      { id: 'informalidad', size: 'medio' },
+      { id: 'salario-minimo', size: 'medio' },
+    ],
+    dona: 'desocupacion',
+  },
+  {
+    id: 'social',
+    nombre: 'Indicadores sociales',
+    piezas: [
+      { id: 'pobreza', size: 'grande' },
+      { id: 'pobreza-extrema', size: 'medio' },
+      { id: 'gini', size: 'medio' },
+    ],
+    dona: 'pobreza',
+  },
+  {
+    id: 'internacional',
+    nombre: 'Economía internacional',
+    piezas: [
+      { id: 'petroleo-brent', size: 'grande' },
+      { id: 'oro', size: 'medio' },
+      { id: 'dxy', size: 'medio' },
+    ],
+    dona: 'dxy',
+  },
+  {
+    id: 'centro',
+    nombre: 'Indicadores del Centro',
+    piezas: [
+      { id: 'nowcast-pib', size: 'grande' },
+      { id: 'indice-incertidumbre', size: 'medio' },
+      { id: 'inflacion-esperada', size: 'medio' },
+    ],
+    dona: 'indice-incertidumbre',
+  },
+];
+
+/* El orden del tablero es el del mapa de sectores: la barra de pestañas y el
+   menú tienen que recorrerse igual. */
+const orden = (id: string): number => {
+  const i = (SECTORES as readonly string[]).indexOf(id);
+  return i === -1 ? 99 : i;
+};
+
+const descripcion = (id: string): string | undefined =>
+  categories.find((c) => c.id === id)?.description;
+
+const tableros = [...TABLEROS]
+  .sort((a, b) => orden(a.id) - orden(b.id))
+  .map((t) => ({
+    ...t,
+    descripcion: t.id === 'panorama' ? undefined : descripcion(t.id),
+    piezas: t.piezas
+      .map((p) => ({ ...p, item: byId(p.id) }))
+      .filter((p): p is Pieza & { item: Indicator } => Boolean(p.item)),
+  }));
+---
+
+<nav id="tableros" class="tab-sectores no-print" aria-label="Sectores del Radar" data-reveal>
+  {
+    tableros.map((t, i) => (
+      <button
+        type="button"
+        class:list={['tab-sector', i === 0 && 'is-on']}
+        data-tablero={t.id}
+        aria-pressed={i === 0 ? 'true' : 'false'}
+      >
+        {t.nombre}
+      </button>
+    ))
+  }
+</nav>
+
+{
+  tableros.map((t, i) => (
+    <div class="tab-panel" data-panel={t.id} hidden={i !== 0}>
+      {t.descripcion && <p class="tab-desc muted">{t.descripcion}</p>}
+
+      <div class="tablero">
+        {t.piezas.map((p) => (
+          <PanelIndicador item={p.item} size={p.size} />
+        ))}
+        {t.dona && <PanelDona id={t.dona} size="medio" />}
+      </div>
+    </div>
+  ))
+}
+
+<script>
+  /* Cambiar de sector es mostrar y ocultar: los tableros ya vienen armados
+     desde el servidor, así que el cambio es inmediato. */
+  const botones = Array.from(document.querySelectorAll<HTMLButtonElement>('[data-tablero]'));
+  const paneles = Array.from(document.querySelectorAll<HTMLElement>('[data-panel]'));
+
+  const abrir = (destino: string): boolean => {
+    const boton = botones.find((b) => b.dataset.tablero === destino);
+    if (!boton) return false;
+    paneles.forEach((p) => {
+      p.hidden = p.dataset.panel !== destino;
+    });
+    botones.forEach((otro) => {
+      const activo = otro === boton;
+      otro.classList.toggle('is-on', activo);
+      otro.setAttribute('aria-pressed', String(activo));
+    });
+    /* La barra de pestañas se desplaza en horizontal: si el sector elegido
+       queda fuera de la vista, el usuario no ve cuál quedó activo. */
+    boton.scrollIntoView({ block: 'nearest', inline: 'center', behavior: 'smooth' });
+    return true;
+  };
+
+  botones.forEach((b) => b.addEventListener('click', () => abrir(b.dataset.tablero!)));
+
+  /* Los enlaces del mapa de sectores abren su tablero y bajan hasta él. */
+  document.querySelectorAll<HTMLElement>('[data-ir-sector]').forEach((enlace) =>
+    enlace.addEventListener('click', (e) => {
+      const destino = enlace.dataset.irSector!;
+      if (!abrir(destino)) return;
+      e.preventDefault();
+      history.replaceState(null, '', `#sector-${destino}`);
+      document.getElementById('tableros')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }),
+  );
+
+  /* Un enlace externo puede apuntar a un sector concreto: /radar#sector-fiscal. */
+  const desdeElHash = () => {
+    const m = location.hash.match(/^#sector-([a-z-]+)$/);
+    if (m) abrir(m[1]);
+  };
+  desdeElHash();
+  window.addEventListener('hashchange', desdeElHash);
+</script>
+
+<style>
+  /* --- navegación por sector -------------------------------------------- */
+  .tab-sectores {
+    display: flex;
+    flex-wrap: nowrap;
+    gap: 6px;
+    margin-bottom: 26px;
+    overflow-x: auto;
+    scrollbar-width: none;
+    padding: 6px 2px 10px;
+    margin-inline: -2px;
+    scroll-margin-top: 96px;
+  }
+  .tab-sectores::-webkit-scrollbar { width: 0; height: 0; }
+
+  .tab-sector {
+    flex: 0 0 auto;
+    padding: 8px 16px;
+    border: 1px solid var(--line, var(--line-light));
+    border-radius: 999px;
+    background: transparent;
+    color: inherit;
+    font-size: 12px;
+    font-weight: 500;
+    white-space: nowrap;
+    cursor: pointer;
+    transition: transform 260ms cubic-bezier(0.22, 0.61, 0.36, 1),
+      border-color 220ms ease, background-color 220ms ease, color 220ms ease,
+      box-shadow 260ms ease;
+  }
+  .tab-sector:hover,
+  .tab-sector:focus-visible {
+    transform: translateY(-2px);
+    border-color: var(--color-gold);
+    box-shadow: 0 10px 20px -12px rgb(3 26 36 / 0.4);
+  }
+  .tab-sector.is-on {
+    background: var(--color-ink);
+    border-color: var(--color-ink);
+    color: var(--color-paper);
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .tab-sector:hover, .tab-sector:focus-visible { transform: none; }
+  }
+
+  .tab-desc {
+    margin-bottom: 20px;
+    font-size: 13.5px;
+    max-width: 68ch;
+  }
+
+  /* --- el tablero -------------------------------------------------------
+     Doce columnas, y cada fila las cierra: seis y seis arriba, tres piezas de
+     cuatro, o una banda entera. Sin huecos sueltos a la derecha. */
+  .tablero {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 18px;
+  }
+
+  @media (min-width: 720px) {
+    .tablero { grid-template-columns: repeat(6, minmax(0, 1fr)); }
+    .tablero > :global(.is-grande) { grid-column: span 6; }
+    .tablero > :global(.is-medio) { grid-column: span 3; }
+    .tablero > :global(.is-chico) { grid-column: span 2; }
+    .tablero > :global(.is-ancho) { grid-column: span 6; }
+    .tablero > :global(.is-tercio) { grid-column: span 3; }
+    .tablero > :global(.is-cifra) { grid-column: span 2; }
+    .tablero > :global(.panel-dona) { grid-column: span 6; }
+  }
+
+  @media (min-width: 1100px) {
+    .tablero { grid-template-columns: repeat(12, minmax(0, 1fr)); }
+    .tablero > :global(.is-grande) { grid-column: span 6; grid-row: span 2; }
+    .tablero > :global(.is-medio) { grid-column: span 3; }
+    .tablero > :global(.is-chico) { grid-column: span 2; }
+    .tablero > :global(.is-ancho) { grid-column: span 12; }
+    .tablero > :global(.is-tercio) { grid-column: span 4; }
+    .tablero > :global(.is-cifra) { grid-column: span 2; }
+    /* La dona ocupa el hueco de la segunda fila, bajo las dos medianas: así
+       el tablero cierra un rectángulo y no queda media fila vacía. */
+    .tablero > :global(.panel-dona) { grid-column: span 6; }
+  }
+</style>

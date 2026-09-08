@@ -1,0 +1,328 @@
+---
+import { withBase } from '../lib/url';
+import type { Indicator } from '../lib/indicators';
+import { ETIQUETA, higherIsBetter } from '../lib/indicators';
+import { num, shortDate } from '../lib/format';
+import { linea, barras, divergentes, conProyeccion } from '../lib/graficos';
+
+/**
+ * Una pieza del tablero.
+ *
+ * El gráfico no lo elige el diseño sino la naturaleza del dato: una tasa se
+ * lee en línea, un stock en área, un saldo a ambos lados del cero y una serie
+ * con pronóstico separando lo medido de lo estimado. Por eso la tarjeta no es
+ * siempre igual, y por eso el tablero no es una cuadrícula de cajas idénticas.
+ *
+ * El tamaño lo decide el tablero, no la tarjeta: `size` cambia el hueco que
+ * ocupa y el alto del gráfico, no el contenido.
+ */
+
+export interface Props {
+  item: Indicator;
+  /**
+   * Hueco que ocupa en el tablero. `cifra` es la pieza mínima: dato,
+   * variación y período, sin gráfico. Sirve para dar densidad a una fila sin
+   * añadir siete curvas que nadie va a leer.
+   */
+  size?: 'grande' | 'medio' | 'chico' | 'ancho' | 'tercio' | 'cifra';
+}
+
+const { item, size = 'medio' } = Astro.props;
+const conGrafico = size !== 'cifra';
+
+const ALTO = { grande: 210, medio: 128, chico: 76, ancho: 104, tercio: 112, cifra: 0 } as const;
+const alto = ALTO[size];
+
+/* En los huecos chicos, una serie larga se convierte en ruido: se recorta a
+   los últimos tramos, que es lo que se puede leer a ese tamaño. */
+const RECORTE = { grande: 96, medio: 60, chico: 36, ancho: 120, tercio: 54, cifra: 2 } as const;
+const serie = item.history.slice(-RECORTE[size]);
+const valores = serie.map((p) => p.v);
+
+const ancho = 600; // el SVG escala; solo importa la proporción
+const g =
+  item.viz === 'proyeccion'
+    ? conProyeccion(valores, ancho, alto)
+    : item.viz === 'divergente'
+      ? divergentes(valores, ancho, alto)
+      : item.viz === 'barras'
+        ? barras(valores, ancho, alto)
+        : linea(valores, ancho, alto, item.viz === 'area');
+
+const sube = item.change >= 0;
+const bueno = sube === higherIsBetter(item.id);
+/* Una serie administrada —el tipo de cambio oficial— o una diaria muy estable
+   puede no moverse entre dos publicaciones. «▲ 0,00» se lee como un error;
+   «sin cambio» es lo que de verdad pasó. */
+const plano = Math.abs(item.change) < 0.5 / 10 ** item.decimals;
+const uid = `g-${item.id}`;
+---
+
+<article class:list={['panel-ind', `is-${size}`, `es-${item.kind}`]} data-reveal>
+  <a href={withBase(`/radar/${item.id}`)} class="pi-link">
+    <header class="pi-head">
+      <p class="pi-nombre">{item.shortName}</p>
+      <span class:list={['pi-sello', `sello-${item.kind}`]}>{ETIQUETA[item.kind]}</span>
+    </header>
+
+    <p class="pi-valor">
+      <span class="pi-cifra tnum">{num(item.value, item.decimals)}</span>
+      <span class="pi-unidad">{item.unit}</span>
+    </p>
+
+    <p class:list={['pi-var', 'tnum', plano ? 'es-plano' : bueno ? 'es-bueno' : 'es-malo']}>
+      <span class="pi-flecha" aria-hidden="true">{plano ? '—' : sube ? '▲' : '▼'}</span>
+      {plano ? 'sin cambio' : `${num(Math.abs(item.change), item.decimals)} ${item.changeUnit}`}
+      <span class="pi-fecha muted">· {shortDate(item.date)}</span>
+    </p>
+
+    <div class="pi-grafico" aria-hidden="true" hidden={!conGrafico}>
+      <svg viewBox={`0 0 ${ancho} ${alto}`} preserveAspectRatio="none" width="100%" height={alto}>
+        {
+          (item.viz === 'linea' || item.viz === 'area') && (
+            <>
+              {item.viz === 'area' && (
+                <>
+                  <defs>
+                    <linearGradient id={uid} x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0" stop-color="currentColor" stop-opacity="0.28" />
+                      <stop offset="1" stop-color="currentColor" stop-opacity="0" />
+                    </linearGradient>
+                  </defs>
+                  <path d={(g as any).area} fill={`url(#${uid})`} />
+                </>
+              )}
+              <path
+                d={(g as any).linea}
+                fill="none"
+                stroke="currentColor"
+                stroke-width={size === 'chico' ? 3 : 2.4}
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                vector-effect="non-scaling-stroke"
+              />
+              <circle cx={(g as any).ultimoX} cy={(g as any).ultimoY} r="3.4" fill="currentColor" />
+            </>
+          )
+        }
+
+        {
+          item.viz === 'barras' &&
+            (g as any[]).map((b) => (
+              <rect x={b.x} y={b.y} width={b.w} height={b.h} fill="currentColor" fill-opacity="0.72" />
+            ))
+        }
+
+        {
+          item.viz === 'divergente' && (
+            <>
+              <line
+                x1="0"
+                y1={(g as any).cero}
+                x2={ancho}
+                y2={(g as any).cero}
+                stroke="currentColor"
+                stroke-opacity="0.28"
+                stroke-width="1"
+                vector-effect="non-scaling-stroke"
+              />
+              {(g as any).barras.map((b: any) => (
+                <rect
+                  x={b.x}
+                  y={b.y}
+                  width={b.w}
+                  height={b.h}
+                  fill="currentColor"
+                  fill-opacity={b.positiva ? 0.78 : 0.34}
+                />
+              ))}
+            </>
+          )
+        }
+
+        {
+          item.viz === 'proyeccion' && (
+            <>
+              <line
+                x1={(g as any).corteX}
+                y1="0"
+                x2={(g as any).corteX}
+                y2={alto}
+                stroke="currentColor"
+                stroke-opacity="0.3"
+                stroke-width="1"
+                stroke-dasharray="4 5"
+                vector-effect="non-scaling-stroke"
+              />
+              <path
+                d={(g as any).observado}
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2.4"
+                stroke-linecap="round"
+                vector-effect="non-scaling-stroke"
+              />
+              <path
+                d={(g as any).proyectado}
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2.4"
+                stroke-dasharray="6 5"
+                stroke-linecap="round"
+                stroke-opacity="0.75"
+                vector-effect="non-scaling-stroke"
+              />
+              <circle cx={(g as any).ultimoX} cy={(g as any).ultimoY} r="3.4" fill="currentColor" />
+            </>
+          )
+        }
+      </svg>
+    </div>
+
+    <footer class="pi-pie">
+      <span class="pi-fuente muted">{item.source}</span>
+      {item.access === 'profesional' && <span class="pi-pro">Vista previa</span>}
+    </footer>
+  </a>
+</article>
+
+<style>
+  .panel-ind {
+    display: flex;
+    border: 1px solid var(--line, var(--line-light));
+    border-radius: 18px;
+    overflow: hidden;
+    background: color-mix(in srgb, currentColor 2%, transparent);
+    transition: transform 320ms cubic-bezier(0.22, 0.61, 0.36, 1),
+      box-shadow 320ms ease, border-color 240ms ease;
+  }
+  .panel-ind:hover,
+  .panel-ind:focus-within {
+    transform: translateY(-4px);
+    border-color: color-mix(in srgb, #008c85 45%, transparent);
+    box-shadow: 0 24px 46px -30px rgb(3 26 36 / 0.5);
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .panel-ind:hover, .panel-ind:focus-within { transform: none; }
+  }
+
+  .pi-link {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    padding: 18px 20px 16px;
+  }
+
+  .pi-head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+  }
+  /* Sin partición: en las piezas estrechas, «inflación esperada» se cortaba
+     sílaba a sílaba y quedaba una columna de letras. */
+  .pi-nombre {
+    font-size: 12.5px;
+    font-weight: 600;
+    letter-spacing: 0.01em;
+    text-align: left;
+    hyphens: manual;
+    -webkit-hyphens: manual;
+    text-wrap: balance;
+  }
+
+  /* El sello dice qué es el dato. Se lee, pero no compite con la cifra. */
+  .pi-sello {
+    flex-shrink: 0;
+    font-size: 8.5px;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    white-space: nowrap;
+    padding-top: 2px;
+  }
+  .sello-oficial { color: var(--muted); }
+  .sello-estimacion { color: var(--color-teal-600); }
+  .sello-proyeccion { color: var(--color-gold); }
+  :global(.surface-dark) .sello-estimacion,
+  :global(.surface-deep) .sello-estimacion { color: var(--color-teal-300); }
+
+  .pi-valor {
+    display: flex;
+    align-items: baseline;
+    gap: 7px;
+    margin-top: 14px;
+    text-align: left;
+  }
+  .pi-cifra {
+    font-family: var(--font-display);
+    font-weight: 600;
+    font-size: 1.9rem;
+    letter-spacing: -0.035em;
+    line-height: 1;
+  }
+  .is-grande .pi-cifra { font-size: 3rem; }
+  .is-chico .pi-cifra { font-size: 1.55rem; }
+  .pi-unidad { font-size: 12px; color: var(--muted); }
+
+  .pi-var {
+    margin-top: 8px;
+    font-size: 12px;
+    text-align: left;
+  }
+  .pi-flecha { font-size: 9px; }
+  .es-plano { color: var(--muted); }
+  .es-bueno { color: var(--color-teal-600); }
+  .es-malo { color: #b4531f; }
+  :global(.surface-dark) .es-bueno,
+  :global(.surface-deep) .es-bueno { color: var(--color-teal-300); }
+  :global(.surface-dark) .es-malo,
+  :global(.surface-deep) .es-malo { color: #e0a06a; }
+  .pi-fecha { font-size: 11px; }
+
+  /* El gráfico toma el color de la familia del dato. */
+  .pi-grafico {
+    margin-top: auto;
+    padding-top: 16px;
+    color: var(--color-teal-600);
+  }
+  .es-estimacion .pi-grafico { color: var(--color-teal); }
+  .es-proyeccion .pi-grafico { color: var(--color-gold); }
+  :global(.surface-dark) .pi-grafico,
+  :global(.surface-deep) .pi-grafico { color: var(--color-teal-300); }
+  .pi-grafico svg { display: block; width: 100%; }
+  /* La pieza grande ocupa dos filas del tablero, así que le sobra alto: el
+     gráfico se estira hasta el pie en vez de dejar un hueco en el medio. */
+  .is-grande .pi-grafico { display: flex; flex: 1; align-items: stretch; }
+  .is-grande .pi-grafico svg { height: 100%; min-height: 210px; }
+
+  .pi-pie {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    margin-top: 12px;
+    font-size: 9.5px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+  .pi-pro { color: var(--color-gold); }
+  .is-chico .pi-pie { display: none; }
+
+  /* --- la pieza mínima --- */
+  /* El sello baja bajo el nombre: en una tarjeta tan estrecha, en la misma
+     línea se montaba encima de los nombres largos. */
+  .is-cifra .pi-head {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 5px;
+  }
+  .is-cifra .pi-sello { padding-top: 0; }
+  .is-cifra .pi-link { padding: 15px 16px 14px; }
+  .is-cifra .pi-cifra { font-size: 1.35rem; }
+  .is-cifra .pi-valor { margin-top: 10px; }
+  .is-cifra .pi-var { margin-top: 5px; font-size: 11px; }
+  .is-cifra .pi-pie { display: none; }
+  .is-cifra .pi-sello { font-size: 8px; }
+</style>

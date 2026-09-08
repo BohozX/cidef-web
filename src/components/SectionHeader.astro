@@ -2,9 +2,9 @@
 /**
  * Cabecera de sección.
  *
- * Solo el título y, a la derecha, el botón que lleva a la sección completa.
- * Sin numeración, sin antetítulo y sin párrafo introductorio: lo que hay
- * debajo ya explica de qué va, y esos elementos solo añadían altura.
+ * El título es el enlace: no hay botón colgando debajo. Al acercar el cursor,
+ * las palabras se levantan en ola —las de más cerca, más alto— y proyectan
+ * sombra; la flecha del final confirma que eso lleva a algún sitio.
  */
 
 import { withBase } from '../lib/url';
@@ -12,29 +12,98 @@ import { withBase } from '../lib/url';
 export interface Props {
   title: string;
   href?: string;
+  /** Solo para lectores de pantalla: adónde lleva el título. */
   linkLabel?: string;
   as?: 'h2' | 'h3';
 }
 
-const { title, href, linkLabel = 'Ver todo', as: Tag = 'h2' } = Astro.props;
+const { title, href, linkLabel, as: Tag = 'h2' } = Astro.props;
+
+/* Cada palabra va en su propia caja: es lo que permite la ola. */
+const words = title.split(' ');
 ---
 
 <header class="sec-head">
-  <div class="sec-head-inner">
-    <Tag class="display-2 sec-title" data-reveal>{title}</Tag>
-
+  <Tag class="display-2 sec-title" data-reveal>
     {
-      href && (
-        <a href={withBase(href)} class="btn btn-outline sec-btn" data-reveal>
-          {linkLabel}
-          <svg class="arw" viewBox="0 0 16 16" width="13" height="13" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8">
-            <path d="M2 8h11M9 4l4 4-4 4" stroke-linecap="round" stroke-linejoin="round" />
-          </svg>
+      href ? (
+        <a href={withBase(href)} class="sec-link" data-sec-link>
+          {words.map((w, i) => (
+            <>
+              <span class="sec-word">{w}</span>
+              {i < words.length - 1 && ' '}
+            </>
+          ))}
+          <span class="sec-go" aria-hidden="true">
+            <svg viewBox="0 0 16 16" width="100%" height="100%" fill="none" stroke="currentColor" stroke-width="1.9">
+              <path d="M2 8h11M9 4l4 4-4 4" stroke-linecap="round" stroke-linejoin="round" />
+            </svg>
+          </span>
+          {linkLabel && <span class="sr-only"> — {linkLabel}</span>}
         </a>
+      ) : (
+        title
       )
     }
-  </div>
+  </Tag>
 </header>
+
+<script>
+  /* La ola solo tiene sentido con un puntero fino: en pantalla táctil no hay
+     cursor que seguir, y con movimiento reducido sobra. */
+  const fino = window.matchMedia('(hover: hover) and (pointer: fine)').matches;
+  const reducido = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  if (fino && !reducido) {
+    document.querySelectorAll<HTMLElement>('[data-sec-link]').forEach((link) => {
+      const words = Array.from(link.querySelectorAll<HTMLElement>('.sec-word'));
+      if (words.length === 0) return;
+
+      /* Los rectángulos se miden al entrar el cursor: leerlos en cada
+         movimiento obliga al navegador a recalcular la página entera. */
+      let cajas: DOMRect[] = [];
+      let frame = 0;
+
+      const medir = (): void => {
+        cajas = words.map((w) => w.getBoundingClientRect());
+      };
+
+      const mover = (e: PointerEvent): void => {
+        if (frame) return;
+        frame = requestAnimationFrame(() => {
+          frame = 0;
+          words.forEach((w, i) => {
+            const r = cajas[i];
+            if (!r) return;
+            const dx = e.clientX - (r.left + r.width / 2);
+            const dy = e.clientY - (r.top + r.height / 2);
+            const cerca = Math.max(0, 1 - Math.hypot(dx, dy * 1.6) / 300);
+            const alza = cerca * cerca * 11;
+            const giro = (dx / 260) * cerca * 3.4;
+            w.style.transform = `translate3d(0, ${-alza}px, 0) rotate(${giro}deg)`;
+            w.style.setProperty('--near', cerca.toFixed(3));
+          });
+        });
+      };
+
+      const soltar = (): void => {
+        if (frame) cancelAnimationFrame(frame);
+        frame = 0;
+        words.forEach((w) => {
+          w.style.transform = '';
+          w.style.setProperty('--near', '0');
+        });
+      };
+
+      link.addEventListener('pointerenter', medir);
+      link.addEventListener('pointermove', mover);
+      link.addEventListener('pointerleave', soltar);
+      /* La página se mueve bajo el cursor: las medidas dejan de valer. */
+      window.addEventListener('scroll', soltar, { passive: true });
+      window.addEventListener('resize', soltar);
+    });
+  }
+</script>
 
 <style>
   /* Centrada y sin regla: el cambio de color entre secciones ya marca el
@@ -47,14 +116,45 @@ const { title, href, linkLabel = 'Ver todo', as: Tag = 'h2' } = Astro.props;
     text-align: center;
   }
 
-  .sec-head-inner {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 16px;
-  }
-
   .sec-title { max-width: 24ch; }
 
-  .sec-btn { flex-shrink: 0; }
+  .sec-link {
+    display: inline-block;
+    max-width: 100%;
+    color: inherit;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .sec-link:focus-visible { outline-offset: 10px; }
+
+  /* Cada palabra responde por su cuenta. `--near` va de 0 a 1 según lo cerca
+     que esté el cursor, y con eso se gradúa la sombra. */
+  .sec-word {
+    display: inline-block;
+    text-shadow: 0 calc(var(--near, 0) * 14px) calc(var(--near, 0) * 28px)
+      rgb(3 26 36 / calc(var(--near, 0) * 0.3));
+    transition: transform 620ms cubic-bezier(0.22, 0.61, 0.36, 1),
+      text-shadow 300ms ease;
+  }
+  :global(.surface-dark) .sec-word,
+  :global(.surface-deep) .sec-word {
+    text-shadow: 0 calc(var(--near, 0) * 14px) calc(var(--near, 0) * 30px)
+      rgb(0 0 0 / calc(var(--near, 0) * 0.55));
+  }
+
+  /* La flecha confirma que el título lleva a alguna parte. */
+  .sec-go {
+    display: inline-block;
+    width: 0.56em;
+    height: 0.56em;
+    margin-left: 0.1em;
+    opacity: 0;
+    transform: translateX(-0.22em);
+    transition: opacity 300ms ease, transform 420ms cubic-bezier(0.22, 0.61, 0.36, 1);
+  }
+  .sec-link:hover .sec-go,
+  .sec-link:focus-visible .sec-go {
+    opacity: 1;
+    transform: none;
+  }
 </style>

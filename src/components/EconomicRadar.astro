@@ -1,8 +1,8 @@
 ---
+import { withBase } from '../lib/url';
 import IndicatorCard from './IndicatorCard.astro';
 import { featured, lastUpdated } from '../lib/indicators';
 import { shortDate } from '../lib/format';
-import { withBase } from '../lib/url';
 
 const items = featured();
 const updated = shortDate(lastUpdated());
@@ -10,13 +10,12 @@ const updated = shortDate(lastUpdated());
 
 <section class="surface-deep section radar-section edge-tl edge-br" aria-labelledby="radar-title">
   <div class="wrap">
-    <div class="rule rule-draw"></div>
 
     <div class="radar-head">
       <div>
         <p class="eyebrow eyebrow-gold" data-reveal>Radar Económico</p>
         <h2 id="radar-title" class="display-2 radar-title" data-reveal>
-          Una lectura rápida de los principales indicadores de la economía boliviana.
+          Una lectura rápida de los principales indicadores de la economía boliviana
         </h2>
       </div>
 

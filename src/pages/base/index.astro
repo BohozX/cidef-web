@@ -1,0 +1,187 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import PageHero from '../../components/PageHero.astro';
+import Newsletter from '../../components/Newsletter.astro';
+import MapaSectores from '../../components/MapaSectores.astro';
+import CatalogoSeries from '../../components/CatalogoSeries.astro';
+import LeyendaSellos from '../../components/LeyendaSellos.astro';
+import { indicators, sectores, lastUpdated } from '../../lib/indicators';
+import { shortDate } from '../../lib/format';
+
+/**
+ * Base de Datos Profesional.
+ *
+ * Aquí empieza la capa profesional del Radar. El tablero público enseña una
+ * selección dibujada; esto es el catálogo completo, sector por sector, con
+ * todo lo que hace falta para decidir si una serie sirve antes de abrirla.
+ *
+ * El acceso será por cuenta. Mientras el registro no esté en pie, la página
+ * queda abierta y lo dice en su propio aviso: no se simula un muro que no
+ * existe todavía.
+ */
+
+const totalSeries = indicators.length;
+const propias = indicators.filter((i) => i.own).length;
+const observaciones = indicators.reduce((s, i) => s + i.history.length, 0);
+
+const facts = [
+  { label: 'Series', value: String(totalSeries) },
+  { label: 'Sectores', value: String(sectores().length) },
+  { label: 'Propias del centro', value: String(propias) },
+  { label: 'Actualizado', value: shortDate(lastUpdated()) },
+];
+
+const PROXIMO = [
+  'Histórico completo de cada serie, no solo el tramo visible',
+  'Mayor frecuencia, hasta el dato diario donde exista',
+  'Transformaciones: variaciones, índices base 100 y series deflactadas',
+  'Descarga en CSV y XLSX, y acceso por API',
+  'Historial de versiones de cada estimación del centro',
+  'Comparación de series y exportación de gráficos',
+];
+---
+
+<BaseLayout
+  title="Base de Datos Profesional"
+  description="El catálogo completo de series económicas del CIDEF, sector por sector: oficiales, estimaciones propias y proyecciones, con su frecuencia, su fuente y su último dato."
+  noindex
+>
+  <PageHero
+    eyebrow="Base de Datos Profesional"
+    title="Toda la serie, no solo el último dato"
+    lede="El tablero del Radar enseña una selección de cada sector. Aquí está el catálogo entero: qué series existen, qué mide cada una, cada cuánto se publica y hasta dónde llega."
+    parent={{ label: 'Radar Económico', href: '/radar' }}
+    facts={facts}
+  />
+
+  <!-- AVISO DE ACCESO -------------------------------------------------------- -->
+  <section class="surface-mist section-tight" aria-label="Condiciones de acceso">
+    <div class="wrap">
+      <div class="acceso" data-reveal>
+        <span class="acceso-marca">
+          <svg viewBox="0 0 16 16" width="13" height="13" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.6">
+            <rect x="3" y="7" width="10" height="7" rx="1.6" />
+            <path d="M5.4 7V5.2a2.6 2.6 0 0 1 5.2 0V7" stroke-linecap="round" />
+          </svg>
+          Acceso profesional
+        </span>
+        <p class="acceso-texto">
+          Esta sección es parte del acceso profesional. Mientras las cuentas no
+          estén activas queda <strong>abierta como vista previa</strong>: se ve el
+          catálogo completo y la ficha de cada serie, y no se pide registro.
+          Las series son de demostración hasta que se conecte la base.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <!-- MAPA Y CATÁLOGO -------------------------------------------------------- -->
+  <section class="surface-light section" aria-labelledby="mapa">
+    <div class="wrap">
+      <MapaSectores
+        destino="catalogo"
+        titulo="Todas las series, sector por sector"
+      />
+
+      <div class="catalogo">
+        <CatalogoSeries />
+      </div>
+
+      <LeyendaSellos />
+    </div>
+  </section>
+
+  <!-- LO QUE VIENE ----------------------------------------------------------- -->
+  <section class="surface-deep section edge-tr" aria-labelledby="proximo">
+    <div class="wrap">
+      <div class="prox-grid">
+        <div>
+          <p class="eyebrow eyebrow-gold" data-reveal>En construcción</p>
+          <h2 id="proximo" class="display-2 prox-title" data-reveal>Lo que abre la cuenta profesional</h2>
+          <p class="prox-text" data-reveal>
+            El catálogo ya está en pie. Lo que sigue es la capa que lo convierte en
+            herramienta de trabajo: el histórico completo detrás de cada serie, las
+            transformaciones que hoy hay que hacer a mano y la salida en formatos
+            que se puedan cargar en R, Python o una hoja de cálculo.
+          </p>
+          <p class="prox-nota muted" data-reveal>
+            Hoy el catálogo reúne {totalSeries} series y {observaciones.toLocaleString('es-BO')} observaciones
+            de demostración. Al conectar la base, esa cifra pasa a ser el histórico real.
+          </p>
+        </div>
+
+        <div>
+          <h3 class="eyebrow muted prox-h" data-reveal>Qué se añade</h3>
+          <ul class="prox-lista" data-reveal-group data-reveal-stagger="0.04">
+            {PROXIMO.map((t) => <li data-reveal>{t}</li>)}
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <Newsletter />
+</BaseLayout>
+
+<style>
+  /* --- aviso de acceso ---------------------------------------------------- */
+  .acceso {
+    display: grid;
+    gap: 10px;
+    padding-block: 6px;
+  }
+  @media (min-width: 820px) {
+    .acceso { grid-template-columns: auto minmax(0, 1fr); gap: 30px; align-items: start; }
+  }
+  .acceso-marca {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 9.5px;
+    font-weight: 700;
+    letter-spacing: 0.13em;
+    text-transform: uppercase;
+    color: var(--color-teal-600);
+    white-space: nowrap;
+    padding-top: 2px;
+  }
+  .acceso-texto {
+    font-size: 13px;
+    line-height: 1.7;
+    max-width: 86ch;
+    text-align: left;
+  }
+  .acceso-texto strong { font-weight: 600; }
+
+  /* El catálogo respira respecto del mapa, pero sin corte de sección: son la
+     misma cosa vista con dos niveles de detalle. */
+  .catalogo { padding-top: clamp(44px, 5vw, 78px); }
+
+  /* --- lo que viene ------------------------------------------------------- */
+  .prox-grid { display: grid; gap: clamp(30px, 4vw, 64px); }
+  @media (min-width: 900px) {
+    .prox-grid { grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); align-items: start; }
+  }
+  .prox-title { margin-top: 14px; max-width: 16ch; }
+  .prox-text { margin-top: 20px; font-size: 15px; line-height: 1.72; }
+  .prox-nota { margin-top: 18px; font-size: 12.5px; max-width: 58ch; }
+
+  .prox-h { display: block; margin-bottom: 16px; }
+  .prox-lista { list-style: none; margin: 0; padding: 0; }
+  .prox-lista li {
+    position: relative;
+    padding: 11px 0 11px 22px;
+    border-top: 1px solid var(--line, var(--line-dark));
+    font-size: 13.5px;
+  }
+  .prox-lista li:last-child { border-bottom: 1px solid var(--line, var(--line-dark)); }
+  .prox-lista li::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 1.35em;
+    width: 8px;
+    height: 1px;
+    background: var(--color-gold);
+  }
+</style>

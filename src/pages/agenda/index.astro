@@ -2,6 +2,7 @@
 import { getCollection } from 'astro:content';
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import PageHero from '../../components/PageHero.astro';
+import { covers } from '../../site.config';
 import AgendaItem from '../../components/AgendaItem.astro';
 import Newsletter from '../../components/Newsletter.astro';
 import { isFuture } from '../../lib/format';
@@ -16,30 +17,37 @@ const pasados = eventos
   .filter((e) => !isFuture(e.data.date.toISOString()))
   .sort((a, b) => b.data.date.getTime() - a.data.date.getTime());
 
+/* El lanzamiento de un documento se agenda como cualquier otra actividad,
+   con el tipo «Presentación»: es la que presenta una publicación del centro.
+   Por eso la cifra se cuenta de aquí y no de la colección de publicaciones,
+   que no sabe nada de fechas de presentación. */
+const lanzamientos = proximos.filter((e) => e.data.type === 'Presentación');
+
 const facts = [
-  { label: 'Próximas', value: String(proximos.length) },
-  { label: 'Realizadas', value: String(pasados.length) },
-  { label: 'Modalidad', value: 'Presencial e híbrida' },
-  { label: 'Acceso', value: 'Con inscripción' },
+  { label: 'Próximos eventos', value: String(proximos.length) },
+  { label: 'Próximas publicaciones', value: String(lanzamientos.length) },
+  { label: 'Eventos realizados', value: String(pasados.length) },
 ];
 ---
 
 <BaseLayout
   title="Agenda"
   description="Seminarios, conferencias, webinars, presentaciones, cursos y convocatorias del Centro de Inteligencia en Desarrollo Económico y Financiero."
+  bleed
 >
   <PageHero
     eyebrow="Agenda"
-    title="Seminarios, presentaciones y convocatorias."
+    title="Seminarios, presentaciones y convocatorias"
     lede="Las actividades del centro son abiertas y con inscripción previa. Los eventos realizados conservan su página con materiales, presentaciones y grabaciones."
     facts={facts}
+    cover={covers.agenda}
   />
 
   {
     proximos.length > 0 && (
       <section class="surface-light section" aria-labelledby="proximas">
         <div class="wrap">
-          <h2 id="proximas" class="eyebrow eyebrow-gold agenda-h" data-reveal>Próximas actividades</h2>
+          <h2 id="proximas" class="eyebrow eyebrow-gold agenda-h" data-reveal>Próximos eventos</h2>
           <div class="row-list" data-reveal-group data-reveal-stagger="0.08">
             {proximos.map((item) => <AgendaItem item={item} />)}
           </div>
@@ -50,9 +58,9 @@ const facts = [
 
   {
     pasados.length > 0 && (
-      <section class="surface-tint section" aria-labelledby="pasadas">
+      <section class="surface-mist section edge-tr agenda-pasadas" aria-labelledby="pasadas">
         <div class="wrap">
-          <h2 id="pasadas" class="eyebrow eyebrow-gold agenda-h" data-reveal>Actividades realizadas</h2>
+          <h2 id="pasadas" class="eyebrow eyebrow-gold agenda-h" data-reveal>Eventos realizados</h2>
           <p class="agenda-note muted" data-reveal>
             Los eventos pasados se mantienen disponibles con sus materiales.
           </p>
@@ -68,6 +76,15 @@ const facts = [
 </BaseLayout>
 
 <style>
+  /* El bloque de lo ya celebrado se separa del de lo próximo con el mismo
+     plomo del inicio, el corte redondeado en una esquina y un filete que lo
+     cierra por arriba. */
+  /* Solo el filete de arriba: con la esquina redondeada, el del costado
+     derecho se convertía en un arco que recorría media página. */
+  .agenda-pasadas {
+    border-top: 1px solid var(--line, var(--line-light));
+  }
+
   .agenda-h { display: block; margin-bottom: 8px; }
   .agenda-note { font-size: 13.5px; margin-bottom: 22px; max-width: 52ch; }
 </style>

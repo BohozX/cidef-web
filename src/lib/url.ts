@@ -1,7 +1,7 @@
 /**
  * Rutas conscientes del `base` del sitio.
  *
- * El sitio se despliega en dos sitios con prefijos distintos: en Cloudflare
+ * El sitio se despliega en dos destinos con prefijos distintos: en Cloudflare
  * Pages cuelga de la raíz (`/`) y en GitHub Pages de `/cidef-web/`. Astro
  * prefija por su cuenta lo que él genera —CSS, JS, imágenes optimizadas— pero
  * no las rutas escritas a mano en el marcado, así que estas pasan por aquí.

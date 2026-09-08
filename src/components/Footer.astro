@@ -9,7 +9,7 @@ const columns = [
   {
     title: 'Investigación',
     links: [
-      { label: 'Análisis', href: '/analisis' },
+      { label: 'Publicaciones', href: '/publicaciones' },
       { label: 'Radar Económico', href: '/radar' },
       { label: 'Indicadores del Centro', href: '/radar?cat=centro' },
       { label: 'Archivo Vivo', href: '/archivo' },
@@ -37,7 +37,6 @@ const columns = [
 
 <footer class="surface-dark no-print">
   <div class="wrap">
-    <div class="rule"></div>
 
     <div class="foot-top">
       <div class="foot-brand">
@@ -79,7 +78,6 @@ const columns = [
       </div>
     </div>
 
-    <div class="rule"></div>
 
     <div class="foot-bottom">
       <p class="muted">© {year} {site.name}. La Paz, Bolivia.</p>
@@ -88,12 +86,12 @@ const columns = [
 </footer>
 
 <style>
-  footer { padding-top: clamp(56px, 7vw, 92px); }
+  footer { padding-top: clamp(20px, 2.2vw, 32px); }
 
   .foot-top {
     display: grid;
-    gap: 44px;
-    padding-block: clamp(36px, 5vw, 60px);
+    gap: 40px;
+    padding-block: clamp(24px, 2.8vw, 38px);
   }
   @media (min-width: 900px) {
     .foot-top { grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); gap: 64px; }

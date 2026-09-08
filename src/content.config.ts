@@ -20,13 +20,18 @@ const publicaciones = defineCollection({
   loader: glob({ base: './src/content/publicaciones', pattern: '**/*.md' }),
   schema: z.object({
     title: z.string(),
+    /* Las nueve familias de documento del centro. El orden es el de la
+       jerarquía editorial, no alfabético. */
     type: z.enum([
-      'Working Paper',
+      'Informe',
       'Reporte',
-      'Policy Brief',
+      'Working Paper',
+      'Boletín',
       'Nota técnica',
-      'Artículo',
-      'Documento de coyuntura',
+      'Policy Brief',
+      'Memoria institucional',
+      'Estudio especial',
+      'Documento metodológico',
     ]),
     serial: z.string().optional(),
     date: z.coerce.date(),
@@ -90,7 +95,11 @@ const formacion = defineCollection({
   schema: z.object({
     title: z.string(),
     shortTitle: z.string(),
-    kind: z.enum(['Diplomado', 'Curso', 'Taller', 'Programa']).default('Diplomado'),
+    /* La oferta ya no es solo de diplomados: hay cursos de experto, cursos
+       rápidos y talleres. El orden es el de duración, de más a menos. */
+    kind: z
+      .enum(['Diplomado', 'Curso de experto', 'Curso', 'Curso rápido', 'Taller'])
+      .default('Diplomado'),
     modality: z.string(),
     weeks: z.number(),
     schedule: z.array(z.string()).default([]),

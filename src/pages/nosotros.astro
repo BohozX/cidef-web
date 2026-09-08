@@ -1,12 +1,12 @@
 ---
+import { withBase, withBaseSrcset } from '../lib/url';
 import { getCollection } from 'astro:content';
 import BaseLayout from '../layouts/BaseLayout.astro';
 import PageHero from '../components/PageHero.astro';
+import { covers } from '../site.config';
 import ResearcherCard from '../components/ResearcherCard.astro';
-import InstitutionalStrip from '../components/InstitutionalStrip.astro';
 import Newsletter from '../components/Newsletter.astro';
 import { site } from '../site.config';
-import { withBase } from '../lib/url';
 
 const [investigadores, publicaciones, formacion] = await Promise.all([
   getCollection('investigadores'),
@@ -68,12 +68,14 @@ const facts = [
 <BaseLayout
   title="Nosotros"
   description="El Centro de Inteligencia en Desarrollo Económico y Financiero produce investigación económica aplicada, datos propios y formación de posgrado en Bolivia."
+  bleed
 >
   <PageHero
     eyebrow="Nosotros"
-    title="Un centro de investigación económica en Bolivia."
+    title="Un centro de investigación económica en Bolivia"
     lede="Producimos investigación aplicada, construimos y publicamos datos propios, y formamos profesionales en análisis económico cuantitativo."
     facts={facts}
+    cover={covers.nosotros}
   />
 
   <section class="surface-light section">
@@ -98,10 +100,9 @@ const facts = [
         <!-- Contenido -------------------------------------------------- -->
         <div class="about-body">
           <section id="quienes" class="about-sec" aria-labelledby="h-quienes">
-            <div class="rule rule-draw"></div>
             <p class="about-kicker"><span class="index-num">01</span><span class="eyebrow">Quiénes somos</span></p>
             <h2 id="h-quienes" class="display-3 about-title" data-reveal>
-              Investigación económica producida en Bolivia, sobre Bolivia.
+              Investigación económica producida en Bolivia, sobre Bolivia
             </h2>
             <div class="about-text" data-reveal>
               <p>
@@ -120,10 +121,9 @@ const facts = [
           </section>
 
           <section id="mision" class="about-sec" aria-labelledby="h-mision">
-            <div class="rule rule-draw"></div>
             <p class="about-kicker"><span class="index-num">02</span><span class="eyebrow">Misión</span></p>
             <h2 id="h-mision" class="display-3 about-title" data-reveal>
-              Convertir información en evidencia útil para decidir.
+              Convertir información en evidencia útil para decidir
             </h2>
             <div class="about-text" data-reveal>
               <p>
@@ -137,9 +137,8 @@ const facts = [
           </section>
 
           <section id="areas" class="about-sec" aria-labelledby="h-areas">
-            <div class="rule rule-draw"></div>
             <p class="about-kicker"><span class="index-num">03</span><span class="eyebrow">Áreas de trabajo</span></p>
-            <h2 id="h-areas" class="display-3 about-title" data-reveal>Siete líneas de investigación.</h2>
+            <h2 id="h-areas" class="display-3 about-title" data-reveal>Siete líneas de investigación</h2>
 
             <ol class="areas" data-reveal-group data-reveal-stagger="0.05">
               {
@@ -155,9 +154,8 @@ const facts = [
           </section>
 
           <section id="equipo" class="about-sec" aria-labelledby="h-equipo">
-            <div class="rule rule-draw"></div>
             <p class="about-kicker"><span class="index-num">04</span><span class="eyebrow">Equipo e investigadores</span></p>
-            <h2 id="h-equipo" class="display-3 about-title" data-reveal>Quiénes firman la investigación.</h2>
+            <h2 id="h-equipo" class="display-3 about-title" data-reveal>Quiénes firman la investigación</h2>
             <p class="about-note muted" data-reveal>
               Cada investigador publica bajo su nombre, con sus identificadores
               académicos y el listado de sus trabajos dentro del centro.
@@ -169,10 +167,9 @@ const facts = [
           </section>
 
           <section id="formacion" class="about-sec" aria-labelledby="h-formacion">
-            <div class="rule rule-draw"></div>
             <p class="about-kicker"><span class="index-num">05</span><span class="eyebrow">Formación</span></p>
             <h2 id="h-formacion" class="display-3 about-title" data-reveal>
-              Diplomados de posgrado con certificación universitaria.
+              Diplomados de posgrado con certificación universitaria
             </h2>
             <div class="about-text" data-reveal>
               <p>
@@ -193,9 +190,8 @@ const facts = [
           </section>
 
           <section id="alianzas" class="about-sec" aria-labelledby="h-alianzas">
-            <div class="rule rule-draw"></div>
             <p class="about-kicker"><span class="index-num">06</span><span class="eyebrow">Alianzas</span></p>
-            <h2 id="h-alianzas" class="display-3 about-title" data-reveal>Con quiénes trabajamos.</h2>
+            <h2 id="h-alianzas" class="display-3 about-title" data-reveal>Con quiénes trabajamos</h2>
 
             <ul class="allies" data-reveal-group data-reveal-stagger="0.06">
               {
@@ -210,9 +206,8 @@ const facts = [
           </section>
 
           <section id="contacto" class="about-sec" aria-labelledby="h-contacto">
-            <div class="rule rule-draw"></div>
             <p class="about-kicker"><span class="index-num">07</span><span class="eyebrow">Contacto</span></p>
-            <h2 id="h-contacto" class="display-3 about-title" data-reveal>Escríbenos.</h2>
+            <h2 id="h-contacto" class="display-3 about-title" data-reveal>Escríbenos</h2>
 
             <dl class="contact-dl" data-reveal>
               <div>
@@ -234,7 +229,6 @@ const facts = [
     </div>
   </section>
 
-  <InstitutionalStrip />
   <Newsletter />
 </BaseLayout>
 
@@ -262,7 +256,6 @@ const facts = [
   .about-index a:hover { color: var(--color-teal-600); transform: translateX(3px); }
 
   .about-sec { padding-bottom: clamp(52px, 7vw, 92px); scroll-margin-top: 96px; }
-  .about-sec:first-child .rule { display: none; }
 
   .about-kicker {
     display: flex;
@@ -271,15 +264,34 @@ const facts = [
     padding-top: 26px;
     margin-bottom: 16px;
   }
-  .about-title { max-width: 20ch; }
+  .about-title { max-width: 24ch; }
+
+  /* Hasta el margen de la página: la columna del índice ya marca la medida y
+     el tope de 62 caracteres dejaba una franja muerta a la derecha. */
   .about-text {
     margin-top: 20px;
-    max-width: 62ch;
     font-size: 15px;
     line-height: 1.72;
+    text-align: justify;
+    hyphens: auto;
+    -webkit-hyphens: auto;
   }
   .about-text p + p { margin-top: 1.1em; }
-  .about-note { margin-top: 16px; max-width: 56ch; font-size: 14px; }
+
+  /* La primera línea del bloque, en el tono del centro: rompe el gris sin
+     recurrir a un recuadro. */
+  .about-text > p:first-child::first-line {
+    color: var(--color-teal-600);
+    font-weight: 500;
+  }
+
+  .about-note {
+    margin-top: 18px;
+    padding-left: 16px;
+    border-left: 2px solid color-mix(in srgb, #d29a28 60%, transparent);
+    font-size: 14px;
+    color: var(--muted);
+  }
 
   .areas { list-style: none; margin: 30px 0 0; padding: 0; }
   .areas li {
@@ -291,7 +303,11 @@ const facts = [
     align-items: baseline;
   }
   .areas li:last-child { border-bottom: 1px solid var(--line-light); }
-  .area-name { font-size: 15px; font-weight: 500; }
+  .area-name {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--color-teal-600);
+  }
   .area-text { font-size: 13.5px; line-height: 1.55; }
   @media (max-width: 700px) {
     .areas li { grid-template-columns: 30px minmax(0, 1fr); }
@@ -320,7 +336,7 @@ const facts = [
   .ally-name { font-size: 15px; font-weight: 500; }
   .ally-role {
     font-size: 11px;
-    font-weight: 600;
+    font-weight: 700;
     letter-spacing: 0.12em;
     text-transform: uppercase;
   }

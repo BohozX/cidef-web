@@ -1,0 +1,205 @@
+---
+import composiciones from '../data/composiciones.json';
+import { dona } from '../lib/graficos';
+import { num } from '../lib/format';
+
+/**
+ * Composición de una serie: en qué se reparte el total.
+ *
+ * La dona solo aparece donde hay un reparto real —divisiones del IPC, destino
+ * de la cartera, finalidad del gasto—. Para una serie en el tiempo es el
+ * gráfico equivocado, y por eso esta pieza es aparte y no una opción más de
+ * las tarjetas de indicador.
+ */
+
+export interface Props {
+  /** Serie a la que acompaña. Debe existir en `composiciones.json`. */
+  id: string;
+  size?: 'medio' | 'tercio' | 'ancho';
+}
+
+const { id, size = 'tercio' } = Astro.props;
+const c = (composiciones as Record<string, any>)[id];
+
+const RADIO = 54;
+const GROSOR = 17;
+const porciones = c ? dona(c.partes, RADIO, GROSOR) : [];
+
+/* El anillo se dibuja de una sola pasada, no porción por porción: cada arco
+   arranca donde acabó el anterior y dura lo que le toca por tamaño. Se anima
+   con `stroke-dashoffset`, así que hace falta el largo del arco —el radio
+   medio por el ángulo— y el punto del giro en el que empieza. */
+const PERIMETRO = 2 * Math.PI * (RADIO - GROSOR / 2);
+const BARRIDO = 1150; // ms de la vuelta completa
+let recorrido = 0;
+const arcos = porciones.map((p) => {
+  const fraccion = p.porcentaje / 100;
+  const arco = {
+    ...p,
+    largo: PERIMETRO * fraccion,
+    retardo: Math.round(recorrido * BARRIDO),
+    /* Un mínimo por porción: sin él, una tajada del 3 % aparece de golpe. */
+    duracion: Math.max(200, Math.round(fraccion * BARRIDO)),
+  };
+  recorrido += fraccion;
+  return arco;
+});
+
+/* Los tableros se alternan con `hidden`, y una animación CSS vuelve a correr
+   cada vez que el elemento pasa de oculto a visible: al cambiar de sector, la
+   dona se dibuja otra vez sin una línea de JavaScript. */
+
+/* Cinco tonos de la paleta, del más saturado al más claro: el orden de la
+   dona ya jerarquiza, el color solo acompaña. */
+const TONOS = ['#005c59', '#007a75', '#008c85', '#4fb3ac', '#8ccdc7', '#c2e2df'];
+---
+
+{
+  c && (
+    <article class:list={['panel-dona', `is-${size}`]} data-reveal>
+      <p class="pd-titulo">{c.titulo}</p>
+
+      <div class="pd-cuerpo">
+        <svg
+          class="pd-svg"
+          viewBox={`0 0 ${RADIO * 2} ${RADIO * 2}`}
+          width={RADIO * 2}
+          height={RADIO * 2}
+          role="img"
+          aria-label={c.titulo}
+        >
+          {arcos.map((p, i) => (
+            <path
+              class="pd-arco"
+              d={p.d}
+              fill="none"
+              stroke={TONOS[i % TONOS.length]}
+              stroke-linecap="butt"
+              style={`--largo:${p.largo.toFixed(1)}; animation-delay:${p.retardo}ms; animation-duration:${p.duracion}ms`}
+            />
+          ))}
+        </svg>
+
+        <ul class="pd-leyenda">
+          {arcos.map((p, i) => (
+            <li style={`--i:${i}`}>
+              <span class="pd-punto" style={`background:${TONOS[i % TONOS.length]}`} aria-hidden="true" />
+              <span class="pd-nombre">{p.nombre}</span>
+              <span class="pd-valor tnum">{num(p.porcentaje, 1)}%</span>
+            </li>
+          ))}
+        </ul>
+      </div>
+
+      <p class="pd-pie muted">{c.unidad} · {c.nota ?? 'Series de demostración'}</p>
+    </article>
+  )
+}
+
+<style define:vars={{ grosor: `${GROSOR}px` }}>
+  .panel-dona {
+    display: flex;
+    flex-direction: column;
+    border: 1px solid var(--line, var(--line-light));
+    border-radius: 18px;
+    background: color-mix(in srgb, currentColor 2%, transparent);
+    padding: 18px 20px 16px;
+    transition: transform 320ms cubic-bezier(0.22, 0.61, 0.36, 1),
+      box-shadow 320ms ease, border-color 240ms ease;
+  }
+  /* El mismo gesto que las tarjetas de indicador: en un tablero, dos piezas
+     vecinas no pueden responder distinto al ratón. */
+  .panel-dona:hover,
+  .panel-dona:focus-within {
+    transform: translateY(-4px);
+    border-color: color-mix(in srgb, #008c85 45%, transparent);
+    box-shadow: 0 24px 46px -30px rgb(3 26 36 / 0.5);
+  }
+
+  .pd-titulo {
+    font-size: 12.5px;
+    font-weight: 600;
+    text-align: left;
+  }
+
+  .pd-cuerpo {
+    display: flex;
+    align-items: center;
+    gap: 22px;
+    margin-top: 16px;
+    flex: 1;
+  }
+  .pd-svg { flex-shrink: 0; }
+
+  /* El anillo se traza: arranca arriba y da la vuelta en el sentido del reloj,
+     que es el orden en que está la leyenda. */
+  .pd-arco {
+    stroke-width: var(--grosor);
+    stroke-dasharray: var(--largo) var(--largo);
+    stroke-dashoffset: var(--largo);
+    animation-name: pd-trazo;
+    animation-timing-function: linear;
+    animation-fill-mode: forwards;
+    transition: stroke-width 260ms cubic-bezier(0.22, 0.61, 0.36, 1);
+  }
+  .panel-dona:hover .pd-arco { stroke-width: calc(var(--grosor) + 2px); }
+
+  @keyframes pd-trazo {
+    to { stroke-dashoffset: 0; }
+  }
+
+  /* En banda ancha la leyenda se reparte en columnas: en una sola, el nombre
+     y su porcentaje quedaban en extremos opuestos de la pantalla. */
+  .pd-leyenda {
+    display: grid;
+    gap: 7px 34px;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    min-width: 0;
+    flex: 1;
+  }
+  @media (min-width: 860px) {
+    .is-ancho .pd-leyenda { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  }
+  @media (min-width: 1200px) {
+    .is-ancho .pd-leyenda { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  }
+  .pd-leyenda li {
+    display: grid;
+    grid-template-columns: 9px minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 9px;
+    font-size: 11.5px;
+    text-align: left;
+    opacity: 0;
+    animation: pd-entra 460ms cubic-bezier(0.22, 0.61, 0.36, 1) forwards;
+    animation-delay: calc(var(--i) * 80ms + 120ms);
+  }
+  @keyframes pd-entra {
+    from { opacity: 0; transform: translateY(6px); }
+    to { opacity: 1; transform: none; }
+  }
+  .pd-punto { width: 9px; height: 9px; border-radius: 999px; }
+  .pd-nombre { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .pd-valor { font-weight: 600; }
+
+  .pd-pie {
+    margin-top: 14px;
+    font-size: 9.5px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .panel-dona:hover, .panel-dona:focus-within { transform: none; }
+    .pd-arco { animation: none; stroke-dashoffset: 0; }
+    .panel-dona:hover .pd-arco { stroke-width: var(--grosor); }
+    .pd-leyenda li { animation: none; opacity: 1; }
+  }
+
+  @media (max-width: 560px) {
+    .pd-cuerpo { flex-direction: column; align-items: flex-start; gap: 16px; }
+  }
+</style>

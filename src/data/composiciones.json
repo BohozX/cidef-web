@@ -1,0 +1,268 @@
+{
+  "_nota": "Composiciones de demostración para los gráficos de dona del Radar. Cada bloque suma 100 y declara la serie a la que acompaña. Se reemplazan por la desagregación real cuando se conecte la base.",
+  "inflacion-interanual": {
+    "titulo": "Aporte por división del IPC",
+    "unidad": "% del total",
+    "partes": [
+      {
+        "nombre": "Alimentos y bebidas",
+        "valor": 38.4
+      },
+      {
+        "nombre": "Vivienda y servicios",
+        "valor": 17.9
+      },
+      {
+        "nombre": "Transporte",
+        "valor": 13.2
+      },
+      {
+        "nombre": "Salud y educación",
+        "valor": 9.6
+      },
+      {
+        "nombre": "Restaurantes y hoteles",
+        "valor": 8.1
+      },
+      {
+        "nombre": "Resto de divisiones",
+        "valor": 12.8
+      }
+    ]
+  },
+  "exportaciones": {
+    "titulo": "Exportaciones por producto",
+    "unidad": "% del valor",
+    "partes": [
+      {
+        "nombre": "Minerales",
+        "valor": 42.7
+      },
+      {
+        "nombre": "Hidrocarburos",
+        "valor": 21.3
+      },
+      {
+        "nombre": "Soya y derivados",
+        "valor": 18.5
+      },
+      {
+        "nombre": "Manufacturas",
+        "valor": 10.4
+      },
+      {
+        "nombre": "Resto",
+        "valor": 7.1
+      }
+    ]
+  },
+  "credito-privado": {
+    "titulo": "Cartera por destino",
+    "unidad": "% de la cartera",
+    "partes": [
+      {
+        "nombre": "Empresarial",
+        "valor": 31.2
+      },
+      {
+        "nombre": "Vivienda",
+        "valor": 24.6
+      },
+      {
+        "nombre": "Microcrédito",
+        "valor": 22.8
+      },
+      {
+        "nombre": "Consumo",
+        "valor": 14.1
+      },
+      {
+        "nombre": "PyME",
+        "valor": 7.3
+      }
+    ]
+  },
+  "resultado-fiscal": {
+    "titulo": "Gasto por finalidad",
+    "unidad": "% del gasto",
+    "partes": [
+      {
+        "nombre": "Servicios generales",
+        "valor": 27.4
+      },
+      {
+        "nombre": "Protección social",
+        "valor": 22.1
+      },
+      {
+        "nombre": "Educación",
+        "valor": 18.9
+      },
+      {
+        "nombre": "Salud",
+        "valor": 15.2
+      },
+      {
+        "nombre": "Asuntos económicos",
+        "valor": 16.4
+      }
+    ]
+  },
+  "imae": {
+    "titulo": "PIB por actividad económica",
+    "unidad": "% del valor agregado",
+    "partes": [
+      {
+        "nombre": "Servicios",
+        "valor": 33.8
+      },
+      {
+        "nombre": "Industria manufacturera",
+        "valor": 17.2
+      },
+      {
+        "nombre": "Agropecuario",
+        "valor": 14.6
+      },
+      {
+        "nombre": "Minería e hidrocarburos",
+        "valor": 13.9
+      },
+      {
+        "nombre": "Construcción",
+        "valor": 10.1
+      },
+      {
+        "nombre": "Resto",
+        "valor": 10.4
+      }
+    ]
+  },
+  "desocupacion": {
+    "titulo": "Empleo por sector",
+    "unidad": "% del empleo urbano",
+    "partes": [
+      {
+        "nombre": "Comercio y servicios",
+        "valor": 41.3
+      },
+      {
+        "nombre": "Industria y manufactura",
+        "valor": 18.7
+      },
+      {
+        "nombre": "Construcción",
+        "valor": 12.4
+      },
+      {
+        "nombre": "Transporte",
+        "valor": 11.2
+      },
+      {
+        "nombre": "Administración pública",
+        "valor": 9.1
+      },
+      {
+        "nombre": "Resto",
+        "valor": 7.3
+      }
+    ]
+  },
+  "indice-incertidumbre": {
+    "titulo": "Corpus del índice de incertidumbre",
+    "unidad": "% de las menciones",
+    "partes": [
+      {
+        "nombre": "Prensa nacional",
+        "valor": 46.2
+      },
+      {
+        "nombre": "Prensa regional",
+        "valor": 23.5
+      },
+      {
+        "nombre": "Boletines oficiales",
+        "valor": 16.8
+      },
+      {
+        "nombre": "Medios especializados",
+        "valor": 13.5
+      }
+    ]
+  },
+  "volumen-p2p": {
+    "titulo": "Volumen P2P por tamaño de operación",
+    "unidad": "% del monto operado",
+    "partes": [
+      {
+        "nombre": "Menos de 500 USD",
+        "valor": 38.2
+      },
+      {
+        "nombre": "De 500 a 2.000",
+        "valor": 26.4
+      },
+      {
+        "nombre": "De 2.000 a 5.000",
+        "valor": 18.1
+      },
+      {
+        "nombre": "De 5.000 a 10.000",
+        "valor": 10.7
+      },
+      {
+        "nombre": "Más de 10.000",
+        "valor": 6.6
+      }
+    ]
+  },
+  "pobreza": {
+    "titulo": "Población en pobreza por área",
+    "unidad": "% de la población pobre",
+    "partes": [
+      {
+        "nombre": "Área rural",
+        "valor": 41.8
+      },
+      {
+        "nombre": "Ciudades capitales",
+        "valor": 33.6
+      },
+      {
+        "nombre": "Resto urbano",
+        "valor": 24.6
+      }
+    ]
+  },
+  "dxy": {
+    "titulo": "Cesta del índice del dólar",
+    "unidad": "% de ponderación",
+    "nota": "Ponderaciones oficiales del índice",
+    "partes": [
+      {
+        "nombre": "Euro",
+        "valor": 57.6
+      },
+      {
+        "nombre": "Yen japonés",
+        "valor": 13.6
+      },
+      {
+        "nombre": "Libra esterlina",
+        "valor": 11.9
+      },
+      {
+        "nombre": "Dólar canadiense",
+        "valor": 9.1
+      },
+      {
+        "nombre": "Corona sueca",
+        "valor": 4.2
+      },
+      {
+        "nombre": "Franco suizo",
+        "valor": 3.6
+      }
+    ]
+  }
+}

@@ -138,7 +138,6 @@ const jsonLd = {
     otros.length > 0 && (
       <section class="surface-tint section" aria-labelledby="otros">
         <div class="wrap">
-          <div class="rule rule-draw"></div>
           <h2 id="otros" class="display-3 otros-title" data-reveal>Otras actividades</h2>
           <div class="row-list" data-reveal-group data-reveal-stagger="0.07">
             {otros.map((item) => <AgendaItem item={item} />)}
@@ -202,7 +201,7 @@ const jsonLd = {
   .resource:hover { transform: translateX(3px); }
   .resource-kind {
     font-size: 10px;
-    font-weight: 600;
+    font-weight: 700;
     letter-spacing: 0.11em;
     text-transform: uppercase;
   }

@@ -44,7 +44,6 @@ const stats = [
     }
   </div>
 
-  <div class="rule"></div>
 
   <form class="archive-controls no-print" role="search" data-reveal>
     <div class="archive-search">
@@ -217,7 +216,7 @@ const stats = [
     font-size: clamp(1.15rem, 2.2vw, 1.6rem);
     padding: 0;
   }
-  .surface-dark .archive-input, .surface-deep .archive-input { color: var(--color-paper); }
+  :global(.surface-dark) .archive-input, :global(.surface-deep) .archive-input { color: var(--color-paper); }
   .archive-input:focus { outline: none; }
   .archive-input::-webkit-search-cancel-button { display: none; }
 
@@ -226,7 +225,7 @@ const stats = [
 
   .archive-count {
     font-size: 11.5px;
-    font-weight: 600;
+    font-weight: 700;
     letter-spacing: 0.13em;
     text-transform: uppercase;
     padding-bottom: 12px;
@@ -250,12 +249,12 @@ const stats = [
 
   .archive-kind {
     font-size: 10.5px;
-    font-weight: 600;
+    font-weight: 700;
     letter-spacing: 0.13em;
     text-transform: uppercase;
     color: var(--color-teal-600);
   }
-  .surface-dark .archive-kind, .surface-deep .archive-kind { color: var(--color-teal-300); }
+  :global(.surface-dark) .archive-kind, :global(.surface-deep) .archive-kind { color: var(--color-teal-300); }
 
   .archive-body { display: block; }
   .archive-title {

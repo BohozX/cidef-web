@@ -18,13 +18,15 @@ from __future__ import annotations
 import argparse
 from pathlib import Path
 
-from PIL import Image
+from PIL import Image, ImageChops, ImageFilter
 
 ROOT = Path(__file__).resolve().parents[1]
 MEDIA = ROOT / "public" / "media"
 
 DEFAULT_LOGO = Path.home() / "Downloads" / "ChatGPT Image Sep 3, 2026, 11_41_23 PM.png"
-DEFAULT_FOTO = Path.home() / "Downloads" / "88947bc6-53eb-4ea4-ad8b-e3af0a612f1d.png"
+# La fotografía vive en el propio proyecto: la exportación no puede depender
+# de un archivo suelto en Descargas.
+DEFAULT_FOTO = ROOT / ".design" / "lapaz-illimani-fuente.png"
 
 PAPER = (245, 243, 237)
 WHITE_CUTOFF = 238   # por encima de esto se considera fondo
@@ -169,39 +171,10 @@ def build_logo(src: Path) -> None:
 
 # ------------------------------------------------------------------ portada --
 
-def build_hero(src: Path) -> None:
-    """Exporta la portada en varios anchos y tres formatos.
-
-    El original mide 2048 px de ancho: no se reescala por encima de eso
-    (ampliar no añade detalle, solo peso y suavizado). La calidad es alta
-    porque la fotografía es nocturna y los degradados del cielo delatan
-    enseguida cualquier compresión agresiva.
-    """
-    img = Image.open(src).convert("RGB")
-    native = img.width
-
-    widths = [w for w in (2048, 1600, 1200, 800) if w <= native]
-    if native not in widths:
-        widths.insert(0, native)
-
-    for width in widths:
-        suffix = "" if width == widths[0] else f"-{width}"
-        h = round(img.height * width / img.width)
-        r = img if width == img.width else img.resize((width, h), Image.LANCZOS)
-        r.save(MEDIA / f"lapaz-illimani{suffix}.jpg", quality=86, optimize=True,
-               progressive=True, subsampling=0)
-        r.save(MEDIA / f"lapaz-illimani{suffix}.webp", quality=80, method=6)
-        try:
-            r.save(MEDIA / f"lapaz-illimani{suffix}.avif", quality=56)
-        except Exception as exc:  # noqa: BLE001 - AVIF es opcional
-            print(f"  (sin AVIF: {exc})")
-
-    print(f"  ancho original: {native} px")
-    for pattern in ("*.avif", "*.webp", "*.jpg"):
-        for f in sorted(MEDIA.glob(f"lapaz-illimani{pattern[1:]}")):
-            pass
-    for f in sorted(MEDIA.glob("lapaz-illimani*")):
-        print(f"  {f.name:<28} {f.stat().st_size / 1024:.0f} KB")
+# La fotografía de portada ya no se procesa aquí: la genera
+# `node tools/hero.mjs`, que además le añade cielo por arriba y la amplía.
+# El motivo es que Pillow, instalado en el disco D, revienta al recortar
+# (STATUS_IN_PAGE_ERROR) desde que ese disco empezó a fallar.
 
 
 def main() -> None:

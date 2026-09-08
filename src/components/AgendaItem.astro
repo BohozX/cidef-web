@@ -1,7 +1,7 @@
 ---
+import { withBase } from '../lib/url';
 import type { CollectionEntry } from 'astro:content';
 import { dayMonth, isFuture } from '../lib/format';
-import { withBase } from '../lib/url';
 
 export interface Props {
   item: CollectionEntry<'eventos'>;
@@ -14,7 +14,7 @@ const { day, month, year } = dayMonth(iso);
 const upcoming = isFuture(iso);
 ---
 
-<article class="row-item agenda-row" data-reveal>
+<article class="row-item agenda-row" data-agenda-row>
   <a href={withBase(`/agenda/${item.id}`)} class="agenda-link">
     <div class="agenda-date" aria-hidden="true">
       <span class="agenda-day tnum">{day}</span>
@@ -26,7 +26,6 @@ const upcoming = isFuture(iso);
       <p class="agenda-meta">
         <span class="chip chip-teal">{d.type}</span>
         {!upcoming && <span class="chip">Realizado</span>}
-        {d.demo && <span class="chip chip-demo">Ejemplo</span>}
       </p>
       <h3 class="agenda-title">{d.title}</h3>
       <p class="agenda-summary muted">{d.summary}</p>
@@ -38,7 +37,7 @@ const upcoming = isFuture(iso);
         <span class="muted">{d.location}</span>
       </p>
       <span class="link-arrow">
-        {upcoming ? 'Inscribirse' : 'Ver materiales'}
+        {upcoming ? 'Inscribirse' : 'Ver detalle'}
         <svg class="arw" viewBox="0 0 16 16" width="12" height="12" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.7">
           <path d="M2 8h11M9 4l4 4-4 4" stroke-linecap="round" stroke-linejoin="round" />
         </svg>
@@ -48,6 +47,32 @@ const upcoming = isFuture(iso);
 </article>
 
 <style>
+  /* El levantamiento va en la fila entera, no en su interior: la línea
+     divisoria pertenece a la fila, y al mover solo el contenido se quedaba
+     abajo, como si media pieza no subiera. Al pasar el cursor la línea se
+     apaga y el bloque despega completo. */
+  .agenda-row {
+    padding-inline: 16px;
+    margin-inline: -16px;
+    border-radius: var(--radius-md);
+    transition: transform 340ms cubic-bezier(0.22, 0.61, 0.36, 1),
+      box-shadow 340ms ease, background-color 340ms ease, border-color 200ms ease;
+  }
+  .agenda-row:hover,
+  .agenda-row:focus-within {
+    transform: translateY(-3px);
+    background: color-mix(in srgb, currentColor 3%, transparent);
+    box-shadow: 0 22px 46px -28px rgb(3 26 36 / 0.55);
+    border-top-color: transparent;
+  }
+  .agenda-row:hover .agenda-day,
+  .agenda-row:focus-within .agenda-day { color: var(--color-gold); }
+  .agenda-day { transition: color 300ms ease; }
+
+  @media (prefers-reduced-motion: reduce) {
+    .agenda-row:hover, .agenda-row:focus-within { transform: none; }
+  }
+
   .agenda-link {
     display: grid;
     grid-template-columns: 62px minmax(0, 1fr);
@@ -63,10 +88,22 @@ const upcoming = isFuture(iso);
     }
   }
 
+  /* Centrada en su columna: el día, el mes y el año forman un bloque y en
+     bandera quedaban colgando a distintas anchuras.
+
+     El desplazamiento hacia abajo la sienta a la altura del título y no del
+     antetítulo, que es una línea menor: son las dos piezas grandes de la
+     fila y deben arrancar juntas. */
   .agenda-date {
     display: flex;
     flex-direction: column;
+    align-items: center;
+    text-align: center;
     line-height: 1;
+    margin-top: 18px;
+  }
+  @media (min-width: 900px) {
+    .agenda-date { margin-top: 24px; }
   }
   .agenda-day {
     font-family: var(--font-display);
@@ -76,7 +113,7 @@ const upcoming = isFuture(iso);
   .agenda-month {
     margin-top: 6px;
     font-size: 10.5px;
-    font-weight: 600;
+    font-weight: 700;
     letter-spacing: 0.16em;
     color: var(--color-gold);
   }

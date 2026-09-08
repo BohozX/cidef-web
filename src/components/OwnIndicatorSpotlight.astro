@@ -1,8 +1,8 @@
 ---
+import { withBase } from '../lib/url';
 import IndicatorChart from './IndicatorChart.astro';
 import { byId } from '../lib/indicators';
 import { deltaLabel, direction, longDate, monthYear, num, shortDate } from '../lib/format';
-import { withBase } from '../lib/url';
 
 export interface Props {
   id?: string;
@@ -16,7 +16,6 @@ const ind = byId(id);
   ind && (
     <section class="surface-tint section spotlight" aria-labelledby="spotlight-title">
       <div class="wrap">
-        <div class="rule rule-draw"></div>
 
         <div class="spot-grid">
           <div class="spot-main">

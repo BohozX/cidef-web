@@ -1,4 +1,5 @@
 ---
+import { withBase, withBaseSrcset } from '../lib/url';
 import { getCollection } from 'astro:content';
 
 import BaseLayout from '../layouts/BaseLayout.astro';
@@ -11,11 +12,9 @@ import EconomicRadar from '../components/EconomicRadar.astro';
 import CalendarAgenda from '../components/CalendarAgenda.astro';
 import ResearcherCard from '../components/ResearcherCard.astro';
 import Newsletter from '../components/Newsletter.astro';
-import Arc from '../components/Arc.astro';
 
 import { site } from '../site.config';
 import { authorList, longDate, num } from '../lib/format';
-import { withBase, withBaseSrcset } from '../lib/url';
 
 const [publicaciones, eventos, formacion, investigadores] = await Promise.all([
   getCollection('publicaciones'),
@@ -79,27 +78,28 @@ const programas = formacion
    colecciones, solo recibe portada, título, resumen y enlace. */
 const fichasInvestigacion: RotatorSlide[] = recientes.map((item) => {
   const d = item.data;
-  const facts: { label: string; value: string }[] = [];
-  if (d.topics.length) facts.push({ label: 'Temas', value: d.topics.join(' · ') });
-  if (d.jel.length) facts.push({ label: 'JEL', value: d.jel.join(' · ') });
+  /* Las listas largas ocupan el ancho entero; los códigos y la extensión
+     comparten renglón, que son cortos. */
+  const facts: RotatorSlide['facts'] = [];
+  if (d.topics.length) facts.push({ label: 'Temas', value: d.topics, wide: true });
   if (d.keywords.length) {
-    facts.push({ label: 'Claves', value: d.keywords.slice(0, 4).join(' · ') });
+    facts.push({ label: 'Claves', value: d.keywords.slice(0, 4), wide: true });
   }
-  if (d.pages) facts.push({ label: 'Extensión', value: `${d.pages} páginas` });
-  if (d.doi) facts.push({ label: 'DOI', value: d.doi });
+  if (d.jel.length) facts.push({ label: 'JEL', value: d.jel, mono: true });
+  if (d.pages) facts.push({ label: 'Extensión', value: `${d.pages} páginas`, mono: true });
+  if (d.doi) facts.push({ label: 'DOI', value: d.doi, mono: true, wide: true });
 
   return {
-    href: withBase(`/analisis/${item.id}`),
+    href: withBase(`/publicaciones/${item.id}`),
     cover: withBase(`/media/portadas/${item.id}`),
     coverAlt: `Portada de ${d.title}`,
     kicker: d.type,
     serial: d.serial,
-    demo: d.demo,
     title: d.title,
     meta: `${authorList(d.authors)} · ${longDate(d.date.toISOString())}`,
     summary: d.abstract,
     facts,
-    cta: 'Leer análisis',
+    cta: 'Leer documento',
   };
 });
 
@@ -116,27 +116,19 @@ const fichasFormacion: RotatorSlide[] = programas.map((item) => {
     meta: `${d.modality} · certificación ${d.certification.includes('UNIFRANZ') ? 'UNIFRANZ' : 'universitaria'}`,
     summary: d.summary,
     facts: [
-      { label: 'Duración', value: `${d.weeks} semanas` },
-      { label: 'Módulos', value: String(d.modules.length) },
-      { label: 'Docentes', value: String(d.faculty.length) },
-      ...(d.tools.length ? [{ label: 'Herramientas', value: d.tools.join(' · ') }] : []),
-      { label: 'Inversión', value: `${d.price.currency} ${num(precio, 0)}` },
+      { label: 'Duración', value: `${d.weeks} semanas`, mono: true },
+      { label: 'Módulos', value: String(d.modules.length), mono: true },
+      { label: 'Docentes', value: String(d.faculty.length), mono: true },
+      { label: 'Inversión', value: `${d.price.currency} ${num(precio, 0)}`, mono: true },
+      ...(d.tools.length
+        ? [{ label: 'Herramientas', value: d.tools, wide: true }]
+        : []),
     ],
     cta: 'Ver programa',
   };
 });
 
-const equipo = investigadores.sort((a, b) => a.data.order - b.data.order).slice(0, 4);
-
-const areas = [
-  'Macroeconomía',
-  'Desarrollo',
-  'Sector externo',
-  'Finanzas',
-  'Mercado laboral',
-  'Política pública',
-  'Economía digital',
-];
+const equipo = investigadores.sort((a, b) => a.data.order - b.data.order);
 ---
 
 <BaseLayout title={site.name} description={site.shortDescription} bleed>
@@ -157,9 +149,9 @@ const areas = [
   <section class="surface-light section" aria-labelledby="analisis-title">
     <div class="wrap">
       <SectionHeader
-        title="Lo último que publicó el centro."
-        href="/analisis"
-        linkLabel="Todos los análisis"
+        title="Últimas publicaciones"
+        href="/publicaciones"
+        linkLabel="Todas las publicaciones"
       />
 
       <FeaturedRotator slides={fichasInvestigacion} label="Publicaciones recientes" />
@@ -175,7 +167,7 @@ const areas = [
       <section class="surface-light section" aria-labelledby="formacion-title">
         <div class="wrap">
           <SectionHeader
-            title="Diplomados abiertos ahora."
+            title="Programas de formación"
             href="/formacion"
             linkLabel="Ver oferta académica"
           />
@@ -194,7 +186,7 @@ const areas = [
   <section class="surface-deep section edge-tr edge-bl" aria-labelledby="agenda-title">
     <div class="wrap">
       <SectionHeader
-        title="Lo que viene este mes."
+        title="Lo que viene este mes"
         href="/agenda"
         linkLabel="Agenda completa"
       />
@@ -212,21 +204,55 @@ const areas = [
 
   <!-- NOSOTROS ------------------------------------------------------------- -->
   <section class="surface-mist section nosotros" aria-labelledby="nosotros-title">
-    <Arc size={720} bottom="-24%" right="-10%" opacity={0.11} rings={2} spin={160} class="nosotros-arc" />
-
     <div class="wrap">
       <SectionHeader
-        title="Quiénes producen esta investigación."
+        title="Quiénes producen esta investigación"
         href="/nosotros"
         linkLabel="Conocer el centro"
       />
 
-      <ul class="home-areas" data-reveal-group data-reveal-stagger="0.04">
-        {areas.map((a) => <li data-reveal>{a}</li>)}
-      </ul>
+      <div class="home-team-wrap">
+        {/* Zonas de paso: viven en el margen de la página, invisibles hasta
+            que el cursor entra, igual que en las fichas rotativas. */}
+        <button
+          type="button"
+          class="team-edge is-prev no-print"
+          data-team-prev
+          aria-label="Ver investigadores anteriores"
+          aria-controls="home-team"
+          hidden
+        >
+          <span class="team-edge-icon" aria-hidden="true">
+            <svg viewBox="0 0 16 16" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.7">
+              <path d="M14 8H3M7 4L3 8l4 4" stroke-linecap="round" stroke-linejoin="round" />
+            </svg>
+          </span>
+        </button>
 
-      <div class="home-team" data-reveal-group data-reveal-stagger="0.08">
-        {equipo.map((item) => <ResearcherCard item={item} />)}
+        <button
+          type="button"
+          class="team-edge is-next no-print"
+          data-team-next
+          aria-label="Ver más investigadores"
+          aria-controls="home-team"
+          hidden
+        >
+          <span class="team-edge-icon" aria-hidden="true">
+            <svg viewBox="0 0 16 16" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.7">
+              <path d="M2 8h11M9 4l4 4-4 4" stroke-linecap="round" stroke-linejoin="round" />
+            </svg>
+          </span>
+        </button>
+
+        <div
+          class="home-team"
+          id="home-team"
+          data-team-track
+          data-reveal-group
+          data-reveal-stagger="0.08"
+        >
+          {equipo.map((item) => <ResearcherCard item={item} />)}
+        </div>
       </div>
     </div>
   </section>
@@ -240,36 +266,115 @@ const areas = [
     overflow: clip;
     border-top-right-radius: clamp(48px, 11vw, 168px);
   }
-  .nosotros-arc { color: var(--color-teal-300); }
   .nosotros .wrap { position: relative; }
 
-  .home-areas {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 10px 12px;
-    list-style: none;
-    margin: 0 0 46px;
+  .home-team-wrap { position: relative; }
+
+  /* Estante: cuatro fichas a la vista y el resto esperando a un lado. El
+     desplazamiento es nativo —con anclaje por ficha—, así que funciona con
+     rueda, con gesto y sin JS; las zonas laterales solo lo empujan. */
+  .home-team {
+    display: grid;
+    grid-auto-flow: column;
+    grid-auto-columns: calc((100% - 20px) / 2);
+    gap: 30px 20px;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    scroll-behavior: smooth;
+    /* Sitio para la sombra de las fichas al pasar el cursor. */
+    padding-bottom: 4px;
+    /* Sin barra nativa: aquí manda la flecha del margen, igual que en el
+       resto del sitio. */
+    scrollbar-width: none;
+  }
+  .home-team::-webkit-scrollbar { width: 0; height: 0; }
+  .home-team > :global(*) { scroll-snap-align: start; }
+  @media (min-width: 900px) {
+    .home-team { grid-auto-columns: calc((100% - 3 * 20px) / 4); }
+  }
+  @media (max-width: 560px) {
+    .home-team { grid-auto-columns: 100%; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .home-team { scroll-behavior: auto; }
+  }
+
+  /* --- zonas de paso --------------------------------------------------- */
+  .team-edge {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: 72px;
+    display: grid;
+    place-items: center;
     padding: 0;
+    border: 0;
+    background: transparent;
+    color: inherit;
+    cursor: pointer;
+    z-index: 2;
   }
-  .home-areas li {
-    padding: 7px 16px;
-    border: 1px solid var(--line, var(--line-light));
+  .team-edge.is-prev { left: -84px; }
+  .team-edge.is-next { right: -84px; }
+
+  .team-edge-icon {
+    display: grid;
+    place-items: center;
+    width: 44px;
+    height: 44px;
     border-radius: 999px;
-    font-size: 12.5px;
-    font-weight: 500;
-    transition: border-color 220ms ease, color 220ms ease;
+    border: 1px solid var(--line, var(--line-light));
+    opacity: 0;
+    transform: scale(0.9);
+    transition: opacity 260ms ease, transform 320ms cubic-bezier(0.22, 0.61, 0.36, 1),
+      border-color 200ms ease, color 200ms ease;
   }
-  .home-areas li:hover {
+  .team-edge:hover .team-edge-icon,
+  .team-edge:focus-visible .team-edge-icon {
+    opacity: 1;
+    transform: none;
     border-color: var(--color-gold);
     color: var(--color-gold);
   }
 
-  .home-team {
-    display: grid;
-    gap: 30px 20px;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+  /* Sin margen de página que aprovechar, se pegan al borde interior. */
+  @media (max-width: 1439px) {
+    .team-edge { width: 40px; }
+    .team-edge.is-prev { left: -8px; }
+    .team-edge.is-next { right: -8px; }
   }
-  @media (min-width: 900px) {
-    .home-team { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  @media (max-width: 760px) {
+    .team-edge { display: none; }
   }
 </style>
+
+<script>
+  /* Las zonas empujan el estante una ficha, y se retiran cuando ya no hay
+     nada más hacia ese lado: una flecha que no lleva a ninguna parte es peor
+     que ninguna flecha. */
+  const track = document.querySelector<HTMLElement>('[data-team-track]');
+  const prev = document.querySelector<HTMLButtonElement>('[data-team-prev]');
+  const next = document.querySelector<HTMLButtonElement>('[data-team-next]');
+
+  if (track && prev && next) {
+    const paso = (): number => {
+      const uno = track.firstElementChild;
+      const dos = uno?.nextElementSibling;
+      if (!uno || !dos) return track.clientWidth;
+      return dos.getBoundingClientRect().left - uno.getBoundingClientRect().left;
+    };
+
+    const actualizar = (): void => {
+      const tope = track.scrollWidth - track.clientWidth;
+      const sobra = tope > 4;
+      prev.hidden = !sobra || track.scrollLeft <= 4;
+      next.hidden = !sobra || track.scrollLeft >= tope - 4;
+    };
+
+    prev.addEventListener('click', () => track.scrollBy({ left: -paso() }));
+    next.addEventListener('click', () => track.scrollBy({ left: paso() }));
+    track.addEventListener('scroll', actualizar, { passive: true });
+    window.addEventListener('resize', actualizar);
+    actualizar();
+  }
+</script>

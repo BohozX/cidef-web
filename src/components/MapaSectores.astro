@@ -1,0 +1,247 @@
+---
+import { sectores, indicators } from '../lib/indicators';
+
+/**
+ * El mapa del Radar: qué sectores hay, qué contesta cada uno y por dónde
+ * entrar.
+ *
+ * Sirve a dos destinos distintos. En el tablero abre el sector sin recargar
+ * la página —la barra de pestañas responde al mismo evento—; en la base
+ * profesional lleva al bloque del catálogo con todas las series de ese
+ * sector. La tarjeta es la misma porque el mapa mental es el mismo.
+ */
+
+export interface Props {
+  /** A dónde lleva cada tarjeta. */
+  destino?: 'tablero' | 'catalogo';
+  titulo?: string;
+  lede?: string;
+}
+
+const { destino = 'tablero', titulo, lede } = Astro.props;
+
+const lista = sectores();
+
+/* En un titular, un número de dos cifras se lee como dato y no como parte de
+   la frase. */
+const LETRAS = ['cero', 'uno', 'dos', 'tres', 'cuatro', 'cinco', 'seis', 'siete', 'ocho', 'nueve', 'diez', 'once', 'doce'];
+const enLetra = (n: number): string => LETRAS[n] ?? String(n);
+
+const totalSeries = indicators.length;
+const propias = indicators.filter((i) => i.own).length;
+
+const alTablero = destino === 'tablero';
+const encabezado = titulo ?? `La economía boliviana, repartida en ${enLetra(lista.length)} tableros`;
+const entrada =
+  lede ??
+  (alTablero
+    ? `Cada sector responde una pregunta y reúne las series que la contestan. Hoy el Radar sigue ${totalSeries} series, ${propias} de ellas elaboradas por el centro. Elige un sector para abrir su tablero.`
+    : `Cada sector reúne sus series completas: histórico, metadatos y descarga. Son ${totalSeries} series, ${propias} de ellas elaboradas por el centro. Elige un sector para ver todo lo que hay dentro.`);
+---
+
+<div class="mapa-head">
+  <div>
+    <p class="eyebrow mapa-eyebrow" data-reveal>
+      {alTablero ? 'Cómo está organizado el Radar' : 'Catálogo por sector'}
+    </p>
+    <h2 id="mapa" class="display-3 mapa-title" data-reveal>{encabezado}</h2>
+  </div>
+  <p class="mapa-lede" data-reveal>{entrada}</p>
+</div>
+
+<ul class="mapa-grid" data-reveal-group data-reveal-stagger="0.05">
+  {
+    lista.map((s, i) => (
+      <li class:list={[i === lista.length - 1 && 'es-cierre']} data-reveal>
+        <a
+          class="mapa-card"
+          href={alTablero ? `#sector-${s.id}` : `#seccion-${s.id}`}
+          data-ir-sector={alTablero ? s.id : undefined}
+        >
+          <span class="mapa-num tnum">{String(i + 1).padStart(2, '0')}</span>
+          <h3 class="mapa-nombre">{s.name}</h3>
+          {s.pregunta && <p class="mapa-pregunta">{s.pregunta}</p>}
+          <p class="mapa-desc muted">{s.description}</p>
+
+          {s.temas && (
+            <p class="mapa-temas muted">
+              {s.temas.map((t, j) => (
+                <>
+                  {j > 0 && <span class="mapa-sep" aria-hidden="true"> · </span>}
+                  {t}
+                </>
+              ))}
+            </p>
+          )}
+
+          <span class="mapa-pie">
+            <span class="mapa-cuenta">
+              {s.series} {s.series === 1 ? 'serie' : 'series'}
+            </span>
+            <span class="mapa-ir">
+              {alTablero ? 'Ver el tablero' : 'Ver las series'}
+              <svg class="arw" viewBox="0 0 16 16" width="12" height="12" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8">
+                <path d="M2 8h11M9 4l4 4-4 4" stroke-linecap="round" stroke-linejoin="round" />
+              </svg>
+            </span>
+          </span>
+        </a>
+      </li>
+    ))
+  }
+</ul>
+
+<style>
+  .mapa-head {
+    display: grid;
+    gap: 18px;
+    padding-bottom: clamp(28px, 3.4vw, 44px);
+  }
+  @media (min-width: 900px) {
+    .mapa-head {
+      grid-template-columns: minmax(0, 1.3fr) minmax(0, 0.7fr);
+      gap: 48px;
+      align-items: end;
+    }
+  }
+  .mapa-eyebrow { color: var(--color-teal-600); }
+  .mapa-title { margin-top: 14px; max-width: 20ch; }
+  /* Columnas estrechas: con partición automática salían cortes como
+     «con-testan» en mitad de una frase de tres líneas. */
+  .mapa-lede,
+  .mapa-pregunta,
+  .mapa-desc,
+  .mapa-temas {
+    hyphens: manual;
+    -webkit-hyphens: manual;
+  }
+  .mapa-lede { font-size: 13.5px; max-width: 46ch; }
+
+  /* --- las tarjetas ------------------------------------------------------ */
+  .mapa-grid {
+    display: grid;
+    gap: 16px;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    grid-template-columns: 1fr;
+  }
+  @media (min-width: 680px) { .mapa-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  @media (min-width: 1100px) { .mapa-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+
+  /* La curvatura del inicio, y el mismo gesto al pasar el ratón que las
+     piezas del tablero: son la misma familia de tarjetas. */
+  .mapa-card {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    padding: 22px 22px 18px;
+    border: 1px solid var(--line, var(--line-light));
+    border-radius: 22px;
+    background: color-mix(in srgb, currentColor 2%, transparent);
+    transition: transform 320ms cubic-bezier(0.22, 0.61, 0.36, 1),
+      box-shadow 320ms ease, border-color 240ms ease;
+  }
+  .mapa-card:hover,
+  .mapa-card:focus-visible {
+    transform: translateY(-4px);
+    border-color: color-mix(in srgb, #008c85 45%, transparent);
+    box-shadow: 0 24px 46px -30px rgb(3 26 36 / 0.5);
+  }
+
+  /* La última tarjeta cierra la fila en vez de quedarse sola: los
+     indicadores del centro no son un sector más de la economía, son lo que
+     produce el CIDEF, y ocupar el ancho entero lo dice sin decirlo. */
+  .mapa-grid > .es-cierre { grid-column: 1 / -1; }
+  @media (min-width: 900px) {
+    .es-cierre .mapa-card {
+      display: grid;
+      grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr);
+      grid-template-areas:
+        'num temas'
+        'nombre temas'
+        'pregunta temas'
+        'desc temas'
+        'pie pie';
+      column-gap: clamp(30px, 4vw, 60px);
+      align-content: start;
+    }
+    .es-cierre .mapa-num { grid-area: num; }
+    .es-cierre .mapa-nombre { grid-area: nombre; }
+    .es-cierre .mapa-pregunta { grid-area: pregunta; }
+    .es-cierre .mapa-desc { grid-area: desc; }
+    .es-cierre .mapa-temas { grid-area: temas; margin-top: 0; padding-top: 0; border-top: 0; }
+    .es-cierre .mapa-pie { grid-area: pie; }
+  }
+
+  .mapa-num {
+    font-family: var(--font-display);
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    color: var(--muted);
+    transition: color 240ms ease;
+  }
+  .mapa-card:hover .mapa-num { color: var(--color-teal-600); }
+
+  .mapa-nombre {
+    margin-top: 12px;
+    font-family: var(--font-display);
+    font-size: 1.18rem;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    line-height: 1.2;
+  }
+  .mapa-pregunta {
+    margin-top: 9px;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--color-teal-600);
+    text-align: left;
+  }
+  .mapa-desc {
+    margin-top: 8px;
+    font-size: 12.5px;
+    line-height: 1.62;
+    text-align: left;
+  }
+
+  /* Las materias del sector, sin cajas: solo las palabras, separadas por un
+     punto medio. Incluye las que todavía no tienen serie publicada. */
+  .mapa-temas {
+    margin-top: 14px;
+    padding-top: 13px;
+    border-top: 1px solid var(--line, var(--line-light));
+    font-size: 11px;
+    line-height: 1.75;
+    text-align: left;
+  }
+  .mapa-sep { opacity: 0.5; }
+
+  .mapa-pie {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-top: auto;
+    padding-top: 16px;
+    font-size: 9.5px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+  .mapa-cuenta { color: var(--muted); }
+  .mapa-ir {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    color: var(--color-teal-600);
+  }
+  .mapa-ir .arw { transition: transform 220ms cubic-bezier(0.22, 0.61, 0.36, 1); }
+  .mapa-card:hover .arw { transform: translateX(4px); }
+
+  @media (prefers-reduced-motion: reduce) {
+    .mapa-card:hover, .mapa-card:focus-visible { transform: none; }
+    .mapa-card:hover .arw { transform: none; }
+  }
+</style>

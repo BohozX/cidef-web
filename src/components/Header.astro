@@ -63,6 +63,22 @@ const mainNav = nav.filter((item) => item.href !== '/');
         </svg>
       </button>
 
+      {/* Acceso al área personal. El icono ya ocupa su sitio; queda por
+          decidir a dónde lleva —formulario propio o proveedor externo—, así
+          que de momento no navega a ninguna parte. */}
+      <button
+        type="button"
+        data-login
+        class="icon-btn"
+        aria-label="Iniciar sesión"
+        title="Iniciar sesión"
+      >
+        <svg viewBox="0 0 20 20" width="18" height="18" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.6">
+          <circle cx="10" cy="6.6" r="3.4" />
+          <path d="M3.6 17c0-3.5 2.9-5.6 6.4-5.6s6.4 2.1 6.4 5.6" stroke-linecap="round" />
+        </svg>
+      </button>
+
       <button
         type="button"
         data-menu-toggle
@@ -133,10 +149,12 @@ const mainNav = nav.filter((item) => item.href !== '/');
     box-shadow: 0 1px 24px rgb(0 0 0 / 0.22);
   }
 
+  /* La marca a la izquierda y, pegados al otro extremo, la navegación y los
+     iconos como un solo grupo: repartidos por igual, el menú quedaba en
+     mitad de la barra y no se leía como conjunto. */
   .header-inner {
     display: flex;
     align-items: center;
-    justify-content: space-between;
     gap: 24px;
     height: 96px;
     transition: height 280ms ease;
@@ -163,7 +181,7 @@ const mainNav = nav.filter((item) => item.href !== '/');
   .brand-tag {
     display: none;
     font-size: 10px;
-    font-weight: 600;
+    font-weight: 700;
     letter-spacing: 0.12em;
     line-height: 1.6;
     text-transform: uppercase;
@@ -180,7 +198,7 @@ const mainNav = nav.filter((item) => item.href !== '/');
   /* --- navegación --- */
   .main-nav { display: none; }
   @media (min-width: 1024px) {
-    .main-nav { display: block; }
+    .main-nav { display: block; margin-left: auto; }
   }
   .main-nav ul {
     display: flex;
@@ -203,24 +221,32 @@ const mainNav = nav.filter((item) => item.href !== '/');
   .header-actions {
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: 6px;
     flex-shrink: 0;
+    margin-left: auto;
   }
+  /* Con la navegación empujada a la derecha, el grupo de iconos necesita su
+     propio aire para no leerse como una palabra más del menú. */
+  .main-nav + .header-actions { margin-left: clamp(20px, 3vw, 44px); }
+
+  /* Sin recuadro: solo el icono. La caja de 36 px se mantiene para que el
+     objetivo siga siendo cómodo de pulsar. */
   .icon-btn {
     display: grid;
     place-items: center;
     width: 36px;
     height: 36px;
-    border: 1px solid var(--line-dark);
+    border: 0;
     border-radius: var(--radius-sm);
     color: inherit;
     background: transparent;
     cursor: pointer;
-    transition: border-color 200ms ease, background-color 200ms ease;
+    opacity: 0.86;
+    transition: opacity 200ms ease, color 200ms ease;
   }
   .icon-btn:hover {
-    border-color: color-mix(in srgb, #f5f3ed 45%, transparent);
-    background: color-mix(in srgb, #f5f3ed 8%, transparent);
+    opacity: 1;
+    color: var(--color-gold);
   }
 
   .menu-btn { flex-direction: column; gap: 5px; }
@@ -238,7 +264,7 @@ const mainNav = nav.filter((item) => item.href !== '/');
     gap: 8px;
     padding: 8px 15px;
     font-size: 12px;
-    font-weight: 600;
+    font-weight: 700;
     letter-spacing: 0.06em;
     text-transform: uppercase;
     border: 1px solid color-mix(in srgb, #d29a28 55%, transparent);

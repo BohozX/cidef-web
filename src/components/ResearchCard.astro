@@ -18,7 +18,7 @@ const iso = d.date.toISOString();
    del `id` de la entrada. Si más adelante hay portadas reales, se dejan en
    la misma carpeta con el mismo nombre. */
 const cover = withBase(`/media/portadas/${item.id}`);
-const href = withBase(`/analisis/${item.id}`);
+const href = withBase(`/publicaciones/${item.id}`);
 ---
 
 {
@@ -60,7 +60,6 @@ const href = withBase(`/analisis/${item.id}`);
         <div class="res-row-meta">
           {index !== undefined && <span class="index-num">{String(index).padStart(2, '0')}</span>}
           <span class="chip chip-teal">{d.type}</span>
-          {d.demo && <span class="chip chip-demo">Ejemplo</span>}
         </div>
 
         <div class="res-row-body">
@@ -102,7 +101,6 @@ const href = withBase(`/analisis/${item.id}`);
         <p class="res-abstract muted res-card-abstract">{d.abstract}</p>
         <div class="res-card-foot">
           <span class="muted">{d.topics[0] ?? ''}</span>
-          {d.demo && <span class="chip chip-demo">Ejemplo</span>}
         </div>
       </a>
     </article>
@@ -223,12 +221,12 @@ const href = withBase(`/analisis/${item.id}`);
   }
   .res-topic {
     font-size: 11px;
-    font-weight: 600;
+    font-weight: 700;
     letter-spacing: 0.09em;
     text-transform: uppercase;
     color: var(--color-teal-600);
   }
-  .surface-dark .res-topic, .surface-deep .res-topic { color: var(--color-teal-300); }
+  :global(.surface-dark) .res-topic, :global(.surface-deep) .res-topic { color: var(--color-teal-300); }
 
   .res-row-side {
     display: flex;
@@ -244,12 +242,28 @@ const href = withBase(`/analisis/${item.id}`);
   .res-row:hover .res-cta { opacity: 1; }
 
   /* ------------------------------------------------------- vista tarjeta */
-  .res-card { height: 100%; }
+  /* Esquinas francamente redondas y sombra al acercar el cursor: la
+     tarjeta se despega del papel en vez de limitarse a cambiar de filo. */
+  .res-card {
+    height: 100%;
+    border-radius: 22px;
+    transition: transform 320ms cubic-bezier(0.22, 0.61, 0.36, 1),
+      box-shadow 320ms ease, border-color 240ms ease;
+  }
+  .res-card:hover,
+  .res-card:focus-within {
+    transform: translateY(-5px);
+    border-color: color-mix(in srgb, #008c85 45%, transparent);
+    box-shadow: 0 26px 50px -30px rgb(3 26 36 / 0.55);
+  }
   .res-card > a {
     display: flex;
     flex-direction: column;
     height: 100%;
-    padding: 22px 22px 18px;
+    padding: 24px 24px 20px;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .res-card:hover, .res-card:focus-within { transform: none; }
   }
   .res-card-top {
     display: flex;
@@ -263,6 +277,11 @@ const href = withBase(`/analisis/${item.id}`);
     -webkit-line-clamp: 4;
     line-clamp: 4;
     margin-bottom: 20px;
+    /* Justificado con partición: sin guiones, una columna estrecha en
+       castellano abre calles enormes entre palabras. */
+    text-align: justify;
+    hyphens: auto;
+    -webkit-hyphens: auto;
   }
   .res-card-foot {
     display: flex;
@@ -273,7 +292,7 @@ const href = withBase(`/analisis/${item.id}`);
     padding-top: 14px;
     border-top: 1px solid var(--line, var(--line-light));
     font-size: 11px;
-    font-weight: 600;
+    font-weight: 700;
     letter-spacing: 0.09em;
     text-transform: uppercase;
   }

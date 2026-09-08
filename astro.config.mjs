@@ -9,11 +9,25 @@ import tailwindcss from '@tailwindcss/vite';
 // variable el build sigue siendo exactamente el de Cloudflare.
 const enGitHubPages = process.env.GITHUB_PAGES === 'true';
 
+/* Las redirecciones de /analisis existen para los enlaces antiguos del dominio
+   propio. Astro aplica el `base` al origen de una redirección pero no a su
+   destino, y el destino tiene que ser una ruta interna sin prefijo —si se le
+   antepone, deja de reconocerla como ruta y pide getStaticPaths—. En la copia
+   de GitHub Pages, que es una previsualización sin enlaces entrantes, se
+   apagan; en Cloudflare siguen igual. */
+const redirecciones = enGitHubPages
+  ? {}
+  : {
+      '/analisis': '/publicaciones',
+      '/analisis/[...id]': '/publicaciones/[...id]',
+    };
+
 export default defineConfig({
   site: enGitHubPages ? 'https://bohozx.github.io' : 'https://cidef.bo',
   base: enGitHubPages ? '/cidef-web' : '/',
   trailingSlash: 'ignore',
   integrations: [sitemap()],
+  redirects: redirecciones,
   vite: {
     // Astro empaqueta su propia copia de Vite: el tipo del plugin proviene
     // de otra instalación y no coincide nominalmente. El plugin funciona.

@@ -1,7 +1,7 @@
 ---
+import { withBase } from '../lib/url';
 import { getCollection } from 'astro:content';
 import { authorList, longDate } from '../lib/format';
-import { withBase } from '../lib/url';
 
 /**
  * Publicación destacada. Se integra editorialmente con la portada:
@@ -22,7 +22,6 @@ const abstract = item
   item && (
     <section class="surface-deep featured" aria-labelledby="featured-title">
       <div class="wrap">
-        <div class="rule rule-draw"></div>
 
         <div class="featured-grid">
           <div class="featured-main">
@@ -35,7 +34,7 @@ const abstract = item
             </p>
 
             <h2 id="featured-title" class="display-3 featured-title" data-reveal>
-              <a href={withBase(`/analisis/${item.id}`)}>{item.data.title}</a>
+              <a href={withBase(`/publicaciones/${item.id}`)}>{item.data.title}</a>
             </h2>
 
             <p class="featured-authors" data-reveal>{authorList(item.data.authors)}</p>
@@ -43,14 +42,14 @@ const abstract = item
             <p class="featured-abstract muted" data-reveal>{abstract}</p>
 
             <div class="featured-actions" data-reveal>
-              <a href={withBase(`/analisis/${item.id}`)} class="btn btn-primary">
-                Leer análisis
+              <a href={withBase(`/publicaciones/${item.id}`)} class="btn btn-primary">
+                Leer documento
                 <svg class="arw" viewBox="0 0 16 16" width="13" height="13" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8">
                   <path d="M2 8h11M9 4l4 4-4 4" stroke-linecap="round" stroke-linejoin="round" />
                 </svg>
               </a>
-              <a href={withBase('/analisis')} class="link-arrow">
-                Todos los análisis
+              <a href={withBase('/publicaciones')} class="link-arrow">
+                Todas las publicaciones
                 <svg class="arw" viewBox="0 0 16 16" width="13" height="13" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.7">
                   <path d="M2 8h11M9 4l4 4-4 4" stroke-linecap="round" stroke-linejoin="round" />
                 </svg>

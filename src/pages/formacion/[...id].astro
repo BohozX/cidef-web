@@ -1,10 +1,10 @@
 ---
+import { withBase, withBaseSrcset } from '../../lib/url';
 import { getCollection, render } from 'astro:content';
 import type { CollectionEntry } from 'astro:content';
 import type { GetStaticPaths } from 'astro';
 
 import BaseLayout from '../../layouts/BaseLayout.astro';
-import PageHero from '../../components/PageHero.astro';
 import ProgramCard from '../../components/ProgramCard.astro';
 import Newsletter from '../../components/Newsletter.astro';
 import { site } from '../../site.config';
@@ -23,9 +23,12 @@ const { entry } = Astro.props;
 const d = entry.data;
 const { Content } = await render(entry);
 
+/* Tres sugerencias bastan: con más, la fila se estrecha y las tarjetas dejan
+   de leerse. */
 const otros = (await getCollection('formacion'))
   .filter((p) => p.id !== entry.id)
-  .sort((a, b) => a.data.order - b.data.order);
+  .sort((a, b) => a.data.order - b.data.order)
+  .slice(0, 3);
 
 const facts = [
   { label: 'Duración', value: `${d.weeks} semanas` },
@@ -56,23 +59,89 @@ const jsonLd = {
 ---
 
 <BaseLayout title={d.title} description={d.summary} ogType="article" jsonLd={jsonLd}>
-  <PageHero
-    eyebrow={`${d.kind} · ${d.modality}`}
-    title={d.title}
-    parent={{ label: 'Formación', href: '/formacion' }}
-    facts={facts}
-  >
-    <div slot="actions" class="prog-actions" data-hero-item>
-      <a href="#inscripcion" class="btn btn-primary">
-        Consultar inscripción
-        <svg class="arw" viewBox="0 0 16 16" width="13" height="13" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8">
-          <path d="M2 8h11M9 4l4 4-4 4" stroke-linecap="round" stroke-linejoin="round" />
-        </svg>
-      </a>
-      <a href="#malla" class="btn btn-outline">Ver malla curricular</a>
-      {d.open && <span class="chip chip-teal">Inscripciones abiertas</span>}
+  <!-- Ficha del programa ------------------------------------------------ -->
+  <section class="surface-deep prog-cabecera">
+    <div class="wrap prog-cabecera-inner">
+      <div class="prog-imagen" data-tilt data-reveal>
+        <picture>
+          <source type="image/webp" srcset={withBase(`/media/portadas/${entry.id}-banda.webp`)} />
+          <img
+            src={withBase(`/media/portadas/${entry.id}-banda.jpg`)}
+            alt={`Motivo gráfico del ${d.title}`}
+            width="1200"
+            height="675"
+            fetchpriority="high"
+            decoding="async"
+          />
+        </picture>
+      </div>
+
+      <div class="prog-info">
+        <nav class="prog-crumb" aria-label="Ruta de navegación">
+          <a href={withBase('/formacion')} class="link-arrow">
+            <svg class="arw" viewBox="0 0 16 16" width="12" height="12" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.7">
+              <path d="M14 8H3M7 4L3 8l4 4" stroke-linecap="round" stroke-linejoin="round" />
+            </svg>
+            Formación
+          </a>
+        </nav>
+
+        <p class="prog-kicker">
+          <span class="prog-clase">{d.kind}</span>
+          {d.open && <span class="prog-abierto">Inscripciones abiertas</span>}
+        </p>
+
+        <h1 class:list={['prog-titulo', d.title.length > 62 && 'is-long']}>{d.title}</h1>
+
+        <p class="prog-resumen">{d.summary}</p>
+
+        <dl class="prog-datos">
+          {facts.map((f) => (
+            <div>
+              <dt>{f.label}</dt>
+              <dd>{f.value}</dd>
+            </div>
+          ))}
+          {d.tools.length > 0 && (
+            <div class="is-wide">
+              <dt>Herramientas</dt>
+              <dd>{d.tools.join(' · ')}</dd>
+            </div>
+          )}
+        </dl>
+
+        <div class="prog-actions">
+      <p class="prog-precio tnum">
+        {d.price.promo ? (
+          <>
+            <span class="prog-precio-hoy">
+              {d.price.currency} {num(d.price.promo, 0)}
+            </span>
+            <span class="prog-precio-antes">
+              {d.price.currency} {num(d.price.total, 0)}
+            </span>
+          </>
+        ) : (
+          <span class="prog-precio-hoy">
+            {d.price.currency} {num(d.price.total, 0)}
+          </span>
+        )}
+      </p>
+
+      {/* Un solo botón: la malla está unos centímetros más abajo, en la
+          misma página, y un enlace para bajar hasta ella no aporta nada. */}
+      <div class="prog-botones">
+          <a href="#inscripcion" class="btn btn-primary">
+            Consultar inscripción
+            <svg class="arw" viewBox="0 0 16 16" width="13" height="13" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8">
+              <path d="M2 8h11M9 4l4 4-4 4" stroke-linecap="round" stroke-linejoin="round" />
+            </svg>
+          </a>
+        </div>
+        </div>
+      </div>
     </div>
-  </PageHero>
+  </section>
 
   <!-- OBJETIVO Y DIRIGIDO A -------------------------------------------------->
   <section class="surface-light section" aria-labelledby="objetivo">
@@ -123,9 +192,8 @@ const jsonLd = {
   </section>
 
   <!-- MALLA CURRICULAR ------------------------------------------------------->
-  <section id="malla" class="surface-deep section" aria-labelledby="malla-h">
+  <section id="malla" class="surface-deep section edge-tr edge-bl" aria-labelledby="malla-h">
     <div class="wrap">
-      <div class="rule rule-draw"></div>
       <p class="eyebrow eyebrow-gold malla-eyebrow" data-reveal>Malla curricular</p>
       <h2 id="malla-h" class="display-2 malla-title" data-reveal>
         {d.modules.length} módulos, {d.weeks} semanas.
@@ -171,14 +239,13 @@ const jsonLd = {
   }
 
   <!-- CERTIFICACIÓN E INSCRIPCIÓN -------------------------------------------->
-  <section id="inscripcion" class="surface-tint section" aria-labelledby="inscr-h">
+  <section id="inscripcion" class="surface-mist section edge-tl edge-br" aria-labelledby="inscr-h">
     <div class="wrap">
-      <div class="rule rule-draw"></div>
 
       <div class="enroll-grid">
         <div>
           <p class="eyebrow eyebrow-gold" data-reveal>Certificación e inscripción</p>
-          <h2 id="inscr-h" class="display-3 enroll-title" data-reveal>Costo y respaldo académico.</h2>
+          <h2 id="inscr-h" class="display-3 enroll-title" data-reveal>Costo y respaldo académico</h2>
           <p class="enroll-cert muted" data-reveal>{d.certification}</p>
 
           {
@@ -254,7 +321,7 @@ const jsonLd = {
         <div class="wrap">
           <h2 id="otros-prog" class="eyebrow eyebrow-gold block-h" data-reveal>Otros programas</h2>
           <div class="otros-grid" data-reveal-group data-reveal-stagger="0.08">
-            {otros.map((item) => <ProgramCard item={item} />)}
+            {otros.map((item) => <ProgramCard item={item} compacto />)}
           </div>
         </div>
       </section>
@@ -264,7 +331,158 @@ const jsonLd = {
   <Newsletter />
 </BaseLayout>
 
+<script>
+  /* La imagen del programa sigue al cursor, igual que en el resto del sitio. */
+  const fino = window.matchMedia('(hover: hover) and (pointer: fine)').matches;
+  const reducido = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const imagen = document.querySelector<HTMLElement>('[data-tilt]');
+
+  if (fino && !reducido && imagen) {
+    let caja: DOMRect | null = null;
+    let frame = 0;
+
+    imagen.addEventListener('pointerenter', () => {
+      caja = imagen.getBoundingClientRect();
+      imagen.classList.add('is-tracking');
+    });
+
+    imagen.addEventListener('pointermove', (e: PointerEvent) => {
+      if (frame) return;
+      frame = requestAnimationFrame(() => {
+        frame = 0;
+        if (!caja) caja = imagen.getBoundingClientRect();
+        const lim = (v: number): number => Math.max(-1, Math.min(1, v));
+        imagen.style.setProperty('--mx', lim(((e.clientX - caja.left) / caja.width) * 2 - 1).toFixed(3));
+        imagen.style.setProperty('--my', lim(((e.clientY - caja.top) / caja.height) * 2 - 1).toFixed(3));
+      });
+    });
+
+    imagen.addEventListener('pointerleave', () => {
+      if (frame) cancelAnimationFrame(frame);
+      frame = 0;
+      caja = null;
+      imagen.classList.remove('is-tracking');
+      imagen.style.setProperty('--mx', '0');
+      imagen.style.setProperty('--my', '0');
+    });
+
+    window.addEventListener('scroll', () => { caja = null; }, { passive: true });
+  }
+</script>
+
 <style>
+  /* --- ficha del programa ----------------------------------------------
+     Igual que la ficha de un documento: la imagen a la izquierda, entera —no
+     recortada—, y a la derecha lo que decide una matrícula. */
+  .prog-cabecera {
+    padding-top: clamp(30px, 3.4vh, 46px);
+    padding-bottom: clamp(40px, 4.5vw, 64px);
+    border-bottom-left-radius: clamp(48px, 11vw, 168px);
+  }
+  .prog-cabecera-inner {
+    display: grid;
+    gap: clamp(28px, 3.5vw, 56px);
+    /* La imagen, centrada contra el texto: anclada arriba dejaba un hueco
+       enorme debajo cuando la columna de la derecha era larga. */
+    align-items: center;
+  }
+  @media (min-width: 900px) {
+    .prog-cabecera-inner { grid-template-columns: minmax(0, 420px) minmax(0, 1fr); }
+  }
+  @media (min-width: 1200px) {
+    .prog-cabecera-inner { grid-template-columns: minmax(0, 520px) minmax(0, 1fr); }
+  }
+
+  /* La imagen sigue al cursor, como las portadas del resto del sitio. */
+  .prog-imagen {
+    overflow: hidden;
+    border-radius: 4px 22px 4px 4px;
+    background: var(--color-ink);
+    transform: perspective(1600px)
+      rotateY(calc(-3deg + var(--mx, 0) * 6deg))
+      rotateX(calc(var(--my, 0) * -5deg));
+    box-shadow:
+      calc(-6px + var(--mx, 0) * -9px) 14px 30px rgb(0 0 0 / 0.28),
+      calc(-14px + var(--mx, 0) * -20px) 34px 68px rgb(0 0 0 / 0.32);
+    transition: transform 640ms cubic-bezier(0.22, 0.61, 0.36, 1), box-shadow 640ms ease;
+  }
+  .prog-imagen.is-tracking { transition-duration: 160ms; }
+  .prog-imagen img { width: 100%; height: auto; }
+
+  .prog-crumb { margin-bottom: 22px; }
+  .prog-crumb .arw { transition: transform 240ms cubic-bezier(0.22, 0.61, 0.36, 1); }
+  .prog-crumb a:hover .arw { transform: translateX(-4px); }
+
+  .prog-kicker {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 8px 16px;
+    font-size: 10.5px;
+    font-weight: 700;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    text-align: left;
+  }
+  .prog-clase { color: var(--color-gold); }
+  .prog-abierto { color: var(--color-teal-300); }
+
+  .prog-titulo {
+    margin-top: 16px;
+    font-size: clamp(1.8rem, 3.1vw, 2.7rem);
+    font-weight: 600;
+    line-height: 1.1;
+    letter-spacing: -0.032em;
+    max-width: 20ch;
+  }
+  .prog-titulo.is-long { font-size: clamp(1.55rem, 2.5vw, 2.2rem); max-width: 26ch; }
+
+  .prog-resumen {
+    margin-top: 20px;
+    font-size: 14.5px;
+    line-height: 1.72;
+    color: color-mix(in srgb, #f5f3ed 80%, transparent);
+  }
+
+  .prog-datos {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+    gap: 18px 34px;
+    margin: 26px 0 0;
+  }
+  .prog-datos .is-wide { grid-column: 1 / -1; }
+  .prog-datos dt {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--color-teal-300);
+  }
+  .prog-datos dd { margin: 6px 0 0; font-size: 13.5px; line-height: 1.5; }
+
+  /* En la portada, lo que se busca al llegar: cuánto cuesta y por dónde se
+     entra. Centrado, como el resto del mensaje. */
+  .prog-actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 16px 28px;
+    margin-top: 30px;
+  }
+  .prog-precio { display: flex; align-items: baseline; gap: 12px; }
+  .prog-precio-hoy {
+    font-family: var(--font-display);
+    font-size: clamp(1.7rem, 2.6vw, 2.2rem);
+    font-weight: 600;
+    letter-spacing: -0.028em;
+  }
+  .prog-precio-antes {
+    font-size: 14px;
+    text-decoration: line-through;
+    color: color-mix(in srgb, #f5f3ed 58%, transparent);
+  }
+  .prog-botones { display: flex; flex-wrap: wrap; gap: 10px; }
+
   .prog-actions {
     display: flex;
     flex-wrap: wrap;
@@ -316,20 +534,15 @@ const jsonLd = {
   .malla-eyebrow { margin-top: 26px; }
   .malla-title { margin-top: 14px; margin-bottom: 40px; max-width: 16ch; }
 
-  .malla { display: grid; gap: 1px; }
+  /* Sin filete vertical entre columnas: con un número impar de módulos,
+     ese borde dejaba una ele suelta colgando en la última fila. Separa el
+     hueco, que no puede quedar descuadrado. */
+  .malla { display: grid; gap: 0 clamp(32px, 4vw, 64px); }
   @media (min-width: 780px) { .malla { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 
   .module {
     padding: 26px 0;
     border-top: 1px solid var(--line-dark);
-  }
-  @media (min-width: 780px) {
-    .module:nth-child(odd) { padding-right: 32px; }
-    .module:nth-child(even) {
-      padding-left: 32px;
-      border-left: 1px solid var(--line-dark);
-      margin-left: -1px;
-    }
   }
 
   .module-head { display: flex; align-items: baseline; gap: 14px; }
@@ -360,17 +573,10 @@ const jsonLd = {
   }
 
   /* --- claustro --- */
-  .faculty { display: grid; gap: 1px; }
+  /* Igual que la malla: separa el hueco, no un filete. */
+  .faculty { display: grid; gap: 0 clamp(32px, 4vw, 68px); }
   @media (min-width: 820px) { .faculty { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
   .teacher { padding: 24px 0; border-top: 1px solid var(--line-light); }
-  @media (min-width: 820px) {
-    .teacher:nth-child(odd) { padding-right: 34px; }
-    .teacher:nth-child(even) {
-      padding-left: 34px;
-      border-left: 1px solid var(--line-light);
-      margin-left: -1px;
-    }
-  }
   .teacher-name { font-size: 1.2rem; }
   .teacher-points { list-style: none; margin: 14px 0 0; padding: 0; }
   .teacher-points li {
@@ -447,6 +653,14 @@ const jsonLd = {
   .enroll-partners ul { list-style: none; margin: 10px 0 0; padding: 0; font-size: 12.5px; }
   .enroll-partners li + li { margin-top: 5px; }
 
-  .otros-grid { display: grid; gap: 16px; }
-  @media (min-width: 760px) { .otros-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  /* Tres en fila, del tamaño que da la columna: con cinco quedaban demasiado
+     estrechas para que el título se leyera de un vistazo. */
+  .otros-grid {
+    display: grid;
+    gap: 22px;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  }
+  @media (min-width: 900px) {
+    .otros-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  }
 </style>

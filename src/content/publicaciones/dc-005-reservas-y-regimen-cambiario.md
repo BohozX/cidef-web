@@ -1,6 +1,6 @@
 ---
 title: "Reservas internacionales y régimen cambiario: una lectura de la transición"
-type: "Documento de coyuntura"
+type: "Informe"
 serial: "Nº 005"
 date: 2026-05-22
 authors:

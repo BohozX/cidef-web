@@ -2,10 +2,9 @@
 import { getCollection } from 'astro:content';
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import PageHero from '../../components/PageHero.astro';
+import { covers } from '../../site.config';
 import ProgramCard from '../../components/ProgramCard.astro';
-import InstitutionalStrip from '../../components/InstitutionalStrip.astro';
 import Newsletter from '../../components/Newsletter.astro';
-import { site } from '../../site.config';
 
 const programas = (await getCollection('formacion')).sort((a, b) => a.data.order - b.data.order);
 
@@ -19,107 +18,153 @@ const facts = [
   { label: 'Modalidad', value: 'Virtual en vivo' },
 ];
 
-const requisitos = programas[0]?.data.requirements ?? [];
+/* Las clases de programa, de más larga a más corta. Solo se ofrecen como
+   viñeta las que tienen algo detrás. */
+const CLASES = ['Diplomado', 'Curso de experto', 'Curso', 'Curso rápido', 'Taller'] as const;
+
+const PLURAL: Record<(typeof CLASES)[number], string> = {
+  Diplomado: 'Diplomados',
+  'Curso de experto': 'Cursos de experto',
+  Curso: 'Cursos',
+  'Curso rápido': 'Cursos rápidos',
+  Taller: 'Talleres',
+};
+
+const clases = CLASES.filter((c) => programas.some((p) => p.data.kind === c)).map((c) => ({
+  tipo: c,
+  label: PLURAL[c],
+}));
+
 ---
 
 <BaseLayout
   title="Formación"
-  description="Diplomados de posgrado en gestión minera, modelación macroeconómica y modelación econométrica aplicada, con certificación de la Universidad Franz Tamayo."
+  description="Diplomados, cursos de experto, cursos rápidos y talleres en economía aplicada, econometría y datos, dictados por especialistas en ejercicio."
+  bleed
 >
   <PageHero
     eyebrow="Formación"
-    title="Formación de expertos, para expertos."
-    lede="Diplomados de posgrado dictados por especialistas en ejercicio —banca central, regulación y academia—, con clases en vivo, casos bolivianos y certificación universitaria."
+    title="Formación de expertos, para expertos"
+    lede="Diplomados, cursos de experto, cursos rápidos y talleres dictados por especialistas en ejercicio —banca central, regulación y academia—, con clases en vivo y casos bolivianos."
     facts={facts}
+    cover={covers.formacion}
   />
 
   <section class="surface-light section" aria-labelledby="programas">
     <div class="wrap">
       <h2 id="programas" class="eyebrow eyebrow-gold form-h" data-reveal>Oferta vigente</h2>
 
+      <div class="form-clases no-print" role="group" aria-label="Clase de programa" data-reveal>
+        <button type="button" class="form-clase is-on" data-clase="" aria-pressed="true">Todas</button>
+        {
+          clases.map((c) => (
+            <button type="button" class="form-clase" data-clase={c.tipo} aria-pressed="false">
+              {c.label}
+            </button>
+          ))
+        }
+      </div>
+
+      {/* Sin cifra a la vista: la rejilla ya muestra cuánto hay. Se conserva
+          para lectores de pantalla, que necesitan saber qué quedó al filtrar. */}
+      <p class="sr-only" data-form-count aria-live="polite">
+        {programas.length} programas
+      </p>
+
       <div class="prog-grid" data-reveal-group data-reveal-stagger="0.08">
-        {programas.map((item) => <ProgramCard item={item} />)}
+        {programas.map((item) => (
+          <div class="form-item" data-reveal data-clase={item.data.kind}>
+            <ProgramCard item={item} />
+          </div>
+        ))}
       </div>
     </div>
   </section>
 
-  <!-- CERTIFICACIÓN Y REQUISITOS ------------------------------------------- -->
-  <section class="surface-deep section" aria-labelledby="cert">
-    <div class="wrap">
-      <div class="rule rule-draw"></div>
-
-      <div class="cert-grid">
-        <div>
-          <p class="eyebrow eyebrow-gold" data-reveal>Respaldo y certificación</p>
-          <h2 id="cert" class="display-2 cert-title" data-reveal>
-            Diploma con validez nacional e internacional.
-          </h2>
-          <p class="cert-text muted" data-reveal>
-            Los programas son auspiciados por el Colegio de Economistas de La Paz,
-            la Escuela de Postgrado MSC y el CIDEF. El diploma es emitido y
-            respaldado por la Universidad Franz Tamayo, con validez para
-            actualización profesional, concursos públicos y acreditación de
-            competencias sectoriales.
-          </p>
-        </div>
-
-        <div class="cert-side">
-          <h3 class="eyebrow muted req-h" data-reveal>Requisitos de inscripción</h3>
-          <ol class="req-list" data-reveal-group data-reveal-stagger="0.05">
-            {
-              requisitos.map((r, i) => (
-                <li data-reveal>
-                  <span class="index-num">{String(i + 1).padStart(2, '0')}</span>
-                  <span>{r}</span>
-                </li>
-              ))
-            }
-          </ol>
-          <p class="req-note muted" data-reveal>
-            La documentación para el trámite del diploma se presenta en fólder
-            amarillo tamaño oficio, en sobre manila cerrado rotulado con nombres
-            y apellidos, institución, departamento, teléfono y correo, en la
-            dirección del Colegio de Economistas de La Paz.
-          </p>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <!-- CONTACTO -------------------------------------------------------------- -->
-  <section class="surface-tint section-tight" aria-labelledby="inscripcion">
-    <div class="wrap">
-      <div class="rule rule-draw"></div>
-      <div class="contact-grid">
-        <div>
-          <p class="eyebrow eyebrow-gold" data-reveal>Inscripciones</p>
-          <h2 id="inscripcion" class="display-3 contact-title" data-reveal>
-            Consulta cupos y descuentos grupales.
-          </h2>
-        </div>
-        <div class="contact-body" data-reveal>
-          <p class="contact-line">
-            <span class="eyebrow muted">Teléfono / WhatsApp</span>
-            <span class="tnum contact-phones">{site.contact.phones.join(' · ')}</span>
-          </p>
-          <p class="contact-line">
-            <span class="eyebrow muted">Dirección</span>
-            <span>{site.contact.address}<br />{site.contact.addressCity}</span>
-          </p>
-          <p class="contact-line">
-            <span class="eyebrow muted">Correo</span>
-            <a href={`mailto:${site.contact.email}`} class="link-underline">{site.contact.email}</a>
-          </p>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <InstitutionalStrip tone="light" />
   <Newsletter />
 </BaseLayout>
 
+<script>
+  /* Filtro por clase de programa. Mismo gesto que en publicaciones. */
+  const botones = Array.from(document.querySelectorAll<HTMLButtonElement>('[data-clase]:not(.form-item)'));
+  const items = Array.from(document.querySelectorAll<HTMLElement>('.form-item'));
+  const cuenta = document.querySelector<HTMLElement>('[data-form-count]');
+
+  if (items.length > 0) {
+    botones.forEach((b) =>
+      b.addEventListener('click', () => {
+        const clase = b.dataset.clase ?? '';
+        let visibles = 0;
+
+        for (const el of items) {
+          const ok = clase === '' || el.dataset.clase === clase;
+          el.hidden = !ok;
+          if (ok) visibles += 1;
+        }
+
+        botones.forEach((otro) => {
+          const activo = otro === b;
+          otro.classList.toggle('is-on', activo);
+          otro.setAttribute('aria-pressed', String(activo));
+        });
+
+        if (cuenta) {
+          cuenta.textContent = visibles === 1 ? '1 programa' : `${visibles} programas`;
+        }
+      }),
+    );
+  }
+</script>
+
 <style>
+  /* Viñetas de clase: mismas que las de publicaciones, en un renglón y de
+     margen a margen. */
+  .form-clases {
+    display: flex;
+    flex-wrap: nowrap;
+    justify-content: space-between;
+    gap: 6px;
+    margin-top: 18px;
+    overflow-x: auto;
+    scrollbar-width: none;
+    padding: 6px 2px 10px;
+    margin-inline: -2px;
+  }
+  .form-clases::-webkit-scrollbar { width: 0; height: 0; }
+
+  .form-clase {
+    display: inline-flex;
+    align-items: center;
+    flex: 0 0 auto;
+    padding: 7px 16px;
+    border: 1px solid var(--line, var(--line-light));
+    border-radius: 999px;
+    background: transparent;
+    color: inherit;
+    font-size: 12px;
+    font-weight: 500;
+    white-space: nowrap;
+    cursor: pointer;
+    transition: transform 260ms cubic-bezier(0.22, 0.61, 0.36, 1),
+      border-color 220ms ease, background-color 220ms ease, color 220ms ease,
+      box-shadow 260ms ease;
+  }
+  .form-clase:hover,
+  .form-clase:focus-visible {
+    transform: translateY(-2px);
+    border-color: var(--color-gold);
+    box-shadow: 0 10px 20px -12px rgb(3 26 36 / 0.4);
+  }
+  .form-clase:active { transform: translateY(0); }
+  .form-clase.is-on {
+    background: var(--color-ink);
+    border-color: var(--color-ink);
+    color: var(--color-paper);
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .form-clase:hover, .form-clase:focus-visible { transform: none; }
+  }
+
   .form-h { display: block; margin-bottom: 26px; }
 
   .prog-grid { display: grid; gap: 16px; }
