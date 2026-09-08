@@ -1,6 +1,7 @@
 ---
 import { getCollection } from 'astro:content';
 import indicators from '../data/indicators.json';
+import { withBase } from '../lib/url';
 
 /**
  * Buscador global. El índice se construye en tiempo de build y se embebe como
@@ -16,7 +17,7 @@ const [publicaciones, eventos, formacion, archivo] = await Promise.all([
   getCollection('archivo'),
 ]);
 
-const index: Entry[] = [
+const indexRaw: Entry[] = [
   ...publicaciones.map((p) => ({
     t: p.data.title,
     u: `/analisis/${p.id}`,
@@ -54,6 +55,10 @@ const index: Entry[] = [
   { t: 'Agenda', u: '/agenda', k: 'Sección', d: 'Seminarios y convocatorias' },
   { t: 'Nosotros', u: '/nosotros', k: 'Sección', d: 'Quiénes somos y equipo' },
 ];
+
+/* El índice viaja al navegador ya resuelto: el script de búsqueda solo lo
+   filtra y no debe conocer el `base` del despliegue. */
+const index: Entry[] = indexRaw.map((e) => ({ ...e, u: withBase(e.u) }));
 ---
 
 <div id="buscador" class="search-overlay" data-search-panel data-open="false" aria-hidden="true" role="dialog" aria-modal="true" aria-label="Buscar en el sitio">

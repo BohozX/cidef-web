@@ -1,5 +1,6 @@
 ---
 import { site } from '../site.config';
+import { withBase, withBaseSrcset } from '../lib/url';
 
 /**
  * Portada.
@@ -14,11 +15,11 @@ import { site } from '../site.config';
 <section class="hero" data-parallax-scope aria-labelledby="hero-title">
   <div class="hero-media">
     <picture class="hero-pic" data-hero-backdrop data-parallax="5">
-      <source type="image/avif" srcset={site.hero.srcset.avif} sizes="100vw" />
-      <source type="image/webp" srcset={site.hero.srcset.webp} sizes="100vw" />
+      <source type="image/avif" srcset={withBaseSrcset(site.hero.srcset.avif)} sizes="100vw" />
+      <source type="image/webp" srcset={withBaseSrcset(site.hero.srcset.webp)} sizes="100vw" />
       <img
-        src={site.hero.src}
-        srcset={site.hero.srcset.jpg}
+        src={withBase(site.hero.src)}
+        srcset={withBaseSrcset(site.hero.srcset.jpg)}
         sizes="100vw"
         alt={site.hero.alt}
         class="hero-img"

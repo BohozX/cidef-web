@@ -1,6 +1,7 @@
 ---
 import type { CollectionEntry } from 'astro:content';
 import { authorList, longDate, year } from '../lib/format';
+import { withBase } from '../lib/url';
 
 export interface Props {
   item: CollectionEntry<'publicaciones'>;
@@ -16,13 +17,14 @@ const iso = d.date.toISOString();
 /* Las portadas se generan con `tools/generate_covers.py` y toman el nombre
    del `id` de la entrada. Si más adelante hay portadas reales, se dejan en
    la misma carpeta con el mismo nombre. */
-const cover = `/media/portadas/${item.id}`;
+const cover = withBase(`/media/portadas/${item.id}`);
+const href = withBase(`/analisis/${item.id}`);
 ---
 
 {
   view === 'cover' ? (
     <article class="res-cover" data-reveal>
-      <a href={`/analisis/${item.id}`}>
+      <a href={href}>
         <div class="cover-frame">
           <picture>
             <source type="image/webp" srcset={`${cover}.webp`} />
@@ -54,7 +56,7 @@ const cover = `/media/portadas/${item.id}`;
     </article>
   ) : view === 'list' ? (
     <article class="row-item res-row" data-reveal>
-      <a href={`/analisis/${item.id}`} class="res-row-link">
+      <a href={href} class="res-row-link">
         <div class="res-row-meta">
           {index !== undefined && <span class="index-num">{String(index).padStart(2, '0')}</span>}
           <span class="chip chip-teal">{d.type}</span>
@@ -90,7 +92,7 @@ const cover = `/media/portadas/${item.id}`;
     </article>
   ) : (
     <article class="panel panel-hover res-card" data-reveal>
-      <a href={`/analisis/${item.id}`}>
+      <a href={href}>
         <div class="res-card-top">
           <span class="chip chip-teal">{d.type}</span>
           <span class="tnum muted res-year">{year(iso)}</span>

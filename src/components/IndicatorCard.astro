@@ -3,6 +3,7 @@ import Sparkline from './Sparkline.astro';
 import type { Indicator } from '../lib/indicators';
 import { tail } from '../lib/sparkline';
 import { deltaLabel, direction, monthYear, num } from '../lib/format';
+import { withBase } from '../lib/url';
 
 export interface Props {
   indicator: Indicator;
@@ -20,7 +21,7 @@ const strokeColor = ind.own ? '#d29a28' : '#008c85';
 ---
 
 <a
-  href={`/radar/${ind.id}`}
+  href={withBase(`/radar/${ind.id}`)}
   class:list={['ind-card', 'panel', 'panel-hover', compact && 'is-compact']}
   data-reveal
 >

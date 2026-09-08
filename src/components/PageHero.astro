@@ -1,4 +1,6 @@
 ---
+import { withBase } from '../lib/url';
+
 export interface Props {
   eyebrow: string;
   title: string;
@@ -17,7 +19,7 @@ const { eyebrow, title, lede, parent, facts = [] } = Astro.props;
     {
       parent && (
         <nav class="page-crumb" aria-label="Ruta de navegación">
-          <a href={parent.href} class="link-arrow page-crumb-link">
+          <a href={withBase(parent.href)} class="link-arrow page-crumb-link">
             <svg class="arw" viewBox="0 0 16 16" width="12" height="12" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.7">
               <path d="M14 8H3M7 4L3 8l4 4" stroke-linecap="round" stroke-linejoin="round" />
             </svg>

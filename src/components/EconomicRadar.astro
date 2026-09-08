@@ -2,6 +2,7 @@
 import IndicatorCard from './IndicatorCard.astro';
 import { featured, lastUpdated } from '../lib/indicators';
 import { shortDate } from '../lib/format';
+import { withBase } from '../lib/url';
 
 const items = featured();
 const updated = shortDate(lastUpdated());
@@ -37,13 +38,13 @@ const updated = shortDate(lastUpdated());
     </div>
 
     <div class="radar-foot">
-      <a href="/radar" class="btn btn-primary">
+      <a href={withBase('/radar')} class="btn btn-primary">
         Ver todos los indicadores
         <svg class="arw" viewBox="0 0 16 16" width="13" height="13" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8">
           <path d="M2 8h11M9 4l4 4-4 4" stroke-linecap="round" stroke-linejoin="round" />
         </svg>
       </a>
-      <a href="/radar?cat=centro" class="link-arrow">
+      <a href={withBase('/radar?cat=centro')} class="link-arrow">
         Indicadores del Centro
         <svg class="arw" viewBox="0 0 16 16" width="13" height="13" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.7">
           <path d="M2 8h11M9 4l4 4-4 4" stroke-linecap="round" stroke-linejoin="round" />

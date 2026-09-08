@@ -1,5 +1,6 @@
 ---
 import { site } from '../site.config';
+import { withBase } from '../lib/url';
 
 /**
  * Marca institucional CIDEF.
@@ -55,7 +56,7 @@ const ratio = ratios[key] ?? 758 / 220;
 {
   src && (
     <img
-      src={src}
+      src={withBase(src)}
       alt={`${site.name} — ${site.legalName}`}
       class={className}
       width={Math.round(height * ratio)}

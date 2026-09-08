@@ -1,6 +1,7 @@
 ---
 import type { CollectionEntry } from 'astro:content';
 import { num } from '../lib/format';
+import { withBase } from '../lib/url';
 
 export interface Props {
   item: CollectionEntry<'formacion'>;
@@ -11,11 +12,11 @@ export interface Props {
 
 const { item, featured = false, cover = false } = Astro.props;
 const d = item.data;
-const coverSrc = `/media/portadas/${item.id}`;
+const coverSrc = withBase(`/media/portadas/${item.id}`);
 ---
 
 <article class:list={['panel', 'panel-hover', 'program', featured && 'is-featured']} data-reveal>
-  <a href={`/formacion/${item.id}`} class="program-link">
+  <a href={withBase(`/formacion/${item.id}`)} class="program-link">
     {
       cover && (
         <div class="program-cover">

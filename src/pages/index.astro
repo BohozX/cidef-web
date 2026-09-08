@@ -15,6 +15,7 @@ import Arc from '../components/Arc.astro';
 
 import { site } from '../site.config';
 import { authorList, longDate, num } from '../lib/format';
+import { withBase, withBaseSrcset } from '../lib/url';
 
 const [publicaciones, eventos, formacion, investigadores] = await Promise.all([
   getCollection('publicaciones'),
@@ -88,8 +89,8 @@ const fichasInvestigacion: RotatorSlide[] = recientes.map((item) => {
   if (d.doi) facts.push({ label: 'DOI', value: d.doi });
 
   return {
-    href: `/analisis/${item.id}`,
-    cover: `/media/portadas/${item.id}`,
+    href: withBase(`/analisis/${item.id}`),
+    cover: withBase(`/media/portadas/${item.id}`),
     coverAlt: `Portada de ${d.title}`,
     kicker: d.type,
     serial: d.serial,
@@ -106,8 +107,8 @@ const fichasFormacion: RotatorSlide[] = programas.map((item) => {
   const d = item.data;
   const precio = d.price.promo ?? d.price.total;
   return {
-    href: `/formacion/${item.id}`,
-    cover: `/media/portadas/${item.id}`,
+    href: withBase(`/formacion/${item.id}`),
+    cover: withBase(`/media/portadas/${item.id}`),
     coverAlt: `Portada del ${d.title}`,
     kicker: d.kind,
     flag: d.open ? 'Inscripciones abiertas' : undefined,
@@ -143,8 +144,8 @@ const areas = [
     <link
       rel="preload"
       as="image"
-      href={site.hero.src}
-      imagesrcset={site.hero.srcset.avif}
+      href={withBase(site.hero.src)}
+      imagesrcset={withBaseSrcset(site.hero.srcset.avif)}
       imagesizes="100vw"
       type="image/avif"
     />

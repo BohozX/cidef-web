@@ -1,5 +1,6 @@
 ---
 import { getCollection } from 'astro:content';
+import { withBase } from '../lib/url';
 
 /**
  * Archivo Vivo: buscador, filtros y orden. Todo el filtrado ocurre en el
@@ -97,7 +98,7 @@ const stats = [
           data-title={e.data.title.toLowerCase()}
           data-haystack={`${e.data.title} ${e.data.kind} ${e.data.author ?? ''} ${e.data.description} ${e.data.topics.join(' ')}`.toLowerCase()}
         >
-          <a href={e.data.href ?? '#'} class="archive-link">
+          <a href={withBase(e.data.href ?? '#')} class="archive-link">
             <span class="archive-kind">{e.data.kind}</span>
 
             <span class="archive-body">

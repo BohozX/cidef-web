@@ -1,5 +1,6 @@
 ---
 import { site } from '../site.config';
+import { withBase } from '../lib/url';
 import Logo from './Logo.astro';
 
 const year = new Date().getFullYear();
@@ -66,7 +67,7 @@ const columns = [
               <ul>
                 {col.links.map((l) => (
                   <li>
-                    <a href={l.href} class="link-underline">
+                    <a href={withBase(l.href)} class="link-underline">
                       {l.label}
                     </a>
                   </li>

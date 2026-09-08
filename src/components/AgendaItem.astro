@@ -1,6 +1,7 @@
 ---
 import type { CollectionEntry } from 'astro:content';
 import { dayMonth, isFuture } from '../lib/format';
+import { withBase } from '../lib/url';
 
 export interface Props {
   item: CollectionEntry<'eventos'>;
@@ -14,7 +15,7 @@ const upcoming = isFuture(iso);
 ---
 
 <article class="row-item agenda-row" data-reveal>
-  <a href={`/agenda/${item.id}`} class="agenda-link">
+  <a href={withBase(`/agenda/${item.id}`)} class="agenda-link">
     <div class="agenda-date" aria-hidden="true">
       <span class="agenda-day tnum">{day}</span>
       <span class="agenda-month">{month}</span>

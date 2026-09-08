@@ -9,6 +9,7 @@ import ResearchCard from '../../components/ResearchCard.astro';
 import Newsletter from '../../components/Newsletter.astro';
 import { site } from '../../site.config';
 import { apaAuthors, authorList, familyName, longDate, year } from '../../lib/format';
+import { withBase } from '../../lib/url';
 
 export const getStaticPaths: GetStaticPaths = async () => {
   const items = await getCollection('publicaciones');
@@ -25,7 +26,7 @@ const { Content } = await render(entry);
 
 const iso = d.date.toISOString();
 const y = year(iso);
-const url = new URL(`/analisis/${entry.id}`, Astro.site ?? site.url).toString();
+const url = new URL(withBase(`/analisis/${entry.id}`), Astro.site ?? site.url).toString();
 
 /* ------------------------------------------------------------- citación -- */
 const apa = `${apaAuthors(d.authors)} (${y}). ${d.title}${d.serial ? ` (${d.type} ${d.serial})` : ''}. ${site.name}. ${d.externalUrl ?? url}`;
@@ -174,7 +175,7 @@ const jsonLd = {
                 <ul class="downloads">
                   {d.files.map((f) => (
                     <li>
-                      <a href={f.href} class="download" rel="noopener">
+                      <a href={withBase(f.href)} class="download" rel="noopener">
                         <span class="download-label">{f.label}</span>
                         <span class="download-kind muted">{f.kind}</span>
                         <svg class="arw" viewBox="0 0 16 16" width="13" height="13" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.7">

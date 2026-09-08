@@ -14,6 +14,8 @@
  * `public/media/aliados/`. Una entrada sin `logo` muestra sus iniciales.
  */
 
+import { withBase } from '../lib/url';
+
 export interface Props {
   /** Casillas visibles. Se recorta al número de asociados disponibles. */
   slots?: number;
@@ -26,7 +28,7 @@ type Partner = {
   url?: string;
 };
 
-const partners: Partner[] = [
+const partnersRaw: Partner[] = [
   {
     name: 'Colegio de Economistas de La Paz',
     short: 'CELP',
@@ -53,6 +55,13 @@ const partners: Partner[] = [
   { name: 'Observatorio Demo de Datos (ejemplo)', short: 'ODD', logo: '/media/aliados/demo-observatorio.png' },
   { name: 'Red Demo de Investigación (ejemplo)', short: 'RDI', logo: '/media/aliados/demo-red.png' },
 ];
+
+/* Las rutas se resuelven una sola vez aquí: el mismo array alimenta el marcado
+   y el `data-pool` que lee el script de rotación en el navegador. */
+const partners: Partner[] = partnersRaw.map((p) => ({
+  ...p,
+  logo: p.logo ? withBase(p.logo) : null,
+}));
 
 const { slots = 5 } = Astro.props;
 const visible = Math.min(slots, partners.length);

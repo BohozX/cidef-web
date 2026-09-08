@@ -6,6 +6,7 @@ import ResearcherCard from '../components/ResearcherCard.astro';
 import InstitutionalStrip from '../components/InstitutionalStrip.astro';
 import Newsletter from '../components/Newsletter.astro';
 import { site } from '../site.config';
+import { withBase } from '../lib/url';
 
 const [investigadores, publicaciones, formacion] = await Promise.all([
   getCollection('investigadores'),
@@ -182,7 +183,7 @@ const facts = [
               </p>
             </div>
             <p data-reveal>
-              <a href="/formacion" class="link-arrow">
+              <a href={withBase('/formacion')} class="link-arrow">
                 Ver la oferta académica
                 <svg class="arw" viewBox="0 0 16 16" width="13" height="13" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.7">
                   <path d="M2 8h11M9 4l4 4-4 4" stroke-linecap="round" stroke-linejoin="round" />

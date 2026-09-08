@@ -1,6 +1,7 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
 import { nav } from '../site.config';
+import { withBase } from '../lib/url';
 ---
 
 <BaseLayout
@@ -23,7 +24,7 @@ import { nav } from '../site.config';
         {
           nav.map((item, i) => (
             <li>
-              <a href={item.href}>
+              <a href={withBase(item.href)}>
                 <span class="index-num">{String(i + 1).padStart(2, '0')}</span>
                 <span class="nf-label">{item.label}</span>
                 {item.description && <span class="nf-desc muted">{item.description}</span>}

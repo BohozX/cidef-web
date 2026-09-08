@@ -1,0 +1,47 @@
+[
+  {
+    "id": "panorama",
+    "name": "Panorama general",
+    "description": "Lectura transversal de la economía boliviana en un solo tablero."
+  },
+  {
+    "id": "precios",
+    "name": "Precios",
+    "description": "Inflación, núcleo, alimentos y expectativas de precios."
+  },
+  {
+    "id": "actividad",
+    "name": "Actividad económica",
+    "description": "Producto, índices de actividad y desempeño sectorial."
+  },
+  {
+    "id": "externo",
+    "name": "Sector externo",
+    "description": "Balanza de pagos, reservas, tipo de cambio y comercio exterior."
+  },
+  {
+    "id": "monetario",
+    "name": "Monetario y financiero",
+    "description": "Agregados monetarios, crédito, depósitos y tasas de interés."
+  },
+  {
+    "id": "fiscal",
+    "name": "Sector fiscal",
+    "description": "Resultado fiscal, deuda pública, ingresos y gasto."
+  },
+  {
+    "id": "laboral",
+    "name": "Mercado laboral",
+    "description": "Empleo, desocupación, informalidad e ingresos laborales."
+  },
+  {
+    "id": "comercio",
+    "name": "Comercio",
+    "description": "Exportaciones, importaciones y saldo comercial por sector."
+  },
+  {
+    "id": "centro",
+    "name": "Indicadores del Centro",
+    "description": "Estimaciones propias del CIDEF con metodología publicada."
+  }
+]

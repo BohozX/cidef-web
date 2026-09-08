@@ -1,0 +1,57 @@
+name: Desplegar en GitHub Pages
+
+# El sitio se reconstruye y publica en cada empuje a `main`. La variable
+# GITHUB_PAGES hace que astro.config.mjs use el prefijo /cidef-web/, que es
+# donde GitHub sirve los repositorios de proyecto.
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Un despliegue a la vez, sin cancelar el que ya esté publicando.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  construir:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Descargar el repositorio
+        uses: actions/checkout@v4
+
+      - name: Preparar Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+
+      - name: Instalar dependencias
+        run: npm ci
+
+      - name: Construir el sitio
+        env:
+          GITHUB_PAGES: 'true'
+        run: npm run build
+
+      - name: Subir el artefacto
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+
+  desplegar:
+    needs: construir
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.despliegue.outputs.page_url }}
+    steps:
+      - name: Publicar en GitHub Pages
+        id: despliegue
+        uses: actions/deploy-pages@v4

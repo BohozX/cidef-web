@@ -1,6 +1,7 @@
 ---
 import type { CollectionEntry } from 'astro:content';
 import { dayMonth, isFuture } from '../lib/format';
+import { withBase } from '../lib/url';
 
 /**
  * Agenda con calendario.
@@ -84,7 +85,7 @@ const list = upcoming.slice(0, 4);
                     {day !== null &&
                       (event ? (
                         <a
-                          href={`/agenda/${event.id}`}
+                          href={withBase(`/agenda/${event.id}`)}
                           class="cal-day is-event"
                           data-day={day}
                           aria-label={`${day} de ${MONTHS[month]}: ${event.data.title}`}
@@ -116,7 +117,7 @@ const list = upcoming.slice(0, 4);
         const { day, month: m } = dayMonth(e.data.date.toISOString());
         return (
           <li data-reveal data-event-day={e.data.date.getUTCDate()}>
-            <a href={`/agenda/${e.id}`} class="agenda-entry">
+            <a href={withBase(`/agenda/${e.id}`)} class="agenda-entry">
               <span class="entry-date" aria-hidden="true">
                 <span class="entry-day tnum">{day}</span>
                 <span class="entry-month">{m}</span>
