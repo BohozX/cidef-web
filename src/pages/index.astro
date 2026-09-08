@@ -1,0 +1,274 @@
+---
+import { getCollection } from 'astro:content';
+
+import BaseLayout from '../layouts/BaseLayout.astro';
+import Hero from '../components/Hero.astro';
+import PartnersStrip from '../components/PartnersStrip.astro';
+import SectionHeader from '../components/SectionHeader.astro';
+import FeaturedRotator from '../components/FeaturedRotator.astro';
+import type { RotatorSlide } from '../components/FeaturedRotator.astro';
+import EconomicRadar from '../components/EconomicRadar.astro';
+import CalendarAgenda from '../components/CalendarAgenda.astro';
+import ResearcherCard from '../components/ResearcherCard.astro';
+import Newsletter from '../components/Newsletter.astro';
+import Arc from '../components/Arc.astro';
+
+import { site } from '../site.config';
+import { authorList, longDate, num } from '../lib/format';
+
+const [publicaciones, eventos, formacion, investigadores] = await Promise.all([
+  getCollection('publicaciones'),
+  getCollection('eventos'),
+  getCollection('formacion'),
+  getCollection('investigadores'),
+]);
+
+/** Cuántas fichas entran como máximo en el bloque rotativo. */
+const MAX_FICHAS = 10;
+
+/**
+ * Reparte por tipo de documento, tomando el más reciente de cada uno por
+ * turnos. Así el bloque no se llena de working papers ni de reportes: van
+ * alternándose informes, notas, policy briefs y demás.
+ */
+function variadas<T extends { data: { type: string; date: Date } }>(
+  items: T[],
+  max: number,
+): T[] {
+  const porTipo = new Map<string, T[]>();
+  for (const item of items) {
+    const lista = porTipo.get(item.data.type) ?? [];
+    lista.push(item);
+    porTipo.set(item.data.type, lista);
+  }
+  for (const lista of porTipo.values()) {
+    lista.sort((a, b) => b.data.date.getTime() - a.data.date.getTime());
+  }
+
+  const salida: T[] = [];
+  let quedan = true;
+  while (salida.length < max && quedan) {
+    quedan = false;
+    for (const lista of porTipo.values()) {
+      const siguiente = lista.shift();
+      if (!siguiente) continue;
+      salida.push(siguiente);
+      quedan = true;
+      if (salida.length >= max) break;
+    }
+  }
+  return salida;
+}
+
+/* La publicación destacada abre el bloque; el resto entra alternando tipos. */
+const destacada = publicaciones.filter((p) => p.data.featured);
+const recientes = [
+  ...destacada,
+  ...variadas(
+    publicaciones.filter((p) => !p.data.featured),
+    MAX_FICHAS - destacada.length,
+  ),
+];
+
+const programas = formacion
+  .filter((p) => p.data.open)
+  .sort((a, b) => a.data.order - b.data.order);
+
+/* Las fichas rotativas se normalizan aquí: el componente no sabe de
+   colecciones, solo recibe portada, título, resumen y enlace. */
+const fichasInvestigacion: RotatorSlide[] = recientes.map((item) => {
+  const d = item.data;
+  const facts: { label: string; value: string }[] = [];
+  if (d.topics.length) facts.push({ label: 'Temas', value: d.topics.join(' · ') });
+  if (d.jel.length) facts.push({ label: 'JEL', value: d.jel.join(' · ') });
+  if (d.keywords.length) {
+    facts.push({ label: 'Claves', value: d.keywords.slice(0, 4).join(' · ') });
+  }
+  if (d.pages) facts.push({ label: 'Extensión', value: `${d.pages} páginas` });
+  if (d.doi) facts.push({ label: 'DOI', value: d.doi });
+
+  return {
+    href: `/analisis/${item.id}`,
+    cover: `/media/portadas/${item.id}`,
+    coverAlt: `Portada de ${d.title}`,
+    kicker: d.type,
+    serial: d.serial,
+    demo: d.demo,
+    title: d.title,
+    meta: `${authorList(d.authors)} · ${longDate(d.date.toISOString())}`,
+    summary: d.abstract,
+    facts,
+    cta: 'Leer análisis',
+  };
+});
+
+const fichasFormacion: RotatorSlide[] = programas.map((item) => {
+  const d = item.data;
+  const precio = d.price.promo ?? d.price.total;
+  return {
+    href: `/formacion/${item.id}`,
+    cover: `/media/portadas/${item.id}`,
+    coverAlt: `Portada del ${d.title}`,
+    kicker: d.kind,
+    flag: d.open ? 'Inscripciones abiertas' : undefined,
+    title: d.title,
+    meta: `${d.modality} · certificación ${d.certification.includes('UNIFRANZ') ? 'UNIFRANZ' : 'universitaria'}`,
+    summary: d.summary,
+    facts: [
+      { label: 'Duración', value: `${d.weeks} semanas` },
+      { label: 'Módulos', value: String(d.modules.length) },
+      { label: 'Docentes', value: String(d.faculty.length) },
+      ...(d.tools.length ? [{ label: 'Herramientas', value: d.tools.join(' · ') }] : []),
+      { label: 'Inversión', value: `${d.price.currency} ${num(precio, 0)}` },
+    ],
+    cta: 'Ver programa',
+  };
+});
+
+const equipo = investigadores.sort((a, b) => a.data.order - b.data.order).slice(0, 4);
+
+const areas = [
+  'Macroeconomía',
+  'Desarrollo',
+  'Sector externo',
+  'Finanzas',
+  'Mercado laboral',
+  'Política pública',
+  'Economía digital',
+];
+---
+
+<BaseLayout title={site.name} description={site.shortDescription} bleed>
+  <Fragment slot="head">
+    <link
+      rel="preload"
+      as="image"
+      href={site.hero.src}
+      imagesrcset={site.hero.srcset.avif}
+      imagesizes="100vw"
+      type="image/avif"
+    />
+  </Fragment>
+
+  <Hero />
+
+  <!-- INVESTIGACIÓN ------------------------------------------------------- -->
+  <section class="surface-light section" aria-labelledby="analisis-title">
+    <div class="wrap">
+      <SectionHeader
+        title="Lo último que publicó el centro."
+        href="/analisis"
+        linkLabel="Todos los análisis"
+      />
+
+      <FeaturedRotator slides={fichasInvestigacion} label="Publicaciones recientes" />
+    </div>
+  </section>
+
+  <!-- RADAR ECONÓMICO ------------------------------------------------------ -->
+  <EconomicRadar />
+
+  <!-- FORMACIÓN ------------------------------------------------------------ -->
+  {
+    programas.length > 0 && (
+      <section class="surface-light section" aria-labelledby="formacion-title">
+        <div class="wrap">
+          <SectionHeader
+            title="Diplomados abiertos ahora."
+            href="/formacion"
+            linkLabel="Ver oferta académica"
+          />
+
+          <FeaturedRotator
+            slides={fichasFormacion}
+            label="Programas con inscripción abierta"
+            side="end"
+          />
+        </div>
+      </section>
+    )
+  }
+
+  <!-- AGENDA --------------------------------------------------------------- -->
+  <section class="surface-deep section edge-tr edge-bl" aria-labelledby="agenda-title">
+    <div class="wrap">
+      <SectionHeader
+        title="Lo que viene este mes."
+        href="/agenda"
+        linkLabel="Agenda completa"
+      />
+
+      <CalendarAgenda items={eventos} />
+    </div>
+  </section>
+
+  <!-- NUESTROS ASOCIADOS ---------------------------------------------------- -->
+  <section class="surface-light section-tight" aria-label="Nuestros asociados">
+    <div class="wrap">
+      <PartnersStrip />
+    </div>
+  </section>
+
+  <!-- NOSOTROS ------------------------------------------------------------- -->
+  <section class="surface-mist section nosotros" aria-labelledby="nosotros-title">
+    <Arc size={720} bottom="-24%" right="-10%" opacity={0.11} rings={2} spin={160} class="nosotros-arc" />
+
+    <div class="wrap">
+      <SectionHeader
+        title="Quiénes producen esta investigación."
+        href="/nosotros"
+        linkLabel="Conocer el centro"
+      />
+
+      <ul class="home-areas" data-reveal-group data-reveal-stagger="0.04">
+        {areas.map((a) => <li data-reveal>{a}</li>)}
+      </ul>
+
+      <div class="home-team" data-reveal-group data-reveal-stagger="0.08">
+        {equipo.map((item) => <ResearcherCard item={item} />)}
+      </div>
+    </div>
+  </section>
+
+  <Newsletter />
+</BaseLayout>
+
+<style>
+  .nosotros {
+    position: relative;
+    overflow: clip;
+    border-top-right-radius: clamp(48px, 11vw, 168px);
+  }
+  .nosotros-arc { color: var(--color-teal-300); }
+  .nosotros .wrap { position: relative; }
+
+  .home-areas {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px 12px;
+    list-style: none;
+    margin: 0 0 46px;
+    padding: 0;
+  }
+  .home-areas li {
+    padding: 7px 16px;
+    border: 1px solid var(--line, var(--line-light));
+    border-radius: 999px;
+    font-size: 12.5px;
+    font-weight: 500;
+    transition: border-color 220ms ease, color 220ms ease;
+  }
+  .home-areas li:hover {
+    border-color: var(--color-gold);
+    color: var(--color-gold);
+  }
+
+  .home-team {
+    display: grid;
+    gap: 30px 20px;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  @media (min-width: 900px) {
+    .home-team { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  }
+</style>

@@ -1,0 +1,115 @@
+---
+/**
+ * Suscripción. El `action` está sin configurar a propósito: conectar con el
+ * proveedor de correo (o una Function de Cloudflare) antes de publicar.
+ */
+---
+
+<section class="surface-deep section-tight newsletter" aria-labelledby="news-title">
+  <div class="wrap">
+    <div class="rule rule-draw"></div>
+
+    <div class="news-grid">
+      <div>
+        <p class="eyebrow eyebrow-gold" data-reveal>Boletín</p>
+        <h2 id="news-title" class="display-3 news-title" data-reveal>
+          Recibe cada análisis y la actualización de indicadores.
+        </h2>
+        <p class="news-note muted" data-reveal>
+          Un envío quincenal con las publicaciones nuevas, los cambios en el
+          Radar Económico y las convocatorias abiertas. Sin reenvíos a terceros.
+        </p>
+      </div>
+
+      <form class="news-form" data-reveal novalidate>
+        <div class="news-field">
+          <label class="sr-only" for="news-email">Correo electrónico</label>
+          <input
+            id="news-email"
+            name="email"
+            type="email"
+            required
+            autocomplete="email"
+            class="field news-input"
+            placeholder="tu@correo.com"
+          />
+          <button type="submit" class="btn btn-primary news-submit">
+            Suscribirme
+            <svg class="arw" viewBox="0 0 16 16" width="13" height="13" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8">
+              <path d="M2 8h11M9 4l4 4-4 4" stroke-linecap="round" stroke-linejoin="round" />
+            </svg>
+          </button>
+        </div>
+        <p class="news-legal muted">
+          Al suscribirte aceptas recibir correos del centro. Puedes darte de
+          baja en cualquier momento.
+        </p>
+        <p class="news-status" data-news-status role="status" aria-live="polite"></p>
+      </form>
+    </div>
+  </div>
+</section>
+
+<script>
+  const form = document.querySelector<HTMLFormElement>('.news-form');
+  const status = document.querySelector<HTMLElement>('[data-news-status]');
+  const input = document.querySelector<HTMLInputElement>('#news-email');
+
+  form?.addEventListener('submit', (event) => {
+    event.preventDefault();
+    if (!input || !status) return;
+
+    const value = input.value.trim();
+    const valid = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(value);
+
+    if (!valid) {
+      status.textContent = 'Revisa el correo: no parece una dirección válida.';
+      status.dataset.state = 'error';
+      input.focus();
+      return;
+    }
+
+    // Pendiente: conectar con el proveedor de correo.
+    status.textContent =
+      'Formulario aún no conectado. Configura el destino en Newsletter.astro antes de publicar.';
+    status.dataset.state = 'pending';
+  });
+</script>
+
+<style>
+  .news-grid {
+    display: grid;
+    gap: 30px;
+    padding-top: 28px;
+  }
+  @media (min-width: 900px) {
+    .news-grid {
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+      gap: 64px;
+      align-items: center;
+    }
+  }
+
+  .news-title { margin-top: 14px; max-width: 20ch; }
+  .news-note { margin-top: 14px; font-size: 14px; max-width: 46ch; }
+
+  .news-field {
+    display: grid;
+    gap: 10px;
+  }
+  @media (min-width: 520px) {
+    .news-field { grid-template-columns: minmax(0, 1fr) auto; }
+  }
+  .news-input { height: 46px; }
+  .news-submit { height: 46px; }
+
+  .news-legal { margin-top: 12px; font-size: 11.5px; max-width: 46ch; }
+
+  .news-status {
+    margin-top: 10px;
+    font-size: 12.5px;
+    min-height: 1.2em;
+  }
+  .news-status[data-state='error'] { color: #b64f2a; }
+  .news-status[data-state='pending'] { color: var(--color-teal-600); }
+</style>

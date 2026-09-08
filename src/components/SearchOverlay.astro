@@ -1,0 +1,275 @@
+---
+import { getCollection } from 'astro:content';
+import indicators from '../data/indicators.json';
+
+/**
+ * Buscador global. El índice se construye en tiempo de build y se embebe como
+ * JSON; el filtrado ocurre en el cliente sin dependencias externas.
+ */
+
+type Entry = { t: string; u: string; k: string; d: string };
+
+const [publicaciones, eventos, formacion, archivo] = await Promise.all([
+  getCollection('publicaciones'),
+  getCollection('eventos'),
+  getCollection('formacion'),
+  getCollection('archivo'),
+]);
+
+const index: Entry[] = [
+  ...publicaciones.map((p) => ({
+    t: p.data.title,
+    u: `/analisis/${p.id}`,
+    k: p.data.type,
+    d: p.data.topics.join(' · '),
+  })),
+  ...eventos.map((e) => ({
+    t: e.data.title,
+    u: `/agenda/${e.id}`,
+    k: e.data.type,
+    d: e.data.location,
+  })),
+  ...formacion.map((f) => ({
+    t: f.data.title,
+    u: `/formacion/${f.id}`,
+    k: f.data.kind,
+    d: `${f.data.weeks} semanas · ${f.data.modality}`,
+  })),
+  ...archivo.map((a) => ({
+    t: a.data.title,
+    u: a.data.href ?? '/archivo',
+    k: a.data.kind,
+    d: a.data.author ?? '',
+  })),
+  ...indicators.map((i) => ({
+    t: i.name,
+    u: `/radar/${i.id}`,
+    k: 'Indicador',
+    d: `${i.frequency} · ${i.source}`,
+  })),
+  { t: 'Radar Económico', u: '/radar', k: 'Sección', d: 'Indicadores de la economía boliviana' },
+  { t: 'Análisis', u: '/analisis', k: 'Sección', d: 'Working papers, reportes y notas' },
+  { t: 'Archivo Vivo', u: '/archivo', k: 'Sección', d: 'Repositorio abierto' },
+  { t: 'Formación', u: '/formacion', k: 'Sección', d: 'Diplomados y oferta académica' },
+  { t: 'Agenda', u: '/agenda', k: 'Sección', d: 'Seminarios y convocatorias' },
+  { t: 'Nosotros', u: '/nosotros', k: 'Sección', d: 'Quiénes somos y equipo' },
+];
+---
+
+<div id="buscador" class="search-overlay" data-search-panel data-open="false" aria-hidden="true" role="dialog" aria-modal="true" aria-label="Buscar en el sitio">
+  <div class="wrap search-head">
+    <span class="eyebrow eyebrow-gold">Buscar</span>
+    <button type="button" data-close class="search-close" aria-label="Cerrar buscador">
+      <svg viewBox="0 0 20 20" width="18" height="18" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.6">
+        <path d="M5 5l10 10M15 5L5 15" stroke-linecap="round" />
+      </svg>
+    </button>
+  </div>
+
+  <div class="wrap search-body">
+    <label class="sr-only" for="q">Buscar publicaciones, indicadores, eventos y recursos</label>
+    <input
+      id="q"
+      type="search"
+      class="search-input"
+      placeholder="Publicaciones, indicadores, eventos…"
+      autocomplete="off"
+      spellcheck="false"
+    />
+    <div class="rule" style="margin-top: 14px"></div>
+    <p class="search-hint muted" data-search-hint>
+      Escribe al menos dos caracteres. Se buscan publicaciones, indicadores del
+      Radar, eventos, programas y recursos del Archivo Vivo.
+    </p>
+    <ul class="search-results" data-search-results role="listbox" aria-label="Resultados"></ul>
+  </div>
+</div>
+
+<script type="application/json" id="search-index" is:inline set:html={JSON.stringify(index)}></script>
+
+<script>
+  type Entry = { t: string; u: string; k: string; d: string };
+
+  const raw = document.getElementById('search-index')?.textContent ?? '[]';
+  const entries: Entry[] = JSON.parse(raw);
+
+  const input = document.querySelector<HTMLInputElement>('#q');
+  const list = document.querySelector<HTMLElement>('[data-search-results]');
+  const hint = document.querySelector<HTMLElement>('[data-search-hint]');
+
+  const normalize = (s: string): string =>
+    s.toLowerCase().normalize('NFD').replace(/\p{Diacritic}/gu, '');
+
+  const haystack = entries.map((e) => normalize(`${e.t} ${e.k} ${e.d}`));
+
+  const escape = (s: string): string =>
+    s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]!);
+
+  function render(query: string): void {
+    if (!list || !hint) return;
+    const q = normalize(query.trim());
+
+    if (q.length < 2) {
+      list.innerHTML = '';
+      hint.hidden = false;
+      return;
+    }
+
+    const terms = q.split(/\s+/);
+    const hits = entries
+      .map((e, i) => ({ e, score: score(haystack[i]!, terms, normalize(e.t)) }))
+      .filter((r) => r.score > 0)
+      .sort((a, b) => b.score - a.score)
+      .slice(0, 12);
+
+    hint.hidden = true;
+
+    if (hits.length === 0) {
+      list.innerHTML =
+        '<li class="search-empty">Sin resultados. Prueba con otro término.</li>';
+      return;
+    }
+
+    list.innerHTML = hits
+      .map(
+        ({ e }) => `
+        <li>
+          <a href="${e.u}" role="option">
+            <span class="search-kind">${escape(e.k)}</span>
+            <span class="search-title">${escape(e.t)}</span>
+            ${e.d ? `<span class="search-meta">${escape(e.d)}</span>` : ''}
+          </a>
+        </li>`,
+      )
+      .join('');
+  }
+
+  function score(hay: string, terms: string[], title: string): number {
+    let total = 0;
+    for (const term of terms) {
+      if (!hay.includes(term)) return 0;
+      total += title.startsWith(term) ? 6 : title.includes(term) ? 3 : 1;
+    }
+    return total;
+  }
+
+  input?.addEventListener('input', () => render(input.value));
+
+  // Enter abre el primer resultado.
+  input?.addEventListener('keydown', (event) => {
+    if (event.key !== 'Enter') return;
+    const first = list?.querySelector<HTMLAnchorElement>('a');
+    if (first) {
+      event.preventDefault();
+      window.location.href = first.href;
+    }
+  });
+
+  // Atajo de teclado: "/" abre el buscador.
+  document.addEventListener('keydown', (event) => {
+    const target = event.target as HTMLElement | null;
+    const typing = target && /^(INPUT|TEXTAREA|SELECT)$/.test(target.tagName);
+    if (event.key === '/' && !typing) {
+      event.preventDefault();
+      document.querySelector<HTMLElement>('[data-search-toggle]')?.click();
+    }
+  });
+</script>
+
+<style>
+  .search-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 80;
+    background: color-mix(in srgb, #031a24 97%, transparent);
+    color: var(--color-paper);
+    --line: var(--line-dark);
+    --muted: color-mix(in srgb, #f5f3ed 58%, transparent);
+    display: flex;
+    flex-direction: column;
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(-10px);
+    transition: opacity 240ms ease, transform 320ms cubic-bezier(0.22, 0.61, 0.36, 1),
+      visibility 240ms;
+  }
+  .search-overlay[data-open='true'] {
+    opacity: 1;
+    visibility: visible;
+    transform: none;
+  }
+
+  .search-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 96px;
+    border-bottom: 1px solid var(--line-dark);
+    flex-shrink: 0;
+  }
+  .search-close {
+    display: grid;
+    place-items: center;
+    width: 36px;
+    height: 36px;
+    border: 1px solid var(--line-dark);
+    border-radius: var(--radius-sm);
+    background: transparent;
+    color: inherit;
+    cursor: pointer;
+  }
+  .search-close:hover { border-color: color-mix(in srgb, #f5f3ed 45%, transparent); }
+
+  .search-body {
+    padding-block: clamp(28px, 6vh, 64px) 40px;
+    overflow-y: auto;
+  }
+
+  .search-input {
+    width: 100%;
+    background: transparent;
+    border: 0;
+    color: inherit;
+    font-family: var(--font-display);
+    font-size: clamp(1.7rem, 5vw, 3rem);
+    line-height: 1.15;
+    padding: 0;
+  }
+  .search-input:focus { outline: none; }
+  .search-input::placeholder { color: color-mix(in srgb, #f5f3ed 28%, transparent); }
+  .search-input::-webkit-search-cancel-button { display: none; }
+
+  .search-hint {
+    margin-top: 16px;
+    font-size: 13px;
+    max-width: 52ch;
+  }
+
+  .search-results {
+    list-style: none;
+    margin: 8px 0 0;
+    padding: 0;
+  }
+  .search-results li + li { border-top: 1px solid var(--line-dark); }
+  .search-results a {
+    display: grid;
+    gap: 3px;
+    padding-block: 15px;
+    transition: transform 200ms cubic-bezier(0.22, 0.61, 0.36, 1);
+  }
+  .search-results a:hover { transform: translateX(4px); }
+  .search-kind {
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--color-gold);
+  }
+  .search-title {
+    font-family: var(--font-display);
+    font-size: 1.15rem;
+    line-height: 1.25;
+  }
+  .search-meta { font-size: 12.5px; color: var(--muted); }
+  .search-empty { padding-block: 22px; color: var(--muted); font-size: 14px; }
+</style>

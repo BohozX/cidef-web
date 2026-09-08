@@ -1,0 +1,135 @@
+---
+import { site } from '../site.config';
+import Logo from './Logo.astro';
+
+const year = new Date().getFullYear();
+
+const columns = [
+  {
+    title: 'Investigación',
+    links: [
+      { label: 'Análisis', href: '/analisis' },
+      { label: 'Radar Económico', href: '/radar' },
+      { label: 'Indicadores del Centro', href: '/radar?cat=centro' },
+      { label: 'Archivo Vivo', href: '/archivo' },
+    ],
+  },
+  {
+    title: 'Institucional',
+    links: [
+      { label: 'Nosotros', href: '/nosotros' },
+      { label: 'Equipo', href: '/nosotros#equipo' },
+      { label: 'Alianzas', href: '/nosotros#alianzas' },
+      { label: 'Contacto', href: '/nosotros#contacto' },
+    ],
+  },
+  {
+    title: 'Formación',
+    links: [
+      { label: 'Diplomados', href: '/formacion' },
+      { label: 'Agenda', href: '/agenda' },
+      { label: 'Convocatorias', href: '/agenda' },
+    ],
+  },
+];
+---
+
+<footer class="surface-dark no-print">
+  <div class="wrap">
+    <div class="rule"></div>
+
+    <div class="foot-top">
+      <div class="foot-brand">
+        <Logo variant="light" layout="horizontal" height={56} class="foot-logo" />
+        <p class="foot-legal">{site.legalName}</p>
+        <p class="foot-desc muted">{site.shortDescription}</p>
+
+        <div class="foot-contact">
+          <div>
+            <span class="eyebrow muted">Dirección</span>
+            <p>{site.contact.address}</p>
+            <p>{site.contact.addressCity}</p>
+          </div>
+          <div>
+            <span class="eyebrow muted">Contacto</span>
+            <p><a href={`mailto:${site.contact.email}`} class="link-underline">{site.contact.email}</a></p>
+            <p class="tnum">{site.contact.phones.join(' · ')}</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="foot-cols">
+        {
+          columns.map((col) => (
+            <div>
+              <span class="eyebrow eyebrow-gold">{col.title}</span>
+              <ul>
+                {col.links.map((l) => (
+                  <li>
+                    <a href={l.href} class="link-underline">
+                      {l.label}
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ))
+        }
+      </div>
+    </div>
+
+    <div class="rule"></div>
+
+    <div class="foot-bottom">
+      <p class="muted">© {year} {site.name}. La Paz, Bolivia.</p>
+    </div>
+  </div>
+</footer>
+
+<style>
+  footer { padding-top: clamp(56px, 7vw, 92px); }
+
+  .foot-top {
+    display: grid;
+    gap: 44px;
+    padding-block: clamp(36px, 5vw, 60px);
+  }
+  @media (min-width: 900px) {
+    .foot-top { grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); gap: 64px; }
+  }
+
+  .foot-logo { width: auto; }
+
+  .foot-legal {
+    margin-top: 12px;
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    max-width: 34ch;
+  }
+  .foot-desc { margin-top: 10px; font-size: 13.5px; max-width: 46ch; }
+
+  .foot-contact {
+    display: grid;
+    gap: 24px;
+    margin-top: 30px;
+    font-size: 13px;
+  }
+  @media (min-width: 560px) { .foot-contact { grid-template-columns: 1fr 1fr; } }
+  .foot-contact .eyebrow { display: block; margin-bottom: 8px; }
+  .foot-contact p + p { margin-top: 2px; }
+
+  .foot-cols {
+    display: grid;
+    gap: 32px;
+  }
+  @media (min-width: 520px) { .foot-cols { grid-template-columns: repeat(3, 1fr); } }
+  .foot-cols ul { list-style: none; margin: 14px 0 0; padding: 0; }
+  .foot-cols li + li { margin-top: 9px; }
+  .foot-cols a { font-size: 13.5px; }
+
+  .foot-bottom {
+    padding-block: 22px 34px;
+    font-size: 12.5px;
+  }
+</style>

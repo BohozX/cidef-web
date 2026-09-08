@@ -1,0 +1,186 @@
+---
+import type { CollectionEntry } from 'astro:content';
+import { num } from '../lib/format';
+
+export interface Props {
+  item: CollectionEntry<'formacion'>;
+  featured?: boolean;
+  /** Muestra la portada del programa en la cabecera de la tarjeta. */
+  cover?: boolean;
+}
+
+const { item, featured = false, cover = false } = Astro.props;
+const d = item.data;
+const coverSrc = `/media/portadas/${item.id}`;
+---
+
+<article class:list={['panel', 'panel-hover', 'program', featured && 'is-featured']} data-reveal>
+  <a href={`/formacion/${item.id}`} class="program-link">
+    {
+      cover && (
+        <div class="program-cover">
+          <picture>
+            <source type="image/webp" srcset={`${coverSrc}.webp`} />
+            <img
+              src={`${coverSrc}.jpg`}
+              alt={`Portada del ${d.title}`}
+              width="760"
+              height="1074"
+              loading="lazy"
+              decoding="async"
+            />
+          </picture>
+        </div>
+      )
+    }
+
+    <div class="program-head">
+      <span class="chip chip-gold">{d.kind}</span>
+      {d.open && <span class="chip chip-teal">Inscripciones abiertas</span>}
+    </div>
+
+    <h3 class="program-title">{d.title}</h3>
+    <p class="program-summary muted">{d.summary}</p>
+
+    <ul class="program-facts tnum">
+      <li><span class="muted">Duración</span><span>{d.weeks} semanas</span></li>
+      <li><span class="muted">Modalidad</span><span>{d.modality}</span></li>
+      <li><span class="muted">Módulos</span><span>{d.modules.length}</span></li>
+      <li><span class="muted">Docentes</span><span>{d.faculty.length}</span></li>
+    </ul>
+
+    {
+      d.tools.length > 0 && (
+        <p class="program-tools">
+          {d.tools.map((t) => <span class="program-tool">{t}</span>)}
+        </p>
+      )
+    }
+
+    <div class="program-foot">
+      <p class="program-price tnum">
+        {d.price.promo ? (
+          <>
+            <span class="program-price-now">{d.price.currency} {num(d.price.promo, 0)}</span>
+            <span class="program-price-was muted">{d.price.currency} {num(d.price.total, 0)}</span>
+          </>
+        ) : (
+          <span class="program-price-now">{d.price.currency} {num(d.price.total, 0)}</span>
+        )}
+      </p>
+      <span class="link-arrow">
+        Ver programa
+        <svg class="arw" viewBox="0 0 16 16" width="12" height="12" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.7">
+          <path d="M2 8h11M9 4l4 4-4 4" stroke-linecap="round" stroke-linejoin="round" />
+        </svg>
+      </span>
+    </div>
+  </a>
+</article>
+
+<style>
+  .program { height: 100%; }
+  .program-link {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    padding: 24px 24px 20px;
+  }
+
+  .program-cover {
+    margin: -24px -24px 22px;
+    overflow: hidden;
+    border-radius: var(--radius-md) var(--radius-md) 0 0;
+    aspect-ratio: 16 / 9;
+    background: var(--color-ink);
+  }
+  .program-cover img {
+    width: 100%;
+    height: 100%;
+    /* La portada es vertical y su mitad superior ya lleva el título: se
+       encuadra por el motivo de datos para no repetirlo bajo la imagen. */
+    object-fit: cover;
+    object-position: 50% 74%;
+    transition: transform 700ms cubic-bezier(0.22, 0.61, 0.36, 1);
+  }
+  .program:hover .program-cover img { transform: scale(1.04); }
+
+  .program-head {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .program-title {
+    margin-top: 18px;
+    /* Tres líneas reservadas para que los bloques inferiores queden
+       alineados entre tarjetas de distinta longitud de título. */
+    min-height: 3.6em;
+    font-size: clamp(1.2rem, 1.7vw, 1.44rem);
+    line-height: 1.2;
+    max-width: 26ch;
+  }
+
+  .program-summary {
+    margin-top: 12px;
+    font-size: 13.5px;
+    line-height: 1.6;
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .program-facts {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px 20px;
+    margin-top: 22px;
+    padding-top: 18px;
+    border-top: 1px solid var(--line, var(--line-light));
+    list-style: none;
+    font-size: 13px;
+  }
+  .program-facts li { display: flex; flex-direction: column; gap: 3px; }
+  .program-facts span:first-child {
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.13em;
+    text-transform: uppercase;
+  }
+
+  .program-tools {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px 14px;
+    margin-top: 18px;
+  }
+  .program-tool {
+    font-size: 10.5px;
+    font-weight: 600;
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+    color: var(--color-teal-600);
+  }
+  .surface-dark .program-tool, .surface-deep .program-tool { color: var(--color-teal-300); }
+
+  .program-foot {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 14px;
+    margin-top: auto;
+    padding-top: 20px;
+  }
+  .program-price { display: flex; align-items: baseline; gap: 10px; }
+  .program-price-now {
+    font-family: var(--font-display);
+    font-size: 1.42rem;
+    letter-spacing: -0.02em;
+  }
+  .program-price-was {
+    font-size: 12.5px;
+    text-decoration: line-through;
+  }
+</style>

@@ -1,0 +1,224 @@
+---
+/**
+ * Carrusel horizontal.
+ *
+ * Avanza solo hacia la izquierda, de tarjeta en tarjeta, y vuelve al inicio
+ * al llegar al final. Se detiene al pasar el cursor, al enfocar con teclado
+ * y cuando la pestaña no está visible. Con `prefers-reduced-motion` no
+ * arranca: queda como una lista deslizable normal.
+ *
+ * El contenido entra por el slot; el componente no sabe qué muestra.
+ */
+
+export interface Props {
+  /** Etiqueta accesible del carrusel. */
+  label: string;
+  /** Milisegundos entre avances. 0 desactiva el avance automático. */
+  interval?: number;
+  /** Ancho de cada tarjeta en la pista. */
+  cardWidth?: string;
+  class?: string;
+}
+
+const { label, interval = 4200, cardWidth = '320px', class: className = '' } = Astro.props;
+---
+
+<div
+  class={`carousel ${className}`}
+  data-carousel
+  data-interval={interval}
+  role="region"
+  aria-roledescription="carrusel"
+  aria-label={label}
+  style={`--card-w:${cardWidth}`}
+>
+  <div class="carousel-track" data-carousel-track tabindex="0">
+    <slot />
+  </div>
+
+  <div class="carousel-bar no-print">
+    <div class="carousel-progress" aria-hidden="true">
+      <span class="carousel-progress-fill" data-carousel-progress></span>
+    </div>
+
+    <div class="carousel-nav">
+      <button type="button" class="carousel-btn" data-carousel-prev aria-label="Anterior">
+        <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.7">
+          <path d="M14 8H3M7 4L3 8l4 4" stroke-linecap="round" stroke-linejoin="round" />
+        </svg>
+      </button>
+      <button type="button" class="carousel-btn" data-carousel-next aria-label="Siguiente">
+        <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.7">
+          <path d="M2 8h11M9 4l4 4-4 4" stroke-linecap="round" stroke-linejoin="round" />
+        </svg>
+      </button>
+    </div>
+  </div>
+</div>
+
+<script>
+  const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  document.querySelectorAll<HTMLElement>('[data-carousel]').forEach((root) => {
+    const track = root.querySelector<HTMLElement>('[data-carousel-track]');
+    const fill = root.querySelector<HTMLElement>('[data-carousel-progress]');
+    const prev = root.querySelector<HTMLButtonElement>('[data-carousel-prev]');
+    const next = root.querySelector<HTMLButtonElement>('[data-carousel-next]');
+    if (!track) return;
+
+    const cards = () => Array.from(track.children) as HTMLElement[];
+
+    const step = (): number => {
+      const list = cards();
+      if (list.length < 2) return track.clientWidth;
+      return list[1]!.offsetLeft - list[0]!.offsetLeft;
+    };
+
+    const maxScroll = () => track.scrollWidth - track.clientWidth;
+
+    const go = (dir: 1 | -1): void => {
+      const target = track.scrollLeft + dir * step();
+      // Al pasarse del final vuelve al principio, y al revés.
+      if (dir === 1 && track.scrollLeft >= maxScroll() - 4) {
+        track.scrollTo({ left: 0, behavior: 'smooth' });
+      } else if (dir === -1 && track.scrollLeft <= 4) {
+        track.scrollTo({ left: maxScroll(), behavior: 'smooth' });
+      } else {
+        track.scrollTo({ left: target, behavior: 'smooth' });
+      }
+    };
+
+    // Se declara antes de los listeners: si el avance automático no llega a
+    // activarse (reduced-motion, interval 0), los botones siguen funcionando.
+    let restart = (): void => {};
+
+    next?.addEventListener('click', () => { go(1); restart(); });
+    prev?.addEventListener('click', () => { go(-1); restart(); });
+
+    /* --- barra de progreso ------------------------------------------- */
+    const bar = root.querySelector<HTMLElement>('.carousel-bar');
+
+    const paint = (): void => {
+      if (!fill) return;
+      const max = maxScroll();
+      // Sin desplazamiento posible no hay nada que indicar: se oculta la barra.
+      if (bar) bar.hidden = max <= 2;
+      if (max <= 2) return;
+      const pct = (track.scrollLeft / max) * 100;
+      fill.style.width = `${Math.max(6, Math.min(100, pct))}%`;
+    };
+
+    track.addEventListener('scroll', paint, { passive: true });
+    window.addEventListener('resize', paint, { passive: true });
+    paint();
+
+    // Las portadas cambian el ancho de la pista al cargar.
+    window.addEventListener('load', paint);
+    track.querySelectorAll('img').forEach((img) => {
+      if (!img.complete) img.addEventListener('load', paint, { once: true });
+    });
+
+    /* --- avance automático -------------------------------------------- */
+    const interval = Number(root.dataset.interval ?? '0');
+    if (reduced || interval <= 0) return;
+
+    let timer = 0;
+    let paused = false;
+
+    const tick = (): void => { if (!paused) go(1); };
+    const start = (): void => { window.clearInterval(timer); timer = window.setInterval(tick, interval); };
+    restart = start;
+
+    const hold = (v: boolean) => () => { paused = v; };
+    root.addEventListener('mouseenter', hold(true));
+    root.addEventListener('mouseleave', hold(false));
+    root.addEventListener('focusin', hold(true));
+    root.addEventListener('focusout', hold(false));
+    track.addEventListener('pointerdown', hold(true));
+    document.addEventListener('visibilitychange', () => { paused = document.hidden; });
+
+    // Solo avanza mientras el carrusel está a la vista.
+    const io = new IntersectionObserver(
+      (entries) => entries.forEach((e) => (paused = !e.isIntersecting)),
+      { threshold: 0.25 },
+    );
+    io.observe(root);
+
+    start();
+  });
+</script>
+
+<style>
+  .carousel { position: relative; }
+
+  .carousel-track {
+    display: flex;
+    gap: 20px;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    scrollbar-width: none;
+    padding-block: 4px 8px;
+    padding-inline: 20px;
+    margin-inline: -20px;
+    scroll-padding-left: 20px;
+  }
+  .carousel-track::-webkit-scrollbar { display: none; }
+  .carousel-track:focus-visible { outline-offset: 6px; }
+
+  /* Las tarjetas llegan por el <slot>: pertenecen al ámbito de la página,
+     así que el selector tiene que salir del ámbito del componente. */
+  .carousel-track > :global(*) {
+    scroll-snap-align: start;
+    flex: 0 0 78%;
+    max-width: var(--card-w);
+  }
+  @media (min-width: 640px) {
+    .carousel-track > :global(*) { flex: 0 0 var(--card-w); max-width: none; }
+  }
+  @media (min-width: 1024px) {
+    .carousel-track { padding-inline: 0; margin-inline: 0; scroll-padding-left: 0; }
+  }
+
+  .carousel-bar {
+    display: flex;
+    align-items: center;
+    gap: 22px;
+    margin-top: 26px;
+  }
+
+  .carousel-progress {
+    flex: 1;
+    height: 1px;
+    background: var(--line, var(--line-light));
+    position: relative;
+  }
+  .carousel-progress-fill {
+    position: absolute;
+    inset: -1px auto;
+    left: 0;
+    height: 3px;
+    background: var(--color-gold);
+    width: 12%;
+    transition: width 420ms cubic-bezier(0.22, 0.61, 0.36, 1);
+  }
+
+  .carousel-nav { display: flex; gap: 6px; }
+  .carousel-btn {
+    display: grid;
+    place-items: center;
+    width: 40px;
+    height: 40px;
+    border: 1px solid var(--line, var(--line-light));
+    border-radius: 999px;
+    background: transparent;
+    color: inherit;
+    cursor: pointer;
+    transition: background-color 200ms ease, border-color 200ms ease, transform 200ms ease;
+  }
+  .carousel-btn:hover {
+    border-color: var(--color-gold);
+    color: var(--color-gold);
+    transform: scale(1.06);
+  }
+  .carousel-btn:active { transform: scale(0.96); }
+</style>

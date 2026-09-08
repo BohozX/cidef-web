@@ -1,0 +1,74 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import { nav } from '../site.config';
+---
+
+<BaseLayout
+  title="Página no encontrada"
+  description="La página solicitada no existe o cambió de dirección."
+  noindex
+>
+  <section class="surface-deep nf">
+    <div class="wrap nf-inner">
+      <p class="eyebrow eyebrow-gold" data-hero-item>Error 404</p>
+      <h1 class="display-1 nf-title" data-hero-item>
+        Esta página no existe <span class="nf-accent">todavía.</span>
+      </h1>
+      <p class="lede nf-lede" data-hero-item>
+        La dirección puede haber cambiado o el documento aún no se ha publicado.
+        Desde aquí puedes ir a cualquier sección del centro.
+      </p>
+
+      <ul class="nf-nav" data-hero-item>
+        {
+          nav.map((item, i) => (
+            <li>
+              <a href={item.href}>
+                <span class="index-num">{String(i + 1).padStart(2, '0')}</span>
+                <span class="nf-label">{item.label}</span>
+                {item.description && <span class="nf-desc muted">{item.description}</span>}
+              </a>
+            </li>
+          ))
+        }
+      </ul>
+    </div>
+  </section>
+</BaseLayout>
+
+<style>
+  .nf {
+    min-height: 82vh;
+    display: flex;
+    align-items: center;
+    padding-block: 140px 80px;
+  }
+  .nf-title { margin-top: 20px; max-width: 16ch; }
+  .nf-accent { color: var(--color-gold); font-style: italic; }
+  .nf-lede { margin-top: 22px; max-width: 50ch; color: color-mix(in srgb, #f5f3ed 78%, transparent); }
+
+  .nf-nav {
+    list-style: none;
+    margin: 44px 0 0;
+    padding: 0;
+    display: grid;
+    gap: 0;
+    max-width: 760px;
+  }
+  @media (min-width: 760px) { .nf-nav { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  .nf-nav li { border-top: 1px solid var(--line-dark); }
+  @media (min-width: 760px) {
+    .nf-nav li:nth-child(odd) { padding-right: 26px; }
+    .nf-nav li:nth-child(even) { padding-left: 26px; }
+  }
+  .nf-nav a {
+    display: grid;
+    grid-template-columns: 32px minmax(0, 1fr);
+    gap: 3px 8px;
+    padding-block: 14px;
+    transition: transform 200ms cubic-bezier(0.22, 0.61, 0.36, 1);
+  }
+  .nf-nav a:hover { transform: translateX(4px); }
+  .nf-label { font-size: 15px; font-weight: 500; }
+  .nf-desc { grid-column: 2; font-size: 12.5px; }
+</style>

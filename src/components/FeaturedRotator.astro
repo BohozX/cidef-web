@@ -1,0 +1,531 @@
+---
+import { slugify } from '../lib/format';
+
+/**
+ * Ficha destacada rotativa.
+ *
+ * Muestra una sola pieza a la vez —portada grande, resumen y datos— y cambia
+ * sola cada 40 segundos. Todas las fichas se renderizan en el servidor y
+ * ocupan la misma celda de la cuadrícula, así que la altura no salta al
+ * cambiar y el contenido es indexable aunque no se ejecute JS.
+ *
+ * Se detiene al pasar el cursor, al enfocar con teclado, cuando la pestaña
+ * pasa a segundo plano y cuando el bloque sale de pantalla.
+ *
+ * Sirve para publicaciones y para programas: la página le pasa las fichas ya
+ * normalizadas.
+ */
+
+export type RotatorSlide = {
+  href: string;
+  /** Ruta de la portada SIN extensión: se sirven .webp y .jpg. */
+  cover: string;
+  coverAlt: string;
+  kicker: string;
+  serial?: string;
+  demo?: boolean;
+  flag?: string;
+  title: string;
+  meta: string;
+  summary: string;
+  /** Clasificaciones en columna: temas, códigos JEL, extensión, precio… */
+  facts?: { label: string; value: string }[];
+  cta: string;
+};
+
+export interface Props {
+  slides: RotatorSlide[];
+  /** Milisegundos que permanece cada ficha. */
+  interval?: number;
+  /** `end` coloca la portada a la derecha y anima en sentido contrario. */
+  side?: 'start' | 'end';
+  label: string;
+}
+
+const { slides, interval = 120000, side = 'start', label } = Astro.props;
+const uid = slugify(label) || 'rot';
+---
+
+<div
+  class:list={['rot', side === 'end' && 'is-mirrored']}
+  data-reveal
+  data-rotator
+  data-interval={interval}
+  role="region"
+  aria-roledescription="carrusel"
+  aria-label={label}
+>
+  <div class="rot-stage">
+    {
+      slides.map((s, i) => (
+        <article
+          class:list={['rot-slide', i === 0 && 'is-active']}
+          data-slide
+          id={`${uid}-${i}`}
+          aria-hidden={i === 0 ? undefined : 'true'}
+        >
+          <a href={s.href} class="rot-link" tabindex={i === 0 ? undefined : -1}>
+            <span class="rot-cover">
+              <picture>
+                <source type="image/webp" srcset={`${s.cover}.webp`} />
+                <img
+                  src={`${s.cover}.jpg`}
+                  alt={s.coverAlt}
+                  width="760"
+                  height="1074"
+                  loading={i === 0 ? 'eager' : 'lazy'}
+                  decoding="async"
+                />
+              </picture>
+            </span>
+
+            <span class="rot-body">
+              <span class="rot-kicker">
+                <span class="chip chip-teal">{s.kicker}</span>
+                {s.serial && <span class="rot-serial">{s.serial}</span>}
+                {s.flag && <span class="chip chip-gold">{s.flag}</span>}
+                {s.demo && <span class="chip chip-demo">Ejemplo</span>}
+              </span>
+
+              <span class="rot-title">{s.title}</span>
+              <span class="rot-meta">{s.meta}</span>
+
+              {s.facts && s.facts.length > 0 && (
+                <span class="rot-facts">
+                  {s.facts.map((f) => (
+                    <span class="rot-fact">
+                      <span class="rot-fact-label">{f.label}</span>
+                      <span class="rot-fact-value">{f.value}</span>
+                    </span>
+                  ))}
+                </span>
+              )}
+            </span>
+
+            <span class="rot-aside">
+              <span class="rot-abstract">{s.summary}</span>
+              <span class="rot-cta">
+                {s.cta}
+                <svg class="arw" viewBox="0 0 16 16" width="13" height="13" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8">
+                  <path d="M2 8h11M9 4l4 4-4 4" stroke-linecap="round" stroke-linejoin="round" />
+                </svg>
+              </span>
+            </span>
+          </a>
+        </article>
+      ))
+    }
+  </div>
+
+  <div class="rot-bar no-print">
+    <ol class="rot-dots" role="tablist" aria-label={label}>
+      {
+        slides.map((s, i) => (
+          <li>
+            <button
+              type="button"
+              role="tab"
+              class="rot-dot"
+              data-goto={i}
+              aria-selected={i === 0 ? 'true' : 'false'}
+              aria-controls={`${uid}-${i}`}
+              aria-label={s.title}
+            >
+              <span class="sr-only">{s.title}</span>
+              <span class="rot-dot-track"><span class="rot-dot-fill"></span></span>
+            </button>
+          </li>
+        ))
+      }
+    </ol>
+
+    <div class="rot-nav">
+      <button type="button" class="rot-btn" data-prev aria-label="Anterior">
+        <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.7">
+          <path d="M14 8H3M7 4L3 8l4 4" stroke-linecap="round" stroke-linejoin="round" />
+        </svg>
+      </button>
+      <button type="button" class="rot-btn" data-next aria-label="Siguiente">
+        <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.7">
+          <path d="M2 8h11M9 4l4 4-4 4" stroke-linecap="round" stroke-linejoin="round" />
+        </svg>
+      </button>
+    </div>
+  </div>
+</div>
+
+<script>
+  const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  document.querySelectorAll<HTMLElement>('[data-rotator]').forEach((root) => {
+    const slides = Array.from(root.querySelectorAll<HTMLElement>('[data-slide]'));
+    const dots = Array.from(root.querySelectorAll<HTMLButtonElement>('[data-goto]'));
+    if (slides.length === 0) return;
+
+    const interval = Number(root.dataset.interval ?? '120000');
+    let current = 0;
+    let timer = 0;
+    let paused = false;
+
+    const paintProgress = (run: boolean): void => {
+      dots.forEach((dot, k) => {
+        const fill = dot.querySelector<HTMLElement>('.rot-dot-fill');
+        if (!fill) return;
+        fill.style.animation = 'none';
+        // Reflujo forzado: sin esto la animación no se reinicia.
+        void fill.offsetWidth;
+        fill.style.animation =
+          run && k === current ? `rotFill ${interval}ms linear forwards` : '';
+      });
+    };
+
+    function restart(): void {
+      window.clearInterval(timer);
+      timer = 0;
+      if (reduced || slides.length < 2) {
+        paintProgress(false);
+        return;
+      }
+      paintProgress(!paused);
+      timer = window.setInterval(() => {
+        if (!paused) show(current + 1);
+      }, interval);
+    }
+
+    function show(next: number): void {
+      const i = (next + slides.length) % slides.length;
+      if (i === current) return;
+
+      slides.forEach((slide, k) => {
+        const active = k === i;
+        slide.classList.toggle('is-active', active);
+        if (active) slide.removeAttribute('aria-hidden');
+        else slide.setAttribute('aria-hidden', 'true');
+        const link = slide.querySelector<HTMLAnchorElement>('.rot-link');
+        if (link) link.tabIndex = active ? 0 : -1;
+      });
+
+      dots.forEach((dot, k) => dot.setAttribute('aria-selected', String(k === i)));
+      current = i;
+      restart();
+    }
+
+    dots.forEach((dot) =>
+      dot.addEventListener('click', () => show(Number(dot.dataset.goto ?? '0'))),
+    );
+    root.querySelector<HTMLButtonElement>('[data-next]')?.addEventListener('click', () => show(current + 1));
+    root.querySelector<HTMLButtonElement>('[data-prev]')?.addEventListener('click', () => show(current - 1));
+
+    const hold = (value: boolean) => (): void => {
+      paused = value;
+      dots.forEach((dot) => {
+        const fill = dot.querySelector<HTMLElement>('.rot-dot-fill');
+        if (fill) fill.style.animationPlayState = value ? 'paused' : 'running';
+      });
+    };
+
+    root.addEventListener('mouseenter', hold(true));
+    root.addEventListener('mouseleave', hold(false));
+    root.addEventListener('focusin', hold(true));
+    root.addEventListener('focusout', hold(false));
+    document.addEventListener('visibilitychange', () => hold(document.hidden)());
+
+    new IntersectionObserver(
+      (entries) => entries.forEach((e) => hold(!e.isIntersecting)()),
+      { threshold: 0.2 },
+    ).observe(root);
+
+    restart();
+  });
+</script>
+
+<style is:global>
+  /* La animación se asigna desde el script: tiene que vivir fuera del ámbito. */
+  @keyframes rotFill {
+    from { transform: scaleX(0); }
+    to { transform: scaleX(1); }
+  }
+</style>
+
+<style>
+  .rot { position: relative; }
+  .rot-stage { display: grid; }
+
+  /* Entra desde la derecha; en el bloque espejado, desde la izquierda. */
+  .rot-slide {
+    grid-area: 1 / 1;
+    opacity: 0;
+    visibility: hidden;
+    transform: translate3d(38px, 8px, 0);
+    transition: opacity 340ms ease, transform 440ms cubic-bezier(0.22, 0.61, 0.36, 1),
+      visibility 340ms;
+    pointer-events: none;
+  }
+  .is-mirrored .rot-slide { transform: translate3d(-38px, 10px, 0); }
+
+  .rot-slide.is-active {
+    opacity: 1;
+    visibility: visible;
+    transform: none;
+    pointer-events: auto;
+  }
+
+  /* Portada · datos · resumen. En el bloque espejado el orden se invierte
+     para que la portada quede del otro lado. */
+  .rot-link {
+    display: grid;
+    gap: 26px;
+    align-items: start;
+  }
+  @media (min-width: 760px) {
+    .rot-link { grid-template-columns: 210px minmax(0, 1fr); gap: 36px; }
+    .rot-cover { grid-column: 1; grid-row: 1; }
+    .rot-body { grid-column: 2; grid-row: 1; }
+    .rot-aside { grid-column: 1 / -1; }
+    .is-mirrored .rot-link { grid-template-columns: minmax(0, 1fr) 210px; }
+    .is-mirrored .rot-cover { grid-column: 2; grid-row: 1; }
+    .is-mirrored .rot-body { grid-column: 1; grid-row: 1; }
+  }
+
+  /* En pantalla ancha la portada va al centro, con los datos a un lado y el
+     resumen al otro. El bloque espejado intercambia los dos costados. */
+  @media (min-width: 1120px) {
+    .rot-link {
+      grid-template-columns: minmax(0, 1.04fr) 300px minmax(0, 0.96fr);
+      gap: 48px;
+      /* Alineadas arriba: así la portada cae siempre en el mismo sitio,
+         aunque una ficha tenga más clasificaciones que otra. */
+      align-items: start;
+    }
+    .rot-body  { grid-column: 1; grid-row: 1; }
+    .rot-cover { grid-column: 2; grid-row: 1; }
+    .rot-aside { grid-column: 3; grid-row: 1; }
+
+    .is-mirrored .rot-link {
+      grid-template-columns: minmax(0, 0.96fr) 300px minmax(0, 1.04fr);
+    }
+    .is-mirrored .rot-aside { grid-column: 1; grid-row: 1; }
+    .is-mirrored .rot-cover { grid-column: 2; grid-row: 1; }
+    .is-mirrored .rot-body  { grid-column: 3; grid-row: 1; }
+  }
+
+  /* Ligero giro en perspectiva y sombra en capas: la portada se lee como un
+     documento físico apoyado, no como una imagen pegada. */
+  .rot-cover {
+    display: block;
+    max-width: 300px;
+    overflow: hidden;
+    border-radius: 3px 22px 3px 3px;
+    background: var(--color-ink);
+    aspect-ratio: 760 / 1074;
+    transform: perspective(1400px) rotateY(-7deg) rotateX(1.2deg);
+    transform-origin: right center;
+    box-shadow:
+      -3px 4px 8px rgb(3 26 36 / 0.10),
+      -12px 18px 30px rgb(3 26 36 / 0.16),
+      -28px 40px 70px rgb(3 26 36 / 0.20);
+    transition: transform 700ms cubic-bezier(0.22, 0.61, 0.36, 1),
+      box-shadow 700ms ease;
+  }
+  .rot-link:hover .rot-cover {
+    transform: perspective(1400px) rotateY(-2.5deg) rotateX(0.4deg) translateY(-4px);
+    box-shadow:
+      -3px 5px 10px rgb(3 26 36 / 0.12),
+      -14px 22px 38px rgb(3 26 36 / 0.20),
+      -32px 50px 84px rgb(3 26 36 / 0.24);
+  }
+
+  .is-mirrored .rot-cover {
+    border-radius: 22px 3px 3px 3px;
+    transform: perspective(1400px) rotateY(7deg) rotateX(1.2deg);
+    transform-origin: left center;
+    box-shadow:
+      3px 4px 8px rgb(3 26 36 / 0.10),
+      12px 18px 30px rgb(3 26 36 / 0.16),
+      28px 40px 70px rgb(3 26 36 / 0.20);
+  }
+  .is-mirrored .rot-link:hover .rot-cover {
+    transform: perspective(1400px) rotateY(2.5deg) rotateX(0.4deg) translateY(-4px);
+  }
+  @media (min-width: 1100px) { .rot-cover { max-width: none; } }
+
+  .rot-cover img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 900ms cubic-bezier(0.22, 0.61, 0.36, 1);
+  }
+  .rot-link:hover .rot-cover img { transform: scale(1.035); }
+
+  .rot-body { display: grid; align-content: start; }
+
+  .rot-kicker {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px;
+  }
+  .rot-serial {
+    font-family: var(--font-mono);
+    font-size: 11.5px;
+    letter-spacing: 0.06em;
+    color: var(--muted);
+  }
+
+  .rot-title {
+    display: block;
+    margin-top: 18px;
+    font-size: clamp(1.4rem, 2.4vw, 2.05rem);
+    font-weight: 600;
+    line-height: 1.1;
+    letter-spacing: -0.032em;
+    max-width: 22ch;
+    transition: color 220ms ease;
+  }
+  .rot-link:hover .rot-title { color: var(--color-teal-600); }
+  .surface-dark .rot-link:hover .rot-title,
+  .surface-deep .rot-link:hover .rot-title { color: var(--color-gold); }
+
+  .rot-meta {
+    display: block;
+    margin-top: 14px;
+    font-size: 13px;
+    font-weight: 500;
+    letter-spacing: 0.02em;
+    color: var(--color-gold);
+  }
+
+  /* --- clasificaciones --- */
+  .rot-facts {
+    display: grid;
+    gap: 0;
+    margin-top: 24px;
+    border-top: 1px solid var(--line, var(--line-light));
+  }
+  .rot-fact {
+    display: grid;
+    grid-template-columns: minmax(0, 88px) minmax(0, 1fr);
+    gap: 4px 18px;
+    padding-block: 9px;
+    border-bottom: 1px solid var(--line, var(--line-light));
+    font-size: 13px;
+  }
+  .rot-fact-label {
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.13em;
+    text-transform: uppercase;
+    color: var(--muted);
+    align-self: center;
+  }
+  .rot-fact-value { line-height: 1.45; }
+
+  /* --- resumen --- */
+  .rot-aside {
+    display: grid;
+    align-content: start;
+  }
+
+  .rot-abstract {
+    display: -webkit-box;
+    -webkit-line-clamp: 9;
+    line-clamp: 9;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    font-size: 14.5px;
+    line-height: 1.72;
+    color: var(--muted);
+    /* Justificado con partición: en castellano, sin guiones, las columnas
+       estrechas abren calles enormes entre palabras. */
+    text-align: justify;
+    hyphens: auto;
+    -webkit-hyphens: auto;
+  }
+
+  .rot-cta {
+    display: inline-flex;
+    align-items: center;
+    gap: 9px;
+    margin-top: 22px;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.11em;
+    text-transform: uppercase;
+    color: var(--color-gold);
+  }
+  .rot-cta .arw { transition: transform 240ms cubic-bezier(0.22, 0.61, 0.36, 1); }
+  .rot-link:hover .rot-cta .arw { transform: translateX(5px); }
+
+  /* --- controles ---------------------------------------------------- */
+  .rot-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 24px;
+    margin-top: 40px;
+    padding-top: 22px;
+    border-top: 1px solid var(--line, var(--line-light));
+  }
+  .is-mirrored .rot-bar { flex-direction: row-reverse; }
+
+  .rot-dots {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px 18px;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+
+  .rot-dot {
+    display: grid;
+    width: 46px;
+    padding: 0;
+    background: transparent;
+    border: 0;
+    color: inherit;
+    cursor: pointer;
+    opacity: 0.45;
+    transition: opacity 220ms ease;
+  }
+  .rot-dot:hover,
+  .rot-dot[aria-selected='true'] { opacity: 1; }
+
+  .rot-dot-track {
+    display: block;
+    height: 3px;
+    background: var(--line, var(--line-light));
+    overflow: hidden;
+  }
+  .rot-dot-fill {
+    display: block;
+    height: 100%;
+    background: var(--color-gold);
+    transform: scaleX(0);
+    transform-origin: left center;
+  }
+
+  .rot-nav { display: flex; gap: 6px; flex-shrink: 0; }
+  .rot-btn {
+    display: grid;
+    place-items: center;
+    width: 40px;
+    height: 40px;
+    border: 1px solid var(--line, var(--line-light));
+    border-radius: 999px;
+    background: transparent;
+    color: inherit;
+    cursor: pointer;
+    transition: border-color 200ms ease, color 200ms ease, transform 200ms ease;
+  }
+  .rot-btn:hover {
+    border-color: var(--color-gold);
+    color: var(--color-gold);
+    transform: scale(1.06);
+  }
+  .rot-btn:active { transform: scale(0.96); }
+
+  @media (prefers-reduced-motion: reduce) {
+    .rot-slide { transition: none; }
+  }
+</style>

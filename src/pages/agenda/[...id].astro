@@ -1,0 +1,211 @@
+---
+import { getCollection, render } from 'astro:content';
+import type { CollectionEntry } from 'astro:content';
+import type { GetStaticPaths } from 'astro';
+
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import PageHero from '../../components/PageHero.astro';
+import AgendaItem from '../../components/AgendaItem.astro';
+import Newsletter from '../../components/Newsletter.astro';
+import { site } from '../../site.config';
+import { isFuture, longDate } from '../../lib/format';
+
+export const getStaticPaths: GetStaticPaths = async () => {
+  const eventos = await getCollection('eventos');
+  return eventos.map((entry) => ({ params: { id: entry.id }, props: { entry } }));
+};
+
+export interface Props {
+  entry: CollectionEntry<'eventos'>;
+}
+
+const { entry } = Astro.props;
+const d = entry.data;
+const { Content } = await render(entry);
+
+const iso = d.date.toISOString();
+const upcoming = isFuture(iso);
+
+const otros = (await getCollection('eventos'))
+  .filter((e) => e.id !== entry.id)
+  .sort((a, b) => b.data.date.getTime() - a.data.date.getTime())
+  .slice(0, 3);
+
+const facts = [
+  { label: 'Fecha', value: longDate(iso) },
+  ...(d.time ? [{ label: 'Hora', value: d.time }] : []),
+  { label: 'Lugar', value: d.location },
+  { label: 'Modalidad', value: d.modality },
+];
+
+const jsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'Event',
+  name: d.title,
+  description: d.summary,
+  startDate: iso.slice(0, 10),
+  ...(d.endDate ? { endDate: d.endDate.toISOString().slice(0, 10) } : {}),
+  eventAttendanceMode:
+    d.modality === 'Virtual'
+      ? 'https://schema.org/OnlineEventAttendanceMode'
+      : d.modality === 'Presencial'
+        ? 'https://schema.org/OfflineEventAttendanceMode'
+        : 'https://schema.org/MixedEventAttendanceMode',
+  location: { '@type': 'Place', name: d.location, address: d.location },
+  organizer: { '@type': 'Organization', name: site.legalName, url: site.url },
+};
+---
+
+<BaseLayout title={d.title} description={d.summary} ogType="article" jsonLd={jsonLd}>
+  <PageHero
+    eyebrow={`${d.type}${upcoming ? '' : ' · Realizado'}`}
+    title={d.title}
+    parent={{ label: 'Agenda', href: '/agenda' }}
+    facts={facts}
+  >
+    <div slot="actions" class="ev-actions" data-hero-item>
+      {
+        upcoming && d.registerUrl && (
+          <a href={d.registerUrl} class="btn btn-primary">
+            Inscribirse
+            <svg class="arw" viewBox="0 0 16 16" width="13" height="13" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8">
+              <path d="M2 8h11M9 4l4 4-4 4" stroke-linecap="round" stroke-linejoin="round" />
+            </svg>
+          </a>
+        )
+      }
+      {d.demo && <span class="chip chip-demo">Evento de ejemplo</span>}
+    </div>
+  </PageHero>
+
+  <section class="surface-light section">
+    <div class="wrap">
+      <div class="ev-grid">
+        <div class="ev-main">
+          <p class="ev-summary">{d.summary}</p>
+          <div class="prose-cidef ev-body"><Content /></div>
+        </div>
+
+        <aside class="ev-side" aria-label="Detalles del evento">
+          {
+            d.speakers.length > 0 && (
+              <div class="side-block">
+                <h2 class="eyebrow eyebrow-gold">Participan</h2>
+                <ul class="speakers">
+                  {d.speakers.map((s) => (
+                    <li>
+                      <span class="speaker-name">{s.name}</span>
+                      {s.affiliation && <span class="muted speaker-aff">{s.affiliation}</span>}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )
+          }
+
+          {
+            d.resources.length > 0 && (
+              <div class="side-block">
+                <h2 class="eyebrow eyebrow-gold">Materiales</h2>
+                <ul class="resources">
+                  {d.resources.map((r) => (
+                    <li>
+                      <a href={r.href} class="resource" rel="noopener">
+                        <span>{r.label}</span>
+                        <span class="muted resource-kind">{r.kind}</span>
+                      </a>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )
+          }
+
+          <div class="side-block">
+            <h2 class="eyebrow eyebrow-gold">Contacto</h2>
+            <p class="side-text muted">
+              Consultas de inscripción:<br />
+              <a href={`mailto:${site.contact.email}`} class="link-underline">{site.contact.email}</a><br />
+              <span class="tnum">{site.contact.phones.slice(0, 2).join(' · ')}</span>
+            </p>
+          </div>
+        </aside>
+      </div>
+    </div>
+  </section>
+
+  {
+    otros.length > 0 && (
+      <section class="surface-tint section" aria-labelledby="otros">
+        <div class="wrap">
+          <div class="rule rule-draw"></div>
+          <h2 id="otros" class="display-3 otros-title" data-reveal>Otras actividades</h2>
+          <div class="row-list" data-reveal-group data-reveal-stagger="0.07">
+            {otros.map((item) => <AgendaItem item={item} />)}
+          </div>
+        </div>
+      </section>
+    )
+  }
+
+  <Newsletter />
+</BaseLayout>
+
+<style>
+  .ev-actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 16px;
+    margin-top: 30px;
+  }
+
+  .ev-grid { display: grid; gap: 44px; }
+  @media (min-width: 1000px) {
+    .ev-grid { grid-template-columns: minmax(0, 1fr) 300px; gap: 68px; align-items: start; }
+  }
+
+  .ev-summary {
+    font-family: var(--font-display);
+    font-size: clamp(1.14rem, 1.8vw, 1.36rem);
+    line-height: 1.55;
+    max-width: 58ch;
+  }
+  .ev-body { margin-top: 30px; }
+
+  .ev-side { display: grid; gap: 32px; }
+  .side-block h2 { display: block; margin-bottom: 14px; }
+  .side-text { font-size: 13.5px; line-height: 1.7; }
+
+  .speakers, .resources { list-style: none; margin: 0; padding: 0; }
+  .speakers li {
+    padding-block: 12px;
+    border-top: 1px solid var(--line-light);
+    display: grid;
+    gap: 3px;
+  }
+  .speakers li:last-child { border-bottom: 1px solid var(--line-light); }
+  .speaker-name { font-size: 14px; font-weight: 500; }
+  .speaker-aff { font-size: 12px; }
+
+  .resources li { border-top: 1px solid var(--line-light); }
+  .resources li:last-child { border-bottom: 1px solid var(--line-light); }
+  .resource {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 12px;
+    padding-block: 13px;
+    font-size: 13.5px;
+    transition: transform 200ms cubic-bezier(0.22, 0.61, 0.36, 1);
+  }
+  .resource:hover { transform: translateX(3px); }
+  .resource-kind {
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.11em;
+    text-transform: uppercase;
+  }
+
+  .otros-title { margin: 26px 0 20px; }
+</style>

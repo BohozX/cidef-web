@@ -1,0 +1,278 @@
+---
+import type { CollectionEntry } from 'astro:content';
+import { authorList, longDate, year } from '../lib/format';
+
+export interface Props {
+  item: CollectionEntry<'publicaciones'>;
+  view?: 'list' | 'grid' | 'cover';
+  /** Numeración editorial opcional. */
+  index?: number;
+}
+
+const { item, view = 'list', index } = Astro.props;
+const d = item.data;
+const iso = d.date.toISOString();
+
+/* Las portadas se generan con `tools/generate_covers.py` y toman el nombre
+   del `id` de la entrada. Si más adelante hay portadas reales, se dejan en
+   la misma carpeta con el mismo nombre. */
+const cover = `/media/portadas/${item.id}`;
+---
+
+{
+  view === 'cover' ? (
+    <article class="res-cover" data-reveal>
+      <a href={`/analisis/${item.id}`}>
+        <div class="cover-frame">
+          <picture>
+            <source type="image/webp" srcset={`${cover}.webp`} />
+            <img
+              src={`${cover}.jpg`}
+              alt={`Portada de ${d.title}`}
+              width="760"
+              height="1074"
+              loading="lazy"
+              decoding="async"
+            />
+          </picture>
+          <span class="cover-go" aria-hidden="true">
+            <svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8">
+              <path d="M4 12L12 4M6 4h6v6" stroke-linecap="round" stroke-linejoin="round" />
+            </svg>
+          </span>
+        </div>
+
+        <p class="cover-kicker">
+          <span class="chip chip-teal">{d.type}</span>
+          {d.demo && <span class="chip chip-demo">Ejemplo</span>}
+        </p>
+        <h3 class="cover-title">{d.title}</h3>
+        <p class="cover-meta muted">
+          {authorList(d.authors)} · {year(iso)}
+        </p>
+      </a>
+    </article>
+  ) : view === 'list' ? (
+    <article class="row-item res-row" data-reveal>
+      <a href={`/analisis/${item.id}`} class="res-row-link">
+        <div class="res-row-meta">
+          {index !== undefined && <span class="index-num">{String(index).padStart(2, '0')}</span>}
+          <span class="chip chip-teal">{d.type}</span>
+          {d.demo && <span class="chip chip-demo">Ejemplo</span>}
+        </div>
+
+        <div class="res-row-body">
+          <h3 class="res-title">{d.title}</h3>
+          <p class="res-authors muted">
+            {authorList(d.authors)}
+            {d.serial && <span class="res-serial"> · {d.serial}</span>}
+          </p>
+          <p class="res-abstract muted">{d.abstract}</p>
+          {d.topics.length > 0 && (
+            <p class="res-topics">
+              {d.topics.map((t) => (
+                <span class="res-topic">{t}</span>
+              ))}
+            </p>
+          )}
+        </div>
+
+        <div class="res-row-side">
+          <time class="tnum muted" datetime={iso}>{longDate(iso)}</time>
+          <span class="link-arrow res-cta">
+            Leer
+            <svg class="arw" viewBox="0 0 16 16" width="12" height="12" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.7">
+              <path d="M2 8h11M9 4l4 4-4 4" stroke-linecap="round" stroke-linejoin="round" />
+            </svg>
+          </span>
+        </div>
+      </a>
+    </article>
+  ) : (
+    <article class="panel panel-hover res-card" data-reveal>
+      <a href={`/analisis/${item.id}`}>
+        <div class="res-card-top">
+          <span class="chip chip-teal">{d.type}</span>
+          <span class="tnum muted res-year">{year(iso)}</span>
+        </div>
+        <h3 class="res-title res-card-title">{d.title}</h3>
+        <p class="res-authors muted">{authorList(d.authors)}</p>
+        <p class="res-abstract muted res-card-abstract">{d.abstract}</p>
+        <div class="res-card-foot">
+          <span class="muted">{d.topics[0] ?? ''}</span>
+          {d.demo && <span class="chip chip-demo">Ejemplo</span>}
+        </div>
+      </a>
+    </article>
+  )
+}
+
+<style>
+  /* --------------------------------------------------------- vista portada */
+  .res-cover > a { display: block; }
+
+  .cover-frame {
+    position: relative;
+    overflow: hidden;
+    border-radius: var(--radius-md);
+    background: var(--color-ink);
+    aspect-ratio: 760 / 1074;
+  }
+  .cover-frame img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 700ms cubic-bezier(0.22, 0.61, 0.36, 1);
+  }
+  .res-cover:hover .cover-frame img { transform: scale(1.035); }
+
+  .cover-go {
+    position: absolute;
+    right: 12px;
+    bottom: 12px;
+    display: grid;
+    place-items: center;
+    width: 34px;
+    height: 34px;
+    border-radius: 999px;
+    background: var(--color-gold);
+    color: var(--color-ink);
+    opacity: 0;
+    transform: translateY(8px);
+    transition: opacity 240ms ease, transform 300ms cubic-bezier(0.22, 0.61, 0.36, 1);
+  }
+  .res-cover:hover .cover-go,
+  .res-cover:focus-within .cover-go { opacity: 1; transform: none; }
+
+  .cover-kicker {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    gap: 7px;
+    margin-top: 16px;
+    /* Dos etiquetas caben en una línea o en dos: se reserva el alto para que
+       los títulos de la fila queden alineados. */
+    min-height: 42px;
+  }
+  .cover-title {
+    margin-top: 12px;
+    font-size: 1.1rem;
+    line-height: 1.26;
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+  .cover-meta { margin-top: 8px; font-size: 12.5px; }
+
+  /* ---------------------------------------------------------- vista lista */
+  .res-row-link {
+    display: grid;
+    gap: 14px;
+    padding-block: 26px;
+  }
+  @media (min-width: 900px) {
+    .res-row-link {
+      grid-template-columns: 218px minmax(0, 1fr) 168px;
+      gap: 32px;
+      align-items: start;
+      padding-block: 30px;
+    }
+  }
+
+  .res-row-meta {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .res-title {
+    font-size: clamp(1.22rem, 1.9vw, 1.62rem);
+    line-height: 1.2;
+    max-width: 34ch;
+  }
+
+  .res-authors {
+    margin-top: 9px;
+    font-size: 12.5px;
+    letter-spacing: 0.02em;
+  }
+  .res-serial { opacity: 0.8; }
+
+  .res-abstract {
+    margin-top: 12px;
+    font-size: 14px;
+    line-height: 1.6;
+    max-width: 68ch;
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .res-topics {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 18px;
+    margin-top: 14px;
+  }
+  .res-topic {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+    color: var(--color-teal-600);
+  }
+  .surface-dark .res-topic, .surface-deep .res-topic { color: var(--color-teal-300); }
+
+  .res-row-side {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 16px;
+    font-size: 12.5px;
+  }
+  @media (min-width: 900px) {
+    .res-row-side { flex-direction: column; align-items: flex-end; gap: 14px; text-align: right; }
+  }
+  .res-cta { opacity: 0.85; }
+  .res-row:hover .res-cta { opacity: 1; }
+
+  /* ------------------------------------------------------- vista tarjeta */
+  .res-card { height: 100%; }
+  .res-card > a {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    padding: 22px 22px 18px;
+  }
+  .res-card-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    font-size: 12px;
+  }
+  .res-card-title { margin-top: 18px; font-size: 1.24rem; }
+  .res-card-abstract {
+    -webkit-line-clamp: 4;
+    line-clamp: 4;
+    margin-bottom: 20px;
+  }
+  .res-card-foot {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-top: auto;
+    padding-top: 14px;
+    border-top: 1px solid var(--line, var(--line-light));
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+  }
+</style>

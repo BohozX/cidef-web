@@ -1,0 +1,81 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,500;1,8..60,400&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+  <style>
+    body { margin: 0; background: #f5f3ed; font-family: "IBM Plex Sans", "Segoe UI", system-ui, sans-serif; color: #031a24; }
+    a { color: #007a75; text-decoration: none; }
+    a:hover { color: #d29a28; }
+    h1 { font-family: "Source Serif 4", Cambria, Georgia, serif; font-weight: 500; margin: 0; letter-spacing: -0.024em; }
+    p { margin: 0; }
+  </style>
+</helmet>
+
+<div style="position: relative; width: 1440px; height: 880px; background: #f5f3ed; overflow: hidden;">
+
+  <!-- cabecera clara -->
+  <div style="position: relative; z-index: 2; height: 80px; display: flex; align-items: center; justify-content: space-between; padding: 0 96px; border-bottom: 1px solid rgba(3,26,36,0.12);">
+    <div style="display: flex; align-items: center; gap: 14px;">
+      <span style="font-family: 'Source Serif 4', Georgia, serif; font-size: 26px; letter-spacing: 0.06em;">CIDEF</span>
+      <span style="font-size: 10px; font-weight: 600; letter-spacing: 0.13em; text-transform: uppercase; line-height: 1.4; color: rgba(3,26,36,0.55); border-left: 1px solid rgba(3,26,36,0.16); padding-left: 14px;">Inteligencia en Desarrollo<br>Económico y Financiero</span>
+    </div>
+    <div style="display: flex; gap: 26px; font-size: 13px; font-weight: 500;">
+      <a href="#" style="color: #d29a28;">Radar Económico</a><a href="#" style="color: #031a24;">Análisis</a><a href="#" style="color: #031a24;">Archivo Vivo</a><a href="#" style="color: #031a24;">Formación</a><a href="#" style="color: #031a24;">Agenda</a><a href="#" style="color: #031a24;">Nosotros</a>
+    </div>
+  </div>
+
+  <!-- panel fotográfico con el borde izquierdo curvado -->
+  <div style="position: absolute; right: 0; top: 80px; bottom: 0; width: 660px; overflow: hidden; border-top-left-radius: 260px; border-bottom-left-radius: 40px;">
+    <img src="lapaz.jpg" alt="La Paz de noche con el Illimani" style="width: 100%; height: 100%; object-fit: cover; object-position: 42% 40%;">
+    <div style="position: absolute; inset: 0; background: linear-gradient(200deg, rgba(3,26,36,0.14) 0%, rgba(4,49,58,0.4) 100%);"></div>
+
+    <!-- ficha de la publicación destacada, sobre la foto -->
+    <div style="position: absolute; left: 44px; bottom: 44px; right: 44px; display: grid; grid-template-columns: 104px minmax(0, 1fr); gap: 16px; padding: 16px; border-radius: 26px 4px 4px 4px; background: rgba(3,26,36,0.78); color: #f5f3ed;">
+      <span style="grid-column: 1 / -1; font-size: 10px; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase; color: #d29a28;">Publicación destacada</span>
+      <img src="cover-wp.jpg" alt="Portada" style="width: 104px; height: 147px; object-fit: cover; border-radius: 3px;">
+      <div style="display: grid; align-content: start; gap: 7px;">
+        <span style="font-size: 10px; font-weight: 600; letter-spacing: 0.13em; text-transform: uppercase; color: #4fb3ac;">Working Paper · Nº 001</span>
+        <span style="font-family: 'Source Serif 4', Georgia, serif; font-size: 16px; line-height: 1.28;">La dinámica del precio del USDT en Bolivia ante episodios de incertidumbre interna</span>
+        <span style="font-size: 11px; color: rgba(245,243,237,0.62);">Daniel Bohoz Oros Trujillo · 2026</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- arco sobre el papel -->
+  <svg viewBox="0 0 100 100" style="position: absolute; left: -220px; bottom: -240px; width: 700px; height: 700px; opacity: 0.14; overflow: visible;">
+    <circle cx="50" cy="50" r="46" fill="none" stroke="#005c59" stroke-width="0.5" stroke-dasharray="170 70" stroke-linecap="round"></circle>
+    <circle cx="50" cy="50" r="33" fill="none" stroke="#005c59" stroke-width="0.7" stroke-dasharray="110 55" stroke-linecap="round"></circle>
+  </svg>
+
+  <!-- columna de texto sobre papel -->
+  <div style="position: absolute; left: 96px; top: 190px; width: 620px;">
+    <div style="display: flex; align-items: center; gap: 12px; color: #a8791c;">
+      <span style="width: 30px; height: 1px; background: currentColor;"></span>
+      <span style="font-size: 11px; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase;">Centro de investigación económica</span>
+    </div>
+
+    <h1 style="margin-top: 26px; font-size: 82px; line-height: 1.0;">Evidencia<br>para entender<br><em style="color: #a8791c; font-style: italic;">Bolivia.</em></h1>
+
+    <p style="margin-top: 28px; max-width: 42ch; font-size: 17px; line-height: 1.62; color: rgba(3,26,36,0.66);">Investigación aplicada, datos propios y análisis para comprender la economía boliviana y contribuir a mejores decisiones.</p>
+
+    <div style="display: flex; gap: 12px; margin-top: 34px;">
+      <a href="#" style="display: inline-flex; align-items: center; gap: 10px; padding: 13px 22px; border-radius: 3px; background: #031a24; color: #f5f3ed; font-size: 13.5px; font-weight: 600;">Explorar análisis
+        <svg viewBox="0 0 16 16" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M2 8h11M9 4l4 4-4 4" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+      </a>
+      <a href="#" style="display: inline-flex; align-items: center; padding: 13px 22px; border-radius: 3px; border: 1px solid rgba(3,26,36,0.2); color: #031a24; font-size: 13.5px; font-weight: 600;">Ver Radar Económico</a>
+    </div>
+
+    <div style="display: flex; align-items: center; gap: 12px; margin-top: 40px; padding-top: 20px; border-top: 1px solid rgba(3,26,36,0.14); max-width: 380px; font-size: 11px; font-weight: 600; letter-spacing: 0.15em; text-transform: uppercase; color: rgba(3,26,36,0.55);">
+      <span>Investigación</span><span>·</span><span>Datos</span><span>·</span><span>Evidencia</span>
+    </div>
+  </div>
+</div>
+</x-dc>
+</body>
+</html>

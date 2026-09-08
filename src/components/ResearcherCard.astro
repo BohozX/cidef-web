@@ -1,0 +1,139 @@
+---
+import type { CollectionEntry } from 'astro:content';
+
+export interface Props {
+  item: CollectionEntry<'investigadores'>;
+}
+
+const { item } = Astro.props;
+const d = item.data;
+
+const links = [
+  ['ORCID', d.links.orcid],
+  ['Scholar', d.links.scholar],
+  ['RePEc', d.links.repec],
+  ['LinkedIn', d.links.linkedin],
+].filter(([, href]) => Boolean(href)) as [string, string][];
+---
+
+<article class="researcher" data-reveal>
+  <div class="portrait">
+    {
+      d.photo ? (
+        <img src={d.photo} alt={d.name} width="400" height="400" loading="lazy" decoding="async" />
+      ) : (
+        /* Marcador de posición mientras no hay retrato: un arco que
+           retoma el trazo del símbolo institucional. */
+        <svg class="portrait-ph" viewBox="0 0 120 120" aria-hidden="true" focusable="false">
+          <path d="M86 30 A34 34 0 1 0 86 90" fill="none" stroke="currentColor" stroke-width="2" opacity="0.5" />
+          <path d="M78 42 A22 22 0 1 0 78 78" fill="none" stroke="currentColor" stroke-width="1.2" opacity="0.3" />
+          <circle cx="86" cy="60" r="3" fill="currentColor" opacity="0.55" />
+        </svg>
+      )
+    }
+  </div>
+
+  <div class="researcher-body">
+    <p class="researcher-area eyebrow eyebrow-gold">{d.area}</p>
+    <h3 class="researcher-name">{d.name}</h3>
+    <p class="researcher-role muted">{d.role}</p>
+    <p class="researcher-bio muted">{d.bio}</p>
+
+    {
+      links.length > 0 && (
+        <ul class="researcher-links">
+          {links.map(([label, href]) => (
+            <li>
+              <a href={href} class="link-underline" rel="noopener noreferrer">{label}</a>
+            </li>
+          ))}
+        </ul>
+      )
+    }
+
+    {d.demo && <p class="researcher-demo"><span class="chip chip-demo">Perfil de ejemplo</span></p>}
+  </div>
+</article>
+
+<style>
+  .researcher {
+    display: grid;
+    grid-template-rows: auto 1fr;
+    /* Sin `start`, las filas automáticas se reparten el espacio sobrante de
+       la cuadrícula y los nombres dejan de alinearse entre tarjetas. */
+    align-content: start;
+    gap: 18px;
+  }
+
+  .portrait {
+    position: relative;
+    aspect-ratio: 1 / 1;
+    overflow: hidden;
+    border-radius: var(--radius-md);
+    background: linear-gradient(160deg, #04313a 0%, #031a24 100%);
+    display: grid;
+    place-items: center;
+  }
+  .portrait img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    /* Tratamiento uniforme para todos los retratos. */
+    filter: grayscale(0.35) contrast(1.04) brightness(0.97);
+    transition: filter 400ms ease, transform 600ms cubic-bezier(0.22, 0.61, 0.36, 1);
+  }
+  .researcher:hover .portrait img {
+    filter: grayscale(0) contrast(1) brightness(1);
+    transform: scale(1.03);
+  }
+  .portrait::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(to top, rgba(3, 26, 36, 0.34), rgba(3, 26, 36, 0) 55%);
+    pointer-events: none;
+  }
+  .portrait-ph {
+    width: 46%;
+    height: auto;
+    color: var(--color-teal-300);
+  }
+
+  .researcher-area {
+    display: block;
+    /* Dos líneas reservadas: mantiene alineados los nombres de la cuadrícula. */
+    min-height: 2.4em;
+  }
+  .researcher-name {
+    margin-top: 10px;
+    font-size: 1.3rem;
+    line-height: 1.2;
+  }
+  .researcher-role {
+    margin-top: 5px;
+    font-size: 12.5px;
+    font-weight: 500;
+    letter-spacing: 0.03em;
+  }
+  .researcher-bio {
+    margin-top: 12px;
+    font-size: 13.5px;
+    line-height: 1.6;
+  }
+
+  .researcher-links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px 16px;
+    margin-top: 14px;
+    padding-top: 12px;
+    border-top: 1px solid var(--line, var(--line-light));
+    list-style: none;
+    font-size: 11.5px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  .researcher-demo { margin-top: 12px; }
+</style>

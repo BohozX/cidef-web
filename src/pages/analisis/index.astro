@@ -1,0 +1,283 @@
+---
+import { getCollection } from 'astro:content';
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import PageHero from '../../components/PageHero.astro';
+import ResearchCard from '../../components/ResearchCard.astro';
+import Newsletter from '../../components/Newsletter.astro';
+import { year } from '../../lib/format';
+
+const items = (await getCollection('publicaciones')).sort(
+  (a, b) => b.data.date.getTime() - a.data.date.getTime(),
+);
+
+const types = [...new Set(items.map((i) => i.data.type))].sort();
+const topics = [...new Set(items.flatMap((i) => i.data.topics))].sort();
+const authors = [...new Set(items.flatMap((i) => i.data.authors))].sort();
+const years = [...new Set(items.map((i) => year(i.data.date.toISOString())))].sort((a, b) => b - a);
+
+const facts = [
+  { label: 'Documentos', value: String(items.length) },
+  { label: 'Tipos', value: String(types.length) },
+  { label: 'Temas', value: String(topics.length) },
+  { label: 'Desde', value: String(years[years.length - 1] ?? '') },
+];
+---
+
+<BaseLayout
+  title="Análisis"
+  description="Working papers, reportes, policy briefs y notas técnicas del Centro de Inteligencia en Desarrollo Económico y Financiero."
+>
+  <PageHero
+    eyebrow="Análisis"
+    title="La producción intelectual del centro."
+    lede="Working papers, reportes de coyuntura, policy briefs, notas técnicas y artículos. Cada documento se publica con su resumen, sus hallazgos, sus datos y la forma de citarlo."
+    facts={facts}
+  />
+
+  <section class="surface-light section" aria-label="Listado de análisis">
+    <div class="wrap">
+      <form class="filters no-print" role="search" data-reveal>
+        <div class="filters-search">
+          <svg viewBox="0 0 20 20" width="16" height="16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.6">
+            <circle cx="8.6" cy="8.6" r="5.4" />
+            <path d="M12.6 12.6 17 17" stroke-linecap="round" />
+          </svg>
+          <label class="sr-only" for="an-q">Buscar en los análisis</label>
+          <input
+            id="an-q"
+            type="search"
+            class="filters-input"
+            placeholder="Buscar por título, autor o tema…"
+            autocomplete="off"
+            data-an-query
+          />
+        </div>
+
+        <div class="filters-row">
+          <label class="sr-only" for="an-type">Tipo de documento</label>
+          <select id="an-type" class="field" data-an-type>
+            <option value="">Todos los tipos</option>
+            {types.map((t) => <option value={t}>{t}</option>)}
+          </select>
+
+          <label class="sr-only" for="an-topic">Tema</label>
+          <select id="an-topic" class="field" data-an-topic>
+            <option value="">Todos los temas</option>
+            {topics.map((t) => <option value={t}>{t}</option>)}
+          </select>
+
+          <label class="sr-only" for="an-author">Autor</label>
+          <select id="an-author" class="field" data-an-author>
+            <option value="">Todos los autores</option>
+            {authors.map((a) => <option value={a}>{a}</option>)}
+          </select>
+
+          <label class="sr-only" for="an-year">Año</label>
+          <select id="an-year" class="field" data-an-year>
+            <option value="">Todos los años</option>
+            {years.map((y) => <option value={y}>{y}</option>)}
+          </select>
+
+          <div class="view-toggle" role="group" aria-label="Modo de visualización">
+            <button type="button" class="view-btn" data-view="list" aria-pressed="true" title="Vista de lista">
+              <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.6">
+                <path d="M2 4h12M2 8h12M2 12h12" stroke-linecap="round" />
+              </svg>
+              <span class="sr-only">Lista</span>
+            </button>
+            <button type="button" class="view-btn" data-view="grid" aria-pressed="false" title="Vista de cuadrícula">
+              <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.6">
+                <rect x="2" y="2" width="5" height="5" /><rect x="9" y="2" width="5" height="5" />
+                <rect x="2" y="9" width="5" height="5" /><rect x="9" y="9" width="5" height="5" />
+              </svg>
+              <span class="sr-only">Cuadrícula</span>
+            </button>
+          </div>
+        </div>
+      </form>
+
+      <p class="filters-count muted" data-an-count aria-live="polite">
+        {items.length} documentos
+      </p>
+
+      <!-- Vista lista -->
+      <div class="row-list an-view" data-an-list data-reveal-group data-reveal-stagger="0.06">
+        {
+          items.map((item, i) => (
+            <div
+              class="an-entry"
+              data-type={item.data.type}
+              data-topics={item.data.topics.join('|')}
+              data-authors={item.data.authors.join('|')}
+              data-year={year(item.data.date.toISOString())}
+              data-haystack={`${item.data.title} ${item.data.authors.join(' ')} ${item.data.topics.join(' ')} ${item.data.keywords.join(' ')} ${item.data.abstract}`.toLowerCase()}
+            >
+              <ResearchCard item={item} index={i + 1} />
+            </div>
+          ))
+        }
+      </div>
+
+      <!-- Vista cuadrícula -->
+      <div class="an-grid an-view" data-an-grid hidden>
+        {
+          items.map((item) => (
+            <div
+              class="an-entry"
+              data-type={item.data.type}
+              data-topics={item.data.topics.join('|')}
+              data-authors={item.data.authors.join('|')}
+              data-year={year(item.data.date.toISOString())}
+              data-haystack={`${item.data.title} ${item.data.authors.join(' ')} ${item.data.topics.join(' ')} ${item.data.keywords.join(' ')} ${item.data.abstract}`.toLowerCase()}
+            >
+              <ResearchCard item={item} view="grid" />
+            </div>
+          ))
+        }
+      </div>
+
+      <p class="an-empty muted" data-an-empty hidden>
+        Ningún documento coincide con los filtros aplicados.
+      </p>
+    </div>
+  </section>
+
+  <Newsletter />
+</BaseLayout>
+
+<script>
+  const query = document.querySelector<HTMLInputElement>('[data-an-query]');
+  const selType = document.querySelector<HTMLSelectElement>('[data-an-type]');
+  const selTopic = document.querySelector<HTMLSelectElement>('[data-an-topic]');
+  const selAuthor = document.querySelector<HTMLSelectElement>('[data-an-author]');
+  const selYear = document.querySelector<HTMLSelectElement>('[data-an-year]');
+  const count = document.querySelector<HTMLElement>('[data-an-count]');
+  const empty = document.querySelector<HTMLElement>('[data-an-empty]');
+  const listView = document.querySelector<HTMLElement>('[data-an-list]');
+  const gridView = document.querySelector<HTMLElement>('[data-an-grid]');
+
+  if (query && selType && selTopic && selAuthor && selYear && count && empty && listView && gridView) {
+    const entries = Array.from(document.querySelectorAll<HTMLElement>('.an-entry'));
+
+    const normalize = (s: string): string =>
+      s.toLowerCase().normalize('NFD').replace(/\p{Diacritic}/gu, '');
+
+    const apply = (): void => {
+      const q = normalize(query.value.trim());
+      const t = selType.value;
+      const topic = selTopic.value;
+      const author = selAuthor.value;
+      const y = selYear.value;
+
+      for (const el of entries) {
+        const hay = normalize(el.dataset.haystack ?? '');
+        const ok =
+          (q.length === 0 || q.split(/\s+/).every((term) => hay.includes(term))) &&
+          (t === '' || el.dataset.type === t) &&
+          (topic === '' || (el.dataset.topics ?? '').split('|').includes(topic)) &&
+          (author === '' || (el.dataset.authors ?? '').split('|').includes(author)) &&
+          (y === '' || el.dataset.year === y);
+        el.hidden = !ok;
+      }
+
+      // Se cuenta solo la vista activa para no duplicar.
+      const active = gridView.hidden ? listView : gridView;
+      const visible = Array.from(active.querySelectorAll<HTMLElement>('.an-entry')).filter(
+        (el) => !el.hidden,
+      ).length;
+
+      count.textContent = visible === 1 ? '1 documento' : `${visible} documentos`;
+      empty.hidden = visible > 0;
+    };
+
+    [query, selType, selTopic, selAuthor, selYear].forEach((el) =>
+      el.addEventListener(el === query ? 'input' : 'change', apply),
+    );
+    query.closest('form')?.addEventListener('submit', (e) => e.preventDefault());
+
+    document.querySelectorAll<HTMLButtonElement>('[data-view]').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const grid = btn.dataset.view === 'grid';
+        listView.hidden = grid;
+        gridView.hidden = !grid;
+        document.querySelectorAll<HTMLButtonElement>('[data-view]').forEach((b) =>
+          b.setAttribute('aria-pressed', String(b === btn)),
+        );
+        apply();
+      });
+    });
+  }
+</script>
+
+<style>
+  .filters {
+    display: grid;
+    gap: 18px;
+    padding-bottom: 26px;
+  }
+
+  .filters-search {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    border-bottom: 1px solid var(--line-light);
+    padding-bottom: 12px;
+    color: var(--muted);
+  }
+  .filters-input {
+    flex: 1;
+    background: transparent;
+    border: 0;
+    color: var(--color-ink);
+    font-family: var(--font-display);
+    font-size: clamp(1.2rem, 2.4vw, 1.7rem);
+    padding: 0;
+  }
+  .filters-input:focus { outline: none; }
+  .filters-input::-webkit-search-cancel-button { display: none; }
+
+  .filters-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    align-items: center;
+  }
+  .filters-row select { flex: 1 1 168px; max-width: 230px; }
+
+  .view-toggle { display: flex; margin-left: auto; }
+  .view-btn {
+    display: grid;
+    place-items: center;
+    width: 40px;
+    height: 40px;
+    border: 1px solid var(--line-light);
+    background: transparent;
+    color: inherit;
+    cursor: pointer;
+    transition: background-color 180ms ease, color 180ms ease, border-color 180ms ease;
+  }
+  .view-btn:first-child { border-radius: var(--radius-sm) 0 0 var(--radius-sm); }
+  .view-btn:last-child { border-radius: 0 var(--radius-sm) var(--radius-sm) 0; margin-left: -1px; }
+  .view-btn[aria-pressed='true'] {
+    background: var(--color-ink);
+    border-color: var(--color-ink);
+    color: var(--color-paper);
+  }
+
+  .filters-count {
+    font-size: 11.5px;
+    font-weight: 600;
+    letter-spacing: 0.13em;
+    text-transform: uppercase;
+    padding-bottom: 10px;
+  }
+
+  .an-grid {
+    display: grid;
+    gap: 16px;
+  }
+  @media (min-width: 700px) { .an-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  @media (min-width: 1080px) { .an-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+
+  .an-empty { padding-block: 52px; font-size: 14px; }
+</style>

@@ -1,0 +1,452 @@
+---
+import { getCollection, render } from 'astro:content';
+import type { CollectionEntry } from 'astro:content';
+import type { GetStaticPaths } from 'astro';
+
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import PageHero from '../../components/PageHero.astro';
+import ProgramCard from '../../components/ProgramCard.astro';
+import Newsletter from '../../components/Newsletter.astro';
+import { site } from '../../site.config';
+import { num } from '../../lib/format';
+
+export const getStaticPaths: GetStaticPaths = async () => {
+  const items = await getCollection('formacion');
+  return items.map((entry) => ({ params: { id: entry.id }, props: { entry } }));
+};
+
+export interface Props {
+  entry: CollectionEntry<'formacion'>;
+}
+
+const { entry } = Astro.props;
+const d = entry.data;
+const { Content } = await render(entry);
+
+const otros = (await getCollection('formacion'))
+  .filter((p) => p.id !== entry.id)
+  .sort((a, b) => a.data.order - b.data.order);
+
+const facts = [
+  { label: 'Duración', value: `${d.weeks} semanas` },
+  { label: 'Modalidad', value: d.modality },
+  { label: 'Módulos', value: String(d.modules.length) },
+  { label: 'Docentes', value: String(d.faculty.length) },
+];
+
+const jsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'Course',
+  name: d.title,
+  description: d.summary,
+  provider: { '@type': 'Organization', name: site.legalName, url: site.url },
+  inLanguage: 'es',
+  offers: {
+    '@type': 'Offer',
+    price: d.price.promo ?? d.price.total,
+    priceCurrency: 'BOB',
+    availability: d.open ? 'https://schema.org/InStock' : 'https://schema.org/SoldOut',
+  },
+  hasCourseInstance: {
+    '@type': 'CourseInstance',
+    courseMode: 'online',
+    courseWorkload: `P${d.weeks}W`,
+  },
+};
+---
+
+<BaseLayout title={d.title} description={d.summary} ogType="article" jsonLd={jsonLd}>
+  <PageHero
+    eyebrow={`${d.kind} · ${d.modality}`}
+    title={d.title}
+    parent={{ label: 'Formación', href: '/formacion' }}
+    facts={facts}
+  >
+    <div slot="actions" class="prog-actions" data-hero-item>
+      <a href="#inscripcion" class="btn btn-primary">
+        Consultar inscripción
+        <svg class="arw" viewBox="0 0 16 16" width="13" height="13" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8">
+          <path d="M2 8h11M9 4l4 4-4 4" stroke-linecap="round" stroke-linejoin="round" />
+        </svg>
+      </a>
+      <a href="#malla" class="btn btn-outline">Ver malla curricular</a>
+      {d.open && <span class="chip chip-teal">Inscripciones abiertas</span>}
+    </div>
+  </PageHero>
+
+  <!-- OBJETIVO Y DIRIGIDO A -------------------------------------------------->
+  <section class="surface-light section" aria-labelledby="objetivo">
+    <div class="wrap">
+      <div class="obj-grid">
+        <div>
+          <h2 id="objetivo" class="eyebrow eyebrow-gold block-h" data-reveal>Objetivo del programa</h2>
+          <p class="obj-text" data-reveal>{d.objective}</p>
+
+          {
+            d.schedule.length > 0 && (
+              <div class="sched" data-reveal>
+                <h3 class="eyebrow muted block-h sched-h">Horarios</h3>
+                <ul>
+                  {d.schedule.map((s) => <li class="tnum">{s}</li>)}
+                </ul>
+              </div>
+            )
+          }
+
+          {
+            d.tools.length > 0 && (
+              <div class="tools" data-reveal>
+                <h3 class="eyebrow muted block-h sched-h">Herramientas</h3>
+                <ul>
+                  {d.tools.map((t) => <li>{t}</li>)}
+                </ul>
+              </div>
+            )
+          }
+        </div>
+
+        <div>
+          <h2 class="eyebrow eyebrow-gold block-h" data-reveal>Dirigido a</h2>
+          <ul class="aud-list" data-reveal-group data-reveal-stagger="0.05">
+            {
+              d.audience.map((a, i) => (
+                <li data-reveal>
+                  <span class="index-num">{String(i + 1).padStart(2, '0')}</span>
+                  <span>{a}</span>
+                </li>
+              ))
+            }
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- MALLA CURRICULAR ------------------------------------------------------->
+  <section id="malla" class="surface-deep section" aria-labelledby="malla-h">
+    <div class="wrap">
+      <div class="rule rule-draw"></div>
+      <p class="eyebrow eyebrow-gold malla-eyebrow" data-reveal>Malla curricular</p>
+      <h2 id="malla-h" class="display-2 malla-title" data-reveal>
+        {d.modules.length} módulos, {d.weeks} semanas.
+      </h2>
+
+      <div class="malla" data-reveal-group data-reveal-stagger="0.06">
+        {
+          d.modules.map((m) => (
+            <article class="module" data-reveal>
+              <header class="module-head">
+                <span class="module-n">{m.n}</span>
+                <h3 class="module-title">{m.title}</h3>
+              </header>
+              <ul class="module-items">
+                {m.items.map((it) => <li>{it}</li>)}
+              </ul>
+            </article>
+          ))
+        }
+      </div>
+    </div>
+  </section>
+
+  <!-- CLAUSTRO DOCENTE ------------------------------------------------------->
+  {
+    d.faculty.length > 0 && (
+      <section class="surface-light section" aria-labelledby="claustro">
+        <div class="wrap">
+          <h2 id="claustro" class="eyebrow eyebrow-gold block-h" data-reveal>Claustro docente</h2>
+          <div class="faculty" data-reveal-group data-reveal-stagger="0.07">
+            {d.faculty.map((f) => (
+              <article class="teacher" data-reveal>
+                <h3 class="teacher-name">{f.name}</h3>
+                <ul class="teacher-points">
+                  {f.highlights.map((h) => <li class="muted">{h}</li>)}
+                </ul>
+              </article>
+            ))}
+          </div>
+        </div>
+      </section>
+    )
+  }
+
+  <!-- CERTIFICACIÓN E INSCRIPCIÓN -------------------------------------------->
+  <section id="inscripcion" class="surface-tint section" aria-labelledby="inscr-h">
+    <div class="wrap">
+      <div class="rule rule-draw"></div>
+
+      <div class="enroll-grid">
+        <div>
+          <p class="eyebrow eyebrow-gold" data-reveal>Certificación e inscripción</p>
+          <h2 id="inscr-h" class="display-3 enroll-title" data-reveal>Costo y respaldo académico.</h2>
+          <p class="enroll-cert muted" data-reveal>{d.certification}</p>
+
+          {
+            d.certificates.length > 0 && (
+              <div data-reveal>
+                <h3 class="eyebrow muted block-h enroll-sub">Certificaciones intermedias</h3>
+                <ul class="cert-list">
+                  {d.certificates.map((c) => <li>{c}</li>)}
+                </ul>
+              </div>
+            )
+          }
+
+          <div class="prose-cidef enroll-body" data-reveal><Content /></div>
+        </div>
+
+        <aside class="enroll-card panel" data-reveal aria-label="Costo del programa">
+          <h3 class="eyebrow eyebrow-gold">Costo del programa</h3>
+
+          <dl class="price-dl tnum">
+            <div>
+              <dt class="muted">Matrícula</dt>
+              <dd>{d.price.currency} {num(d.price.matricula, 0)}</dd>
+            </div>
+            <div>
+              <dt class="muted">Colegiatura</dt>
+              <dd>{d.price.currency} {num(d.price.colegiatura, 0)}</dd>
+            </div>
+            <div class="price-total">
+              <dt>Total</dt>
+              <dd>{d.price.currency} {num(d.price.total, 0)}</dd>
+            </div>
+          </dl>
+
+          {
+            d.price.promo && (
+              <div class="promo">
+                <p class="promo-label eyebrow">Precio para asociados</p>
+                <p class="promo-value metric tnum">
+                  {d.price.currency} {num(d.price.promo, 0)}
+                </p>
+                {d.price.promoNote && <p class="promo-note muted">{d.price.promoNote}</p>}
+              </div>
+            )
+          }
+
+          <div class="enroll-contact">
+            <h4 class="eyebrow muted">Teléfono / WhatsApp</h4>
+            <p class="tnum enroll-phones">
+              {(d.contact.length > 0 ? d.contact : site.contact.phones).join(' · ')}
+            </p>
+            <p class="enroll-addr muted">{site.contact.address}<br />{site.contact.addressCity}</p>
+          </div>
+
+          {
+            d.partners.length > 0 && (
+              <div class="enroll-partners">
+                <h4 class="eyebrow muted">Auspician</h4>
+                <ul>
+                  {d.partners.map((p) => <li>{p}</li>)}
+                </ul>
+              </div>
+            )
+          }
+        </aside>
+      </div>
+    </div>
+  </section>
+
+  {
+    otros.length > 0 && (
+      <section class="surface-light section" aria-labelledby="otros-prog">
+        <div class="wrap">
+          <h2 id="otros-prog" class="eyebrow eyebrow-gold block-h" data-reveal>Otros programas</h2>
+          <div class="otros-grid" data-reveal-group data-reveal-stagger="0.08">
+            {otros.map((item) => <ProgramCard item={item} />)}
+          </div>
+        </div>
+      </section>
+    )
+  }
+
+  <Newsletter />
+</BaseLayout>
+
+<style>
+  .prog-actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 12px 16px;
+    margin-top: 32px;
+  }
+
+  .block-h { display: block; margin-bottom: 16px; }
+
+  .obj-grid { display: grid; gap: 44px; }
+  @media (min-width: 960px) {
+    .obj-grid { grid-template-columns: minmax(0, 1.25fr) minmax(0, 0.75fr); gap: 68px; }
+  }
+  .obj-text {
+    font-family: var(--font-display);
+    font-size: clamp(1.06rem, 1.6vw, 1.24rem);
+    line-height: 1.6;
+    max-width: 62ch;
+  }
+
+  .sched, .tools { margin-top: 34px; }
+  .sched-h { margin-bottom: 10px; }
+  .sched ul, .tools ul { list-style: none; margin: 0; padding: 0; }
+  .sched li { padding-block: 8px; border-top: 1px solid var(--line-light); font-size: 14px; }
+  .sched li:last-child { border-bottom: 1px solid var(--line-light); }
+  .tools ul { display: flex; flex-wrap: wrap; gap: 8px; }
+  .tools li {
+    padding: 6px 13px;
+    border: 1px solid var(--line-light);
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 500;
+  }
+
+  .aud-list { list-style: none; margin: 0; padding: 0; }
+  .aud-list li {
+    display: grid;
+    grid-template-columns: 32px minmax(0, 1fr);
+    gap: 12px;
+    padding-block: 14px;
+    border-top: 1px solid var(--line-light);
+    font-size: 14px;
+    line-height: 1.5;
+  }
+  .aud-list li:last-child { border-bottom: 1px solid var(--line-light); }
+
+  /* --- malla --- */
+  .malla-eyebrow { margin-top: 26px; }
+  .malla-title { margin-top: 14px; margin-bottom: 40px; max-width: 16ch; }
+
+  .malla { display: grid; gap: 1px; }
+  @media (min-width: 780px) { .malla { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+
+  .module {
+    padding: 26px 0;
+    border-top: 1px solid var(--line-dark);
+  }
+  @media (min-width: 780px) {
+    .module:nth-child(odd) { padding-right: 32px; }
+    .module:nth-child(even) {
+      padding-left: 32px;
+      border-left: 1px solid var(--line-dark);
+      margin-left: -1px;
+    }
+  }
+
+  .module-head { display: flex; align-items: baseline; gap: 14px; }
+  .module-n {
+    font-family: var(--font-display);
+    font-size: 1.5rem;
+    color: var(--color-gold);
+    min-width: 34px;
+  }
+  .module-title { font-size: 1.16rem; line-height: 1.25; }
+  .module-items { list-style: none; margin: 16px 0 0 48px; padding: 0; }
+  .module-items li {
+    position: relative;
+    padding-left: 15px;
+    font-size: 13.5px;
+    line-height: 1.55;
+    color: color-mix(in srgb, #f5f3ed 74%, transparent);
+  }
+  .module-items li + li { margin-top: 7px; }
+  .module-items li::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0.68em;
+    width: 6px;
+    height: 1px;
+    background: var(--color-teal-300);
+  }
+
+  /* --- claustro --- */
+  .faculty { display: grid; gap: 1px; }
+  @media (min-width: 820px) { .faculty { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  .teacher { padding: 24px 0; border-top: 1px solid var(--line-light); }
+  @media (min-width: 820px) {
+    .teacher:nth-child(odd) { padding-right: 34px; }
+    .teacher:nth-child(even) {
+      padding-left: 34px;
+      border-left: 1px solid var(--line-light);
+      margin-left: -1px;
+    }
+  }
+  .teacher-name { font-size: 1.2rem; }
+  .teacher-points { list-style: none; margin: 14px 0 0; padding: 0; }
+  .teacher-points li {
+    position: relative;
+    padding-left: 15px;
+    font-size: 13.5px;
+    line-height: 1.55;
+  }
+  .teacher-points li + li { margin-top: 8px; }
+  .teacher-points li::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0.68em;
+    width: 6px;
+    height: 1px;
+    background: var(--color-gold);
+  }
+
+  /* --- inscripción --- */
+  .enroll-grid { display: grid; gap: 40px; padding-top: 32px; }
+  @media (min-width: 1000px) {
+    .enroll-grid { grid-template-columns: minmax(0, 1fr) 340px; gap: 68px; align-items: start; }
+  }
+  .enroll-title { margin-top: 14px; max-width: 18ch; }
+  .enroll-cert { margin-top: 16px; font-size: 14px; line-height: 1.7; max-width: 58ch; }
+  .enroll-sub { margin-top: 30px; margin-bottom: 10px; }
+  .cert-list { list-style: none; margin: 0; padding: 0; }
+  .cert-list li {
+    position: relative;
+    padding: 10px 0 10px 15px;
+    border-top: 1px solid var(--line-light);
+    font-size: 14px;
+  }
+  .cert-list li:last-child { border-bottom: 1px solid var(--line-light); }
+  .cert-list li::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 1.35em;
+    width: 7px;
+    height: 1px;
+    background: var(--color-gold);
+  }
+  .enroll-body { margin-top: 30px; }
+
+  .enroll-card { padding: 26px 24px; }
+  @media (min-width: 1000px) { .enroll-card { position: sticky; top: 96px; } }
+  .price-dl { display: grid; gap: 0; margin: 18px 0 0; }
+  .price-dl > div {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 14px;
+    padding-block: 11px;
+    border-top: 1px solid var(--line-light);
+    font-size: 14px;
+  }
+  .price-dl dt { font-size: 12.5px; }
+  .price-dl dd { margin: 0; }
+  .price-total { border-bottom: 1px solid var(--line-light); font-weight: 600; }
+  .price-total dt { font-size: 12.5px; font-weight: 600; }
+
+  .promo { margin-top: 22px; }
+  .promo-label { color: var(--color-gold); }
+  .promo-value { font-size: 2.1rem; color: var(--color-gold); margin-top: 8px; }
+  .promo-note { margin-top: 10px; font-size: 12px; line-height: 1.55; }
+
+  .enroll-contact { margin-top: 26px; padding-top: 18px; border-top: 1px solid var(--line-light); }
+  .enroll-phones { margin-top: 8px; font-size: 14px; letter-spacing: 0.02em; }
+  .enroll-addr { margin-top: 8px; font-size: 12.5px; line-height: 1.55; }
+
+  .enroll-partners { margin-top: 22px; padding-top: 18px; border-top: 1px solid var(--line-light); }
+  .enroll-partners ul { list-style: none; margin: 10px 0 0; padding: 0; font-size: 12.5px; }
+  .enroll-partners li + li { margin-top: 5px; }
+
+  .otros-grid { display: grid; gap: 16px; }
+  @media (min-width: 760px) { .otros-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+</style>

@@ -1,0 +1,72 @@
+---
+import { buildSparkline } from '../lib/sparkline';
+
+export interface Props {
+  values: number[];
+  width?: number;
+  height?: number;
+  /** Color del trazo; por defecto hereda del contexto. */
+  stroke?: string;
+  showArea?: boolean;
+  showDot?: boolean;
+  class?: string;
+}
+
+const {
+  values,
+  width = 168,
+  height = 44,
+  stroke = 'currentColor',
+  showArea = true,
+  showDot = true,
+  class: className = '',
+} = Astro.props;
+
+const geo = buildSparkline(values, width, height);
+const uid = `sp${Math.random().toString(36).slice(2, 9)}`;
+---
+
+{
+  geo.line && (
+    <svg
+      class={`spark ${className}`}
+      viewBox={`0 0 ${width} ${height}`}
+      width={width}
+      height={height}
+      preserveAspectRatio="none"
+      aria-hidden="true"
+      focusable="false"
+    >
+      {showArea && (
+        <>
+          <defs>
+            <linearGradient id={uid} x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color={stroke} stop-opacity="0.22" />
+              <stop offset="100%" stop-color={stroke} stop-opacity="0" />
+            </linearGradient>
+          </defs>
+          <path d={geo.area} fill={`url(#${uid})`} />
+        </>
+      )}
+      <path
+        class="spark-path"
+        d={geo.line}
+        fill="none"
+        stroke={stroke}
+        stroke-width="1.5"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        vector-effect="non-scaling-stroke"
+      />
+      {showDot && <circle cx={geo.lastX} cy={geo.lastY} r="2.2" fill={stroke} />}
+    </svg>
+  )
+}
+
+<style>
+  .spark {
+    width: 100%;
+    height: auto;
+    overflow: visible;
+  }
+</style>

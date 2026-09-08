@@ -1,0 +1,166 @@
+---
+import { getCollection } from 'astro:content';
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import PageHero from '../../components/PageHero.astro';
+import ProgramCard from '../../components/ProgramCard.astro';
+import InstitutionalStrip from '../../components/InstitutionalStrip.astro';
+import Newsletter from '../../components/Newsletter.astro';
+import { site } from '../../site.config';
+
+const programas = (await getCollection('formacion')).sort((a, b) => a.data.order - b.data.order);
+
+const totalDocentes = new Set(programas.flatMap((p) => p.data.faculty.map((f) => f.name))).size;
+const totalModulos = programas.reduce((acc, p) => acc + p.data.modules.length, 0);
+
+const facts = [
+  { label: 'Programas', value: String(programas.length) },
+  { label: 'Módulos', value: String(totalModulos) },
+  { label: 'Docentes', value: String(totalDocentes) },
+  { label: 'Modalidad', value: 'Virtual en vivo' },
+];
+
+const requisitos = programas[0]?.data.requirements ?? [];
+---
+
+<BaseLayout
+  title="Formación"
+  description="Diplomados de posgrado en gestión minera, modelación macroeconómica y modelación econométrica aplicada, con certificación de la Universidad Franz Tamayo."
+>
+  <PageHero
+    eyebrow="Formación"
+    title="Formación de expertos, para expertos."
+    lede="Diplomados de posgrado dictados por especialistas en ejercicio —banca central, regulación y academia—, con clases en vivo, casos bolivianos y certificación universitaria."
+    facts={facts}
+  />
+
+  <section class="surface-light section" aria-labelledby="programas">
+    <div class="wrap">
+      <h2 id="programas" class="eyebrow eyebrow-gold form-h" data-reveal>Oferta vigente</h2>
+
+      <div class="prog-grid" data-reveal-group data-reveal-stagger="0.08">
+        {programas.map((item) => <ProgramCard item={item} />)}
+      </div>
+    </div>
+  </section>
+
+  <!-- CERTIFICACIÓN Y REQUISITOS ------------------------------------------- -->
+  <section class="surface-deep section" aria-labelledby="cert">
+    <div class="wrap">
+      <div class="rule rule-draw"></div>
+
+      <div class="cert-grid">
+        <div>
+          <p class="eyebrow eyebrow-gold" data-reveal>Respaldo y certificación</p>
+          <h2 id="cert" class="display-2 cert-title" data-reveal>
+            Diploma con validez nacional e internacional.
+          </h2>
+          <p class="cert-text muted" data-reveal>
+            Los programas son auspiciados por el Colegio de Economistas de La Paz,
+            la Escuela de Postgrado MSC y el CIDEF. El diploma es emitido y
+            respaldado por la Universidad Franz Tamayo, con validez para
+            actualización profesional, concursos públicos y acreditación de
+            competencias sectoriales.
+          </p>
+        </div>
+
+        <div class="cert-side">
+          <h3 class="eyebrow muted req-h" data-reveal>Requisitos de inscripción</h3>
+          <ol class="req-list" data-reveal-group data-reveal-stagger="0.05">
+            {
+              requisitos.map((r, i) => (
+                <li data-reveal>
+                  <span class="index-num">{String(i + 1).padStart(2, '0')}</span>
+                  <span>{r}</span>
+                </li>
+              ))
+            }
+          </ol>
+          <p class="req-note muted" data-reveal>
+            La documentación para el trámite del diploma se presenta en fólder
+            amarillo tamaño oficio, en sobre manila cerrado rotulado con nombres
+            y apellidos, institución, departamento, teléfono y correo, en la
+            dirección del Colegio de Economistas de La Paz.
+          </p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CONTACTO -------------------------------------------------------------- -->
+  <section class="surface-tint section-tight" aria-labelledby="inscripcion">
+    <div class="wrap">
+      <div class="rule rule-draw"></div>
+      <div class="contact-grid">
+        <div>
+          <p class="eyebrow eyebrow-gold" data-reveal>Inscripciones</p>
+          <h2 id="inscripcion" class="display-3 contact-title" data-reveal>
+            Consulta cupos y descuentos grupales.
+          </h2>
+        </div>
+        <div class="contact-body" data-reveal>
+          <p class="contact-line">
+            <span class="eyebrow muted">Teléfono / WhatsApp</span>
+            <span class="tnum contact-phones">{site.contact.phones.join(' · ')}</span>
+          </p>
+          <p class="contact-line">
+            <span class="eyebrow muted">Dirección</span>
+            <span>{site.contact.address}<br />{site.contact.addressCity}</span>
+          </p>
+          <p class="contact-line">
+            <span class="eyebrow muted">Correo</span>
+            <a href={`mailto:${site.contact.email}`} class="link-underline">{site.contact.email}</a>
+          </p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <InstitutionalStrip tone="light" />
+  <Newsletter />
+</BaseLayout>
+
+<style>
+  .form-h { display: block; margin-bottom: 26px; }
+
+  .prog-grid { display: grid; gap: 16px; }
+  @media (min-width: 760px) { .prog-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  @media (min-width: 1140px) { .prog-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+
+  .cert-grid {
+    display: grid;
+    gap: 40px;
+    padding-top: 32px;
+  }
+  @media (min-width: 960px) {
+    .cert-grid { grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.95fr); gap: 68px; }
+  }
+  .cert-title { margin-top: 16px; max-width: 17ch; }
+  .cert-text { margin-top: 18px; font-size: 14.5px; line-height: 1.7; max-width: 54ch; }
+
+  .req-h { display: block; margin-bottom: 12px; }
+  .req-list { list-style: none; margin: 0; padding: 0; }
+  .req-list li {
+    display: grid;
+    grid-template-columns: 32px minmax(0, 1fr);
+    gap: 12px;
+    padding-block: 13px;
+    border-top: 1px solid var(--line-dark);
+    font-size: 13.5px;
+    line-height: 1.5;
+  }
+  .req-list li:last-child { border-bottom: 1px solid var(--line-dark); }
+  .req-note { margin-top: 18px; font-size: 12.5px; line-height: 1.6; }
+
+  .contact-grid {
+    display: grid;
+    gap: 28px;
+    padding-top: 30px;
+  }
+  @media (min-width: 900px) {
+    .contact-grid { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 64px; align-items: center; }
+  }
+  .contact-title { margin-top: 14px; max-width: 18ch; }
+  .contact-body { display: grid; gap: 18px; }
+  .contact-line { display: grid; gap: 6px; font-size: 14px; line-height: 1.6; }
+  .contact-phones { font-size: 15px; letter-spacing: 0.02em; }
+</style>

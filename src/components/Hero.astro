@@ -1,0 +1,224 @@
+---
+import { site } from '../site.config';
+
+/**
+ * Portada.
+ *
+ * Solo el mensaje del centro, centrado, sobre la fotografía nocturna del
+ * Illimani. Sin botones, sin publicaciones, sin datos: lo primero que se ve
+ * es qué es este centro y nada más. La imagen tiene un movimiento lento y
+ * continuo —acercamiento y deriva— para que la portada respire sin distraer.
+ */
+---
+
+<section class="hero" data-parallax-scope aria-labelledby="hero-title">
+  <div class="hero-media">
+    <picture class="hero-pic" data-hero-backdrop data-parallax="5">
+      <source type="image/avif" srcset={site.hero.srcset.avif} sizes="100vw" />
+      <source type="image/webp" srcset={site.hero.srcset.webp} sizes="100vw" />
+      <img
+        src={site.hero.src}
+        srcset={site.hero.srcset.jpg}
+        sizes="100vw"
+        alt={site.hero.alt}
+        class="hero-img"
+        fetchpriority="high"
+        decoding="async"
+        width={site.hero.width}
+        height={site.hero.height}
+      />
+    </picture>
+
+    <div class="hero-veil" aria-hidden="true"></div>
+    <div class="hero-glow" aria-hidden="true"></div>
+    <div class="hero-vignette" aria-hidden="true"></div>
+  </div>
+
+  <div class="wrap hero-inner">
+    <p class="hero-eyebrow" data-hero-item>
+      <span class="hero-tick" aria-hidden="true"></span>
+      <span class="eyebrow">{site.legalName}</span>
+      <span class="hero-tick" aria-hidden="true"></span>
+    </p>
+
+    <h1 id="hero-title" class="display-1 hero-title" data-hero-item>
+      Evidencia para entender Bolivia.
+    </h1>
+
+    <p class="hero-lede" data-hero-item>
+      Investigación aplicada, datos propios y análisis para comprender la
+      economía boliviana y contribuir a mejores decisiones.
+    </p>
+  </div>
+
+  <div class="hero-scroll" aria-hidden="true" data-hero-item>
+    <span class="hero-scroll-line"></span>
+  </div>
+</section>
+
+<style>
+  .hero {
+    position: relative;
+    min-height: 94vh;
+    min-height: 94svh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 140px 0 96px;
+    background: var(--color-ink);
+    color: var(--color-paper);
+    --line: var(--line-dark);
+    overflow: clip;
+    border-bottom-left-radius: clamp(48px, 11vw, 168px);
+    border-bottom-right-radius: clamp(48px, 11vw, 168px);
+  }
+
+  .hero-media { position: absolute; inset: -4% 0; z-index: 0; }
+
+  .hero-pic,
+  .hero-img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: 50% 38%;
+  }
+
+  /* Movimiento continuo de la fotografía: acercamiento muy lento con una
+     deriva mínima. La animación va en el <img> y el parallax en el
+     <picture>, para que las dos transformaciones no compitan. */
+  .hero-img {
+    transform-origin: 52% 42%;
+    animation: illimani 34s ease-in-out infinite alternate;
+    will-change: transform;
+  }
+
+  @keyframes illimani {
+    from { transform: scale(1.015) translate3d(0, 0, 0); }
+    to   { transform: scale(1.09) translate3d(-1.1%, -1.4%, 0); }
+  }
+
+  /* Velo vertical: el contenido va al centro, así que el degradado también. */
+  .hero-veil {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+      to bottom,
+      rgba(3, 26, 36, 0.72) 0%,
+      rgba(3, 26, 36, 0.5) 26%,
+      rgba(4, 49, 58, 0.52) 52%,
+      rgba(3, 26, 36, 0.86) 84%,
+      rgba(3, 26, 36, 0.95) 100%
+    );
+  }
+
+  /* Halo cálido que deriva despacio: da sensación de aire en la hoyada. */
+  .hero-glow {
+    position: absolute;
+    inset: -10%;
+    background: radial-gradient(
+      42% 34% at 50% 68%,
+      rgba(210, 154, 40, 0.16) 0%,
+      rgba(210, 154, 40, 0) 70%
+    );
+    animation: drift 26s ease-in-out infinite alternate;
+  }
+
+  @keyframes drift {
+    from { transform: translate3d(-2.5%, 1.5%, 0) scale(1); opacity: 0.85; }
+    to   { transform: translate3d(2.5%, -1.5%, 0) scale(1.08); opacity: 1; }
+  }
+
+  .hero-vignette {
+    position: absolute;
+    inset: 0;
+    background:
+      radial-gradient(78% 60% at 50% 46%, rgba(3, 26, 36, 0) 38%, rgba(3, 26, 36, 0.55) 100%),
+      linear-gradient(to bottom, rgba(3, 26, 36, 0.5) 0%, rgba(3, 26, 36, 0) 18%);
+  }
+
+  /* --- contenido, centrado --- */
+  .hero-inner {
+    position: relative;
+    z-index: 1;
+    width: 100%;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .hero-eyebrow {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+    color: var(--color-gold);
+    max-width: 100%;
+  }
+  .hero-tick {
+    display: block;
+    width: clamp(18px, 4vw, 46px);
+    height: 1px;
+    background: currentColor;
+    flex-shrink: 0;
+  }
+  .hero-eyebrow .eyebrow {
+    letter-spacing: 0.18em;
+    line-height: 1.5;
+  }
+  /* En pantalla estrecha el nombre ocupa tres líneas: las rayitas laterales
+     dejan de leerse como remate y se retiran. */
+  @media (max-width: 620px) {
+    .hero-tick { display: none; }
+  }
+
+  .hero-title {
+    margin-top: clamp(26px, 3.4vw, 40px);
+    max-width: 17ch;
+  }
+
+  .hero-lede {
+    margin-top: clamp(20px, 2.4vw, 30px);
+    max-width: 52ch;
+    font-size: clamp(1.02rem, 1.35vw, 1.2rem);
+    line-height: 1.66;
+    color: color-mix(in srgb, #f5f3ed 82%, transparent);
+  }
+
+  .hero-scroll {
+    position: absolute;
+    left: 50%;
+    bottom: clamp(30px, 5vh, 56px);
+    translate: -50% 0;
+    z-index: 1;
+  }
+  .hero-scroll-line {
+    display: block;
+    width: 1px;
+    height: 54px;
+    background: linear-gradient(
+      to bottom,
+      rgba(245, 243, 237, 0) 0%,
+      rgba(245, 243, 237, 0.5) 45%,
+      rgba(245, 243, 237, 0) 100%
+    );
+    transform-origin: top center;
+    animation: scrollHint 3s ease-in-out infinite;
+  }
+
+  @keyframes scrollHint {
+    0%, 100% { transform: scaleY(0.4); opacity: 0.4; }
+    50% { transform: scaleY(1); opacity: 1; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .hero-img,
+    .hero-glow,
+    .hero-scroll-line {
+      animation: none;
+      transform: none;
+    }
+  }
+</style>

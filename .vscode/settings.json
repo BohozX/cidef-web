@@ -1,0 +1,39 @@
+{
+  // Pylance y el buscador de VS Code recorrían node_modules entero —decenas de
+  // miles de archivos— compitiendo con el compilador por el disco. Excluirlos
+  // devuelve el proyecto a tiempos normales.
+  "files.watcherExclude": {
+    "**/node_modules/**": true,
+    "**/.astro/**": true,
+    "**/dist/**": true,
+    "**/.tools/**": true,
+    "**/.preview/**": true
+  },
+  "search.exclude": {
+    "**/node_modules": true,
+    "**/.astro": true,
+    "**/dist": true,
+    "**/.tools": true,
+    "**/.preview": true,
+    "**/package-lock.json": true
+  },
+  "files.exclude": {
+    "**/.astro": true
+  },
+
+  // Este proyecto es TypeScript/Astro: Pylance no tiene nada que analizar aquí.
+  "python.analysis.exclude": [
+    "**/node_modules",
+    "**/.astro",
+    "**/dist",
+    "**/.tools",
+    "**/.preview"
+  ],
+  "python.analysis.indexing": false,
+  "python.analysis.diagnosticMode": "openFilesOnly",
+
+  // El servidor de TypeScript tampoco necesita vigilar dependencias.
+  "typescript.tsserver.watchOptions": {
+    "excludeDirectories": ["**/node_modules", "**/.astro", "**/dist"]
+  }
+}

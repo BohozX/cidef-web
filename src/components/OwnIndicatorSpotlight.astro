@@ -1,0 +1,193 @@
+---
+import IndicatorChart from './IndicatorChart.astro';
+import { byId } from '../lib/indicators';
+import { deltaLabel, direction, longDate, monthYear, num, shortDate } from '../lib/format';
+
+export interface Props {
+  id?: string;
+}
+
+const { id = 'nowcast-pib' } = Astro.props;
+const ind = byId(id);
+---
+
+{
+  ind && (
+    <section class="surface-tint section spotlight" aria-labelledby="spotlight-title">
+      <div class="wrap">
+        <div class="rule rule-draw"></div>
+
+        <div class="spot-grid">
+          <div class="spot-main">
+            <p class="spot-kicker" data-reveal>
+              <span class="chip chip-gold">Estimación del Centro</span>
+              {ind.version && <span class="eyebrow muted">{ind.version}</span>}
+            </p>
+
+            <h2 id="spotlight-title" class="display-2 spot-title" data-reveal>{ind.name}</h2>
+
+            <p class="spot-desc muted" data-reveal>{ind.description}</p>
+
+            <div class="spot-figure" data-reveal>
+              <p class="spot-value metric">
+                <span
+                  data-count={ind.value}
+                  data-count-decimals={ind.decimals}
+                  data-count-suffix={ind.unit === '%' ? '%' : ''}
+                >{num(ind.value, ind.decimals)}{ind.unit === '%' ? '%' : ''}</span>
+              </p>
+              <div class="spot-figure-meta">
+                <p class:list={['tnum', `delta-${direction(ind.change)}`]}>
+                  {deltaLabel(ind.change, ind.changeUnit, ind.decimals)}
+                </p>
+                {ind.ciLow !== undefined && ind.ciHigh !== undefined && (
+                  <p class="spot-ci tnum muted">
+                    Intervalo de confianza: {num(ind.ciLow, ind.decimals)} a{' '}
+                    {num(ind.ciHigh, ind.decimals)}
+                  </p>
+                )}
+                <p class="spot-ref muted">Referencia: {monthYear(ind.date)}</p>
+              </div>
+            </div>
+
+            <div class="spot-actions" data-reveal>
+              <a href={`/radar/${ind.id}`} class="btn btn-solid">
+                Ver ficha completa
+                <svg class="arw" viewBox="0 0 16 16" width="13" height="13" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8">
+                  <path d="M2 8h11M9 4l4 4-4 4" stroke-linecap="round" stroke-linejoin="round" />
+                </svg>
+              </a>
+              <a href="/radar?cat=centro" class="link-arrow">
+                Todos los indicadores del Centro
+                <svg class="arw" viewBox="0 0 16 16" width="13" height="13" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.7">
+                  <path d="M2 8h11M9 4l4 4-4 4" stroke-linecap="round" stroke-linejoin="round" />
+                </svg>
+              </a>
+            </div>
+          </div>
+
+          <div class="spot-side" data-reveal>
+            <IndicatorChart
+              id={ind.id}
+              name={ind.name}
+              unit={ind.unit}
+              decimals={ind.decimals}
+              history={ind.history}
+              own={ind.own}
+              source={ind.source}
+              ranges={false}
+              height={230}
+            />
+
+            {ind.vintages && ind.vintages.length > 0 && (
+              <div class="vintages">
+                <p class="eyebrow muted vintages-title">Historial de estimaciones</p>
+                <ul>
+                  {ind.vintages.map((v) => (
+                    <li>
+                      <span class="vintage-version tnum">{v.version}</span>
+                      <span class="vintage-value tnum">
+                        {num(v.value, ind.decimals)}
+                        {ind.unit === '%' ? '%' : ''}
+                      </span>
+                      <span class="vintage-date tnum muted">{shortDate(v.date)}</span>
+                      {v.note && <span class="vintage-note muted">{v.note}</span>}
+                    </li>
+                  ))}
+                </ul>
+                <p class="vintages-note muted">
+                  Las revisiones no sobrescriben estimaciones anteriores: cada
+                  versión queda archivada y es citable.
+                </p>
+              </div>
+            )}
+          </div>
+        </div>
+
+        <p class="spot-updated muted">
+          Actualizado el {longDate(ind.updated)} · Fuente: {ind.source} · Serie de demostración
+        </p>
+      </div>
+    </section>
+  )
+}
+
+<style>
+  .spot-grid {
+    display: grid;
+    gap: 44px;
+    padding-top: 30px;
+  }
+  @media (min-width: 1000px) {
+    .spot-grid {
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1.05fr);
+      gap: 72px;
+      align-items: start;
+    }
+  }
+
+  .spot-kicker {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 12px;
+  }
+  .spot-title { margin-top: 18px; max-width: 16ch; }
+  .spot-desc { margin-top: 16px; font-size: 15px; line-height: 1.65; max-width: 50ch; }
+
+  .spot-figure {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 14px 28px;
+    margin-top: 30px;
+    padding-top: 24px;
+    border-top: 1px solid var(--line-light);
+  }
+  .spot-value {
+    font-size: clamp(3.4rem, 7vw, 5.4rem);
+    color: var(--color-gold);
+  }
+  .spot-figure-meta { display: grid; gap: 5px; font-size: 12.5px; }
+  .spot-ci, .spot-ref { font-size: 12px; }
+
+  .spot-actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 16px 28px;
+    margin-top: 30px;
+  }
+
+  .vintages {
+    margin-top: 26px;
+    border-top: 1px solid var(--line-light);
+    padding-top: 20px;
+  }
+  .vintages-title { display: block; margin-bottom: 12px; }
+  .vintages ul { list-style: none; margin: 0; padding: 0; }
+  .vintages li {
+    display: grid;
+    grid-template-columns: auto auto 1fr;
+    gap: 4px 14px;
+    padding-block: 10px;
+    border-top: 1px solid var(--line-light);
+    font-size: 12.5px;
+    align-items: baseline;
+  }
+  .vintages li:first-child { border-top: 0; }
+  .vintage-version { font-weight: 600; letter-spacing: 0.05em; }
+  .vintage-value { color: var(--color-gold); font-weight: 600; }
+  .vintage-date { justify-self: end; }
+  .vintage-note { grid-column: 1 / -1; font-size: 11.5px; }
+
+  .vintages-note { margin-top: 14px; font-size: 11.5px; line-height: 1.5; }
+
+  .spot-updated {
+    margin-top: 34px;
+    padding-top: 16px;
+    border-top: 1px solid var(--line-light);
+    font-size: 11.5px;
+    letter-spacing: 0.04em;
+  }
+</style>

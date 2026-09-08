@@ -1,0 +1,414 @@
+---
+/**
+ * Nuestros asociados.
+ *
+ * Cierra el bloque de formación: son las instituciones que avalan los
+ * programas. Solo se muestran los logotipos —sin nombre ni descripción— y
+ * las casillas se relevan por disolución de píxeles: el logotipo que sale se
+ * deshace hacia arriba y el que entra se arma desde abajo.
+ *
+ * Si hay más asociados que casillas, las casillas rotan; si hay los mismos o
+ * menos, no rota y solo se ejecuta el armado inicial al entrar en pantalla.
+ *
+ * Los logotipos son propiedad de cada institución y viven en
+ * `public/media/aliados/`. Una entrada sin `logo` muestra sus iniciales.
+ */
+
+export interface Props {
+  /** Casillas visibles. Se recorta al número de asociados disponibles. */
+  slots?: number;
+}
+
+type Partner = {
+  name: string;
+  short: string;
+  logo: string | null;
+  url?: string;
+};
+
+const partners: Partner[] = [
+  {
+    name: 'Colegio de Economistas de La Paz',
+    short: 'CELP',
+    logo: '/media/aliados/celp.png',
+  },
+  {
+    name: 'Escuela de Postgrado MSC',
+    short: 'MSC',
+    logo: '/media/aliados/msc.png',
+  },
+  {
+    name: 'Universidad Franz Tamayo',
+    short: 'UNIFRANZ',
+    logo: '/media/aliados/unifranz-logo-dark.svg',
+    url: 'https://unifranz.edu.bo/',
+  },
+
+  /* Los siguientes son ficticios y lo declaran en el propio archivo: existen
+     para que la rotación tenga más asociados que casillas. Se generan con
+     `python tools/generate_demo_partners.py` y se borran al llegar los
+     asociados reales. */
+  { name: 'Instituto Demo de Economía (ejemplo)', short: 'IDE', logo: '/media/aliados/demo-instituto.png' },
+  { name: 'Fundación Demo Altiplano (ejemplo)', short: 'FDA', logo: '/media/aliados/demo-fundacion.png' },
+  { name: 'Observatorio Demo de Datos (ejemplo)', short: 'ODD', logo: '/media/aliados/demo-observatorio.png' },
+  { name: 'Red Demo de Investigación (ejemplo)', short: 'RDI', logo: '/media/aliados/demo-red.png' },
+];
+
+const { slots = 5 } = Astro.props;
+const visible = Math.min(slots, partners.length);
+const initial = partners.slice(0, visible);
+---
+
+<div class="partners" data-partners data-pool={JSON.stringify(partners)}>
+  <div class="rule rule-draw"></div>
+
+  <div class="partners-inner">
+    <p class="partners-label">
+      <span class="eyebrow">Nuestros asociados</span>
+    </p>
+
+    <ul class="partners-list">
+      {
+        initial.map((p, i) => (
+          <li class="partner" data-slot={i}>
+            {/* El <img> es el contenido real y el respaldo sin JS; el canvas
+                se superpone solo cuando el script toma el control. */}
+            {p.logo ? (
+              <img src={p.logo} alt={p.name} class="partner-img" data-slot-img loading="lazy" decoding="async" />
+            ) : (
+              <span class="partner-initials" data-slot-img>{p.short}</span>
+            )}
+            <canvas class="partner-canvas" data-slot-canvas aria-hidden="true"></canvas>
+          </li>
+        ))
+      }
+    </ul>
+  </div>
+</div>
+
+<script>
+  type Partner = { name: string; short: string; logo: string | null };
+
+  const CELL = 9;         // lado del píxel, en píxeles de dispositivo
+  const RISE = 30;        // cuánto sube cada píxel al deshacerse
+  const DURATION = 1100;  // ms de cada transición
+  const DWELL = 5000;     // ms entre relevos
+
+  const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  document.querySelectorAll<HTMLElement>('[data-partners]').forEach((root) => {
+    let pool: Partner[] = [];
+    try {
+      pool = JSON.parse(root.dataset.pool ?? '[]');
+    } catch {
+      return;
+    }
+
+    const cells = Array.from(root.querySelectorAll<HTMLElement>('[data-slot]'));
+    if (cells.length === 0 || pool.length === 0) return;
+
+    /* --- carga de imágenes -------------------------------------------- */
+    const cache = new Map<string, HTMLImageElement>();
+
+    const load = (src: string): Promise<HTMLImageElement | null> =>
+      new Promise((resolve) => {
+        const hit = cache.get(src);
+        if (hit) return resolve(hit);
+        const img = new Image();
+        img.decoding = 'async';
+        img.onload = () => { cache.set(src, img); resolve(img); };
+        img.onerror = () => resolve(null);
+        img.src = src;
+      });
+
+    /* --- una casilla ---------------------------------------------------- */
+    class Slot {
+      readonly el: HTMLElement;
+      readonly canvas: HTMLCanvasElement | null;
+      readonly ctx: CanvasRenderingContext2D | null;
+      readonly img: HTMLElement | null;
+      index: number;
+      w = 0;
+      h = 0;
+      dpr = 1;
+      cols = 0;
+      rows = 0;
+      seeds = new Float32Array(0);
+      buffer: HTMLCanvasElement | null = null;
+      busy = false;
+
+      constructor(el: HTMLElement, index: number) {
+        this.el = el;
+        this.canvas = el.querySelector<HTMLCanvasElement>('[data-slot-canvas]');
+        this.ctx = this.canvas?.getContext('2d') ?? null;
+        this.img = el.querySelector<HTMLElement>('[data-slot-img]');
+        this.index = index;
+      }
+
+      measure(): void {
+        if (!this.canvas) return;
+        const r = this.el.getBoundingClientRect();
+        this.dpr = Math.min(2, window.devicePixelRatio || 1);
+        this.w = Math.max(1, Math.round(r.width * this.dpr));
+        this.h = Math.max(1, Math.round(r.height * this.dpr));
+        this.canvas.width = this.w;
+        this.canvas.height = this.h;
+
+        this.cols = Math.ceil(this.w / CELL);
+        this.rows = Math.ceil(this.h / CELL);
+
+        // Un retardo fijo por celda: la disolución no parpadea entre cuadros.
+        this.seeds = new Float32Array(this.cols * this.rows);
+        for (let i = 0; i < this.seeds.length; i += 1) this.seeds[i] = Math.random();
+
+        this.buffer = document.createElement('canvas');
+        this.buffer.width = this.w;
+        this.buffer.height = this.h;
+      }
+
+      /** Encaja el logotipo en la casilla sin deformarlo. */
+      private prepare(img: HTMLImageElement): void {
+        if (!this.buffer) return;
+        const bctx = this.buffer.getContext('2d');
+        if (!bctx) return;
+        bctx.clearRect(0, 0, this.w, this.h);
+        const scale = Math.min(this.w / img.naturalWidth, this.h / img.naturalHeight);
+        const dw = img.naturalWidth * scale;
+        const dh = img.naturalHeight * scale;
+        bctx.drawImage(img, (this.w - dw) / 2, (this.h - dh) / 2, dw, dh);
+      }
+
+      paint(progress: number, mode: 'in' | 'out'): void {
+        const ctx = this.ctx;
+        const buf = this.buffer;
+        if (!ctx || !buf) return;
+
+        ctx.clearRect(0, 0, this.w, this.h);
+
+        if (mode === 'in' && progress >= 1) {
+          ctx.globalAlpha = 1;
+          ctx.drawImage(buf, 0, 0);
+          return;
+        }
+
+        for (let cy = 0; cy < this.rows; cy += 1) {
+          // Las celdas de abajo se van primero: el barrido fluye hacia arriba.
+          const bias = 1 - cy / Math.max(1, this.rows - 1);
+          for (let cx = 0; cx < this.cols; cx += 1) {
+            const seed = this.seeds[cy * this.cols + cx] ?? 0;
+            const delay = seed * 0.42 + bias * 0.34;
+            const local = Math.min(1, Math.max(0, (progress - delay) / 0.4));
+            const t = mode === 'out' ? local : 1 - local;
+            if (t >= 1) continue;
+
+            ctx.globalAlpha = 1 - t;
+            ctx.drawImage(
+              buf,
+              cx * CELL, cy * CELL, CELL, CELL,
+              cx * CELL, cy * CELL - t * RISE * this.dpr, CELL, CELL,
+            );
+          }
+        }
+        ctx.globalAlpha = 1;
+      }
+
+      async render(index: number, mode: 'in' | 'out' | 'set'): Promise<void> {
+        const partner = pool[index];
+        if (!partner || !this.canvas) return;
+
+        if (!partner.logo) {
+          // Sin logotipo la casilla usa sus iniciales: no hay nada que pintar.
+          this.canvas.style.opacity = '0';
+          if (this.img) this.img.style.opacity = '1';
+          return;
+        }
+
+        const img = await load(partner.logo);
+        if (!img || !this.ctx) return;
+
+        if (this.img) {
+          this.img.style.opacity = '0';
+          if (this.img instanceof HTMLImageElement) this.img.alt = partner.name;
+        }
+        this.canvas.style.opacity = '1';
+        this.prepare(img);
+
+        if (mode === 'set' || reduced) {
+          this.paint(1, 'in');
+          return;
+        }
+        await this.animate(mode);
+      }
+
+      animate(mode: 'in' | 'out'): Promise<void> {
+        return new Promise((resolve) => {
+          const start = performance.now();
+          const step = (now: number): void => {
+            const p = Math.min(1, (now - start) / DURATION);
+            this.paint(p, mode);
+            if (p < 1) requestAnimationFrame(step);
+            else resolve();
+          };
+          requestAnimationFrame(step);
+        });
+      }
+
+      async swap(next: number): Promise<void> {
+        if (this.busy) return;
+        this.busy = true;
+        await this.render(this.index, 'out');
+        this.index = next;
+        await this.render(next, 'in');
+        this.busy = false;
+      }
+    }
+
+    const slots = cells.map((el, i) => new Slot(el, i));
+    const rotates = pool.length > slots.length;
+
+    let started = false;
+    let timer = 0;
+    let cursor = slots.length;
+    let turn = 0;
+
+    const rotate = (): void => {
+      const slot = slots[turn % slots.length];
+      turn += 1;
+      if (!slot) return;
+      void slot.swap(cursor % pool.length);
+      cursor += 1;
+    };
+
+    const startTimer = (): void => {
+      if (!rotates || reduced || timer) return;
+      timer = window.setInterval(rotate, DWELL);
+    };
+
+    const stopTimer = (): void => {
+      if (!timer) return;
+      window.clearInterval(timer);
+      timer = 0;
+    };
+
+    const begin = (): void => {
+      if (started) return;
+      started = true;
+      slots.forEach((s) => s.measure());
+      slots.forEach((s, i) => {
+        if (reduced) return void s.render(s.index, 'set');
+        // Entrada escalonada: las casillas se arman una tras otra.
+        window.setTimeout(() => void s.render(s.index, 'in'), i * 170);
+      });
+      startTimer();
+    };
+
+    new IntersectionObserver(
+      (entries) => {
+        const inView = entries.some((e) => e.isIntersecting);
+        if (inView) { begin(); startTimer(); }
+        else stopTimer();
+      },
+      { threshold: 0.25 },
+    ).observe(root);
+
+    // Si por lo que sea el canvas no llegó a pintar, se muestra la imagen:
+    // la franja nunca debe quedarse en blanco.
+    window.setTimeout(() => {
+      slots.forEach((s) => {
+        if (s.canvas && s.canvas.style.opacity !== '1' && s.img) {
+          s.img.style.opacity = '1';
+        }
+      });
+    }, 3000);
+
+    document.addEventListener('visibilitychange', () => {
+      if (document.hidden) stopTimer();
+      else if (started) startTimer();
+    });
+
+    let resizeTimer = 0;
+    window.addEventListener('resize', () => {
+      window.clearTimeout(resizeTimer);
+      resizeTimer = window.setTimeout(() => {
+        if (!started) return;
+        slots.forEach((s) => s.measure());
+        slots.forEach((s) => void s.render(s.index, 'set'));
+      }, 200);
+    }, { passive: true });
+  });
+</script>
+
+<style>
+  .partners { margin-top: 0; }
+
+  .partners-inner {
+    display: grid;
+    gap: clamp(24px, 3vw, 34px);
+    padding-top: clamp(26px, 3vw, 36px);
+  }
+
+  .partners-label {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    color: var(--color-teal-600);
+    white-space: nowrap;
+  }
+  .surface-dark .partners-label,
+  .surface-deep .partners-label { color: var(--color-teal-300); }
+
+  .partners-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 28px 44px;
+    align-items: center;
+    justify-items: center;
+  }
+
+  /* Casilla de tamaño fijo: acepta un logotipo horizontal, uno cuadrado o
+     las iniciales sin romper el ritmo de la fila. */
+  /* Sin `place-items: center`: con él los hijos no se estiran, `height: 100%`
+     queda indefinido y los logotipos cuadrados tomaban su alto natural,
+     desbordando la casilla y quedando a distinta altura que los apaisados.
+     Estirados, `object-fit: contain` los centra a todos por igual. */
+  .partner {
+    position: relative;
+    display: grid;
+    width: 100%;
+    max-width: 200px;
+    height: 96px;
+  }
+
+  /* Anclados a la caja, no colocados en la retícula: como celda de grid,
+     `height: 100%` se resuelve contra una fila que crece con el contenido, y
+     los logotipos cuadrados se salían de la casilla. */
+  .partner-img,
+  .partner-canvas {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    transition: opacity 200ms ease;
+  }
+  .partner-canvas { pointer-events: none; opacity: 0; }
+
+  /* Oculto hasta que el canvas dibuja, para que no se vea el logotipo en
+     frío antes de la animación. Sin JS queda visible y la franja funciona. */
+  .partner-img { opacity: 0; }
+  :global(html.no-js) .partner-img { opacity: 1; }
+
+  .partner-initials {
+    grid-area: 1 / 1;
+    place-self: center;
+    font-size: 15px;
+    font-weight: 700;
+    letter-spacing: 0.07em;
+    color: var(--color-teal-600);
+  }
+  .surface-dark .partner-initials,
+  .surface-deep .partner-initials { color: var(--color-teal-300); }
+</style>

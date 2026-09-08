@@ -1,0 +1,67 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,500;1,8..60,400&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+  <style>
+    body { margin: 0; background: #031a24; font-family: "IBM Plex Sans", "Segoe UI", system-ui, sans-serif; }
+    a { color: #d29a28; text-decoration: none; }
+    a:hover { color: #e5bb6b; }
+    h1 { font-family: "Source Serif 4", Cambria, Georgia, serif; font-weight: 500; margin: 0; letter-spacing: -0.024em; }
+    p { margin: 0; }
+  </style>
+</helmet>
+
+<div style="position: relative; width: 1440px; height: 880px; background: #031a24; color: #f5f3ed; overflow: hidden;">
+
+  <img src="lapaz.jpg" alt="La Paz de noche con el Illimani" style="position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: 50% 34%;">
+  <div style="position: absolute; inset: 0; background: linear-gradient(to bottom, rgba(3,26,36,0.62) 0%, rgba(3,26,36,0.18) 34%, rgba(3,26,36,0.9) 74%, rgba(3,26,36,0.98) 100%);"></div>
+
+  <!-- cabecera -->
+  <div style="position: relative; height: 80px; display: flex; align-items: center; justify-content: space-between; padding: 0 96px;">
+    <img src="logo.png" alt="CIDEF" style="height: 44px; width: auto; display: block;">
+    <div style="display: flex; gap: 26px; font-size: 13px; font-weight: 500;">
+      <a href="#" style="color: #d29a28;">Radar Económico</a><a href="#" style="color: #f5f3ed;">Análisis</a><a href="#" style="color: #f5f3ed;">Archivo Vivo</a><a href="#" style="color: #f5f3ed;">Formación</a><a href="#" style="color: #f5f3ed;">Agenda</a><a href="#" style="color: #f5f3ed;">Nosotros</a>
+    </div>
+  </div>
+
+  <!-- banda inferior: el titular se reparte a lo ancho -->
+  <div style="position: absolute; left: 0; right: 0; bottom: 0; padding: 0 96px 44px;">
+
+    <div style="display: flex; align-items: center; gap: 14px; color: #d29a28; margin-bottom: 26px;">
+      <span style="width: 42px; height: 1px; background: currentColor;"></span>
+      <span style="font-size: 11px; font-weight: 600; letter-spacing: 0.15em; text-transform: uppercase;">Centro de Inteligencia en Desarrollo Económico y Financiero</span>
+    </div>
+
+    <h1 style="font-size: 104px; line-height: 0.98;">Evidencia para</h1>
+    <div style="display: flex; align-items: flex-end; justify-content: space-between; gap: 56px; margin-top: 4px;">
+      <h1 style="font-size: 104px; line-height: 0.98;">entender <em style="color: #d29a28; font-style: italic;">Bolivia.</em></h1>
+      <div style="display: grid; gap: 22px; max-width: 420px; padding-bottom: 14px;">
+        <p style="font-size: 16px; line-height: 1.62; color: rgba(245,243,237,0.82);">Investigación aplicada, datos propios y análisis para comprender la economía boliviana.</p>
+        <div style="display: flex; gap: 12px;">
+          <a href="#" style="display: inline-flex; align-items: center; gap: 10px; padding: 13px 22px; border-radius: 3px; background: #d29a28; color: #031a24; font-size: 13.5px; font-weight: 600;">Explorar análisis
+            <svg viewBox="0 0 16 16" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M2 8h11M9 4l4 4-4 4" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+          </a>
+          <a href="#" style="display: inline-flex; align-items: center; padding: 13px 22px; border-radius: 3px; border: 1px solid rgba(245,243,237,0.28); color: #f5f3ed; font-size: 13.5px; font-weight: 600;">Radar Económico</a>
+        </div>
+      </div>
+    </div>
+
+    <!-- cinta de indicadores -->
+    <div style="display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 40px; margin-top: 34px; padding-top: 22px; border-top: 1px solid rgba(245,243,237,0.18);">
+      <div style="display: grid; gap: 5px;"><span style="font-size: 10px; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase; color: rgba(245,243,237,0.6);">Inflación</span><span style="font-family: 'Source Serif 4', Georgia, serif; font-size: 26px;">6,64%</span></div>
+      <div style="display: grid; gap: 5px;"><span style="font-size: 10px; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase; color: rgba(245,243,237,0.6);">Tipo de cambio</span><span style="font-family: 'Source Serif 4', Georgia, serif; font-size: 26px;">Bs 8,57</span></div>
+      <div style="display: grid; gap: 5px;"><span style="font-size: 10px; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase; color: rgba(245,243,237,0.6);">Reservas</span><span style="font-family: 'Source Serif 4', Georgia, serif; font-size: 26px;">2.757</span></div>
+      <div style="display: grid; gap: 5px;"><span style="font-size: 10px; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase; color: rgba(245,243,237,0.6);">Actividad</span><span style="font-family: 'Source Serif 4', Georgia, serif; font-size: 26px;">5,64%</span></div>
+      <div style="display: grid; gap: 5px;"><span style="font-size: 10px; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase; color: #d29a28;">Nowcast PIB</span><span style="font-family: 'Source Serif 4', Georgia, serif; font-size: 26px; color: #e5bb6b;">−0,79%</span></div>
+    </div>
+  </div>
+</div>
+</x-dc>
+</body>
+</html>

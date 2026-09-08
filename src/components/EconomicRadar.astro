@@ -1,0 +1,115 @@
+---
+import IndicatorCard from './IndicatorCard.astro';
+import { featured, lastUpdated } from '../lib/indicators';
+import { shortDate } from '../lib/format';
+
+const items = featured();
+const updated = shortDate(lastUpdated());
+---
+
+<section class="surface-deep section radar-section edge-tl edge-br" aria-labelledby="radar-title">
+  <div class="wrap">
+    <div class="rule rule-draw"></div>
+
+    <div class="radar-head">
+      <div>
+        <p class="eyebrow eyebrow-gold" data-reveal>Radar Económico</p>
+        <h2 id="radar-title" class="display-2 radar-title" data-reveal>
+          Una lectura rápida de los principales indicadores de la economía boliviana.
+        </h2>
+      </div>
+
+      <div class="radar-meta">
+        <p class="radar-updated tnum" data-reveal>
+          <span class="eyebrow muted">Actualizado</span>
+          <span>{updated}</span>
+        </p>
+        <p class="radar-note muted" data-reveal>
+          Series de demostración. Cada ficha indica su fuente y distingue los
+          datos oficiales de las estimaciones propias del centro.
+        </p>
+      </div>
+    </div>
+
+    <!-- Escritorio: cuadrícula. Móvil: carril horizontal. -->
+    <div class="radar-grid" data-reveal-group data-reveal-stagger="0.06">
+      {items.map((ind) => <IndicatorCard indicator={ind} />)}
+    </div>
+
+    <div class="radar-foot">
+      <a href="/radar" class="btn btn-primary">
+        Ver todos los indicadores
+        <svg class="arw" viewBox="0 0 16 16" width="13" height="13" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8">
+          <path d="M2 8h11M9 4l4 4-4 4" stroke-linecap="round" stroke-linejoin="round" />
+        </svg>
+      </a>
+      <a href="/radar?cat=centro" class="link-arrow">
+        Indicadores del Centro
+        <svg class="arw" viewBox="0 0 16 16" width="13" height="13" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.7">
+          <path d="M2 8h11M9 4l4 4-4 4" stroke-linecap="round" stroke-linejoin="round" />
+        </svg>
+      </a>
+    </div>
+  </div>
+</section>
+
+<style>
+  .radar-head {
+    display: grid;
+    gap: 22px;
+    padding-block: 24px clamp(30px, 4vw, 46px);
+  }
+  @media (min-width: 940px) {
+    .radar-head {
+      grid-template-columns: minmax(0, 1.25fr) minmax(0, 0.75fr);
+      gap: 56px;
+      align-items: end;
+    }
+  }
+  .radar-title { max-width: 22ch; margin-top: 14px; }
+
+  .radar-meta { display: grid; gap: 14px; }
+  .radar-updated {
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+    font-size: 15px;
+  }
+  .radar-note { font-size: 13px; max-width: 44ch; }
+
+  .radar-grid {
+    display: flex;
+    gap: 14px;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    scrollbar-width: none;
+    padding-inline: 20px;
+    margin-inline: -20px;
+    padding-bottom: 4px;
+  }
+  .radar-grid::-webkit-scrollbar { display: none; }
+  .radar-grid > * { scroll-snap-align: start; flex: 0 0 78%; max-width: 300px; }
+
+  @media (min-width: 700px) {
+    .radar-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      overflow: visible;
+      padding-inline: 0;
+      margin-inline: 0;
+      gap: 16px;
+    }
+    .radar-grid > * { max-width: none; }
+  }
+  @media (min-width: 1080px) {
+    .radar-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  }
+
+  .radar-foot {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 18px 28px;
+    margin-top: clamp(28px, 3.5vw, 44px);
+  }
+</style>

@@ -1,0 +1,122 @@
+---
+import '../styles/global.css';
+import Header from '../components/Header.astro';
+import ScrollProgress from '../components/ScrollProgress.astro';
+import Footer from '../components/Footer.astro';
+import { site } from '../site.config';
+
+export interface Props {
+  title: string;
+  description: string;
+  /** Ruta absoluta o relativa de la imagen para redes sociales. */
+  image?: string;
+  /** `article` para publicaciones y eventos. */
+  ogType?: 'website' | 'article';
+  noindex?: boolean;
+  /** JSON-LD adicional (structured data). */
+  jsonLd?: Record<string, unknown> | Record<string, unknown>[];
+  /** Oculta el borde superior del contenido cuando la portada es a sangre. */
+  bleed?: boolean;
+}
+
+const {
+  title,
+  description,
+  image = '/media/lapaz-illimani-1200.jpg',
+  ogType = 'website',
+  noindex = false,
+  jsonLd,
+  bleed = false,
+} = Astro.props;
+
+const canonical = new URL(Astro.url.pathname, Astro.site ?? site.url).toString();
+const ogImage = new URL(image, Astro.site ?? site.url).toString();
+const fullTitle = title === site.name ? `${site.name} — ${site.legalName}` : `${title} · ${site.name}`;
+
+const organization = {
+  '@context': 'https://schema.org',
+  '@type': 'ResearchOrganization',
+  name: site.legalName,
+  alternateName: site.name,
+  url: site.url,
+  description: site.shortDescription,
+  address: {
+    '@type': 'PostalAddress',
+    streetAddress: site.contact.address,
+    addressLocality: site.city,
+    addressCountry: 'BO',
+  },
+};
+
+const blocks = jsonLd ? (Array.isArray(jsonLd) ? jsonLd : [jsonLd]) : [];
+---
+
+<!doctype html>
+<html lang="es-BO" class="no-js">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{fullTitle}</title>
+    <meta name="description" content={description} />
+    <link rel="canonical" href={canonical} />
+    {noindex && <meta name="robots" content="noindex, nofollow" />}
+
+    <link rel="icon" href="/favicon.png" type="image/png" sizes="512x512" />
+    <link rel="apple-touch-icon" href="/favicon.png" />
+    <meta name="theme-color" content="#031a24" />
+
+    <meta property="og:site_name" content={site.name} />
+    <meta property="og:type" content={ogType} />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:url" content={canonical} />
+    <meta property="og:image" content={ogImage} />
+    <meta property="og:locale" content="es_BO" />
+
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content={title} />
+    <meta name="twitter:description" content={description} />
+    <meta name="twitter:image" content={ogImage} />
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=DM+Mono:wght@400;500&display=swap"
+    />
+
+    <script is:inline>
+      document.documentElement.classList.remove('no-js');
+    </script>
+
+    {
+      blocks.concat(organization).map((block) => (
+        <script type="application/ld+json" is:inline set:html={JSON.stringify(block)} />
+      ))
+    }
+
+    <slot name="head" />
+  </head>
+
+  <body>
+    <a
+      href="#contenido"
+      class="sr-only focus:not-sr-only fixed left-4 top-4 z-[100] btn btn-primary no-print"
+    >
+      Saltar al contenido
+    </a>
+
+    <Header transparentAtTop={bleed} />
+    <ScrollProgress />
+
+    <main id="contenido" class={bleed ? '' : 'pt-24'}>
+      <slot />
+    </main>
+
+    <Footer />
+
+    <script>
+      import '../scripts/motion';
+    </script>
+  </body>
+</html>

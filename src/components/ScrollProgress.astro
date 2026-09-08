@@ -1,0 +1,103 @@
+---
+/**
+ * Indicador de avance de lectura.
+ *
+ * Sustituye a la barra de desplazamiento nativa, que se oculta en
+ * `global.css` porque su franja clara cortaba la portada a sangre. Aquí no
+ * se pierde la referencia de posición: una línea finísima en el borde
+ * derecho marca cuánto se ha recorrido.
+ *
+ * Es solo informativa —no se arrastra— y se oculta en pantallas táctiles,
+ * donde el sistema ya dibuja su propio indicador flotante.
+ */
+---
+
+<div class="sp no-print" aria-hidden="true" data-scroll-progress>
+  <span class="sp-track"></span>
+  <span class="sp-thumb" data-scroll-thumb></span>
+</div>
+
+<script>
+  const root = document.querySelector<HTMLElement>('[data-scroll-progress]');
+  const thumb = document.querySelector<HTMLElement>('[data-scroll-thumb]');
+
+  if (root && thumb) {
+    let ticking = false;
+
+    const update = (): void => {
+      ticking = false;
+      const doc = document.documentElement;
+      const max = doc.scrollHeight - window.innerHeight;
+
+      // En páginas que no se desplazan no hay nada que indicar.
+      if (max < 120) {
+        root.dataset.visible = 'false';
+        return;
+      }
+
+      const ratio = Math.min(1, Math.max(0, window.scrollY / max));
+      // El pulgar ocupa una fracción proporcional a lo que se ve de la página.
+      const size = Math.max(0.08, window.innerHeight / doc.scrollHeight);
+
+      root.dataset.visible = 'true';
+      thumb.style.height = `${size * 100}%`;
+      thumb.style.transform = `translateY(${(ratio * (1 - size) * 100) / size}%)`;
+    };
+
+    const onScroll = (): void => {
+      if (ticking) return;
+      ticking = true;
+      requestAnimationFrame(update);
+    };
+
+    window.addEventListener('scroll', onScroll, { passive: true });
+    window.addEventListener('resize', onScroll, { passive: true });
+    window.addEventListener('load', update);
+    update();
+  }
+</script>
+
+<style>
+  .sp {
+    position: fixed;
+    right: 7px;
+    top: 118px;
+    bottom: 42px;
+    width: 2px;
+    z-index: 50;
+    opacity: 0;
+    transition: opacity 400ms ease;
+    pointer-events: none;
+  }
+  .sp[data-visible='true'] { opacity: 1; }
+
+  /* En táctil el sistema ya muestra su propio indicador. */
+  @media (hover: none), (max-width: 720px) {
+    .sp { display: none; }
+  }
+
+  .sp-track,
+  .sp-thumb {
+    position: absolute;
+    inset-inline: 0;
+    border-radius: 999px;
+  }
+
+  .sp-track {
+    top: 0;
+    bottom: 0;
+    background: color-mix(in srgb, currentColor 14%, transparent);
+    color: var(--color-ink);
+  }
+
+  .sp-thumb {
+    top: 0;
+    height: 12%;
+    background: color-mix(in srgb, #d29a28 80%, transparent);
+    will-change: transform;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .sp { transition: none; }
+  }
+</style>

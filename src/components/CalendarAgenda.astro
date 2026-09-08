@@ -1,0 +1,363 @@
+---
+import type { CollectionEntry } from 'astro:content';
+import { dayMonth, isFuture } from '../lib/format';
+
+/**
+ * Agenda con calendario.
+ *
+ * A la izquierda, el mes con los días marcados; a la derecha, la lista de
+ * actividades. Al pasar por un día se resalta su evento y viceversa, de modo
+ * que el calendario no es decorativo: es el índice de la lista.
+ */
+
+export interface Props {
+  items: CollectionEntry<'eventos'>[];
+  /** Mes inicial. Por defecto, el del primer evento próximo. */
+  month?: number;
+  year?: number;
+}
+
+const { items } = Astro.props;
+
+const upcoming = items
+  .filter((e) => isFuture(e.data.date.toISOString()))
+  .sort((a, b) => a.data.date.getTime() - b.data.date.getTime());
+
+const reference = upcoming[0]?.data.date ?? new Date();
+const year = Astro.props.year ?? reference.getUTCFullYear();
+const month = Astro.props.month ?? reference.getUTCMonth();
+
+const MONTHS = [
+  'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
+  'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre',
+];
+const WEEKDAYS = ['L', 'M', 'M', 'J', 'V', 'S', 'D'];
+
+/* Rejilla del mes, empezando en lunes. */
+const first = new Date(Date.UTC(year, month, 1));
+const daysInMonth = new Date(Date.UTC(year, month + 1, 0)).getUTCDate();
+const offset = (first.getUTCDay() + 6) % 7;
+
+const cells: (number | null)[] = [
+  ...Array.from({ length: offset }, () => null),
+  ...Array.from({ length: daysInMonth }, (_, i) => i + 1),
+];
+while (cells.length % 7 !== 0) cells.push(null);
+
+/* Eventos del mes visible, indexados por día. */
+const inMonth = new Map<number, CollectionEntry<'eventos'>>();
+for (const e of upcoming) {
+  const d = e.data.date;
+  if (d.getUTCFullYear() === year && d.getUTCMonth() === month) {
+    inMonth.set(d.getUTCDate(), e);
+  }
+}
+
+const list = upcoming.slice(0, 4);
+---
+
+<div class="agenda">
+  <!-- Calendario --------------------------------------------------------- -->
+  <div class="cal" data-reveal>
+    <div class="cal-head">
+      <span class="cal-month">{MONTHS[month]}</span>
+      <span class="cal-year tnum muted">{year}</span>
+    </div>
+
+    <table class="cal-grid">
+      <caption class="sr-only">
+        Actividades de {MONTHS[month]} de {year}
+      </caption>
+      <thead>
+        <tr>
+          {WEEKDAYS.map((w, i) => <th scope="col" abbr={String(i)}>{w}</th>)}
+        </tr>
+      </thead>
+      <tbody>
+        {
+          Array.from({ length: cells.length / 7 }, (_, row) => (
+            <tr>
+              {cells.slice(row * 7, row * 7 + 7).map((day) => {
+                const event = day ? inMonth.get(day) : undefined;
+                return (
+                  <td class:list={[day === null && 'is-empty', event && 'has-event']}>
+                    {day !== null &&
+                      (event ? (
+                        <a
+                          href={`/agenda/${event.id}`}
+                          class="cal-day is-event"
+                          data-day={day}
+                          aria-label={`${day} de ${MONTHS[month]}: ${event.data.title}`}
+                        >
+                          <span class="tnum">{day}</span>
+                        </a>
+                      ) : (
+                        <span class="cal-day tnum">{day}</span>
+                      ))}
+                  </td>
+                );
+              })}
+            </tr>
+          ))
+        }
+      </tbody>
+    </table>
+
+    <p class="cal-legend muted">
+      <span class="cal-dot" aria-hidden="true"></span>
+      Días con actividad programada
+    </p>
+  </div>
+
+  <!-- Lista --------------------------------------------------------------- -->
+  <ol class="agenda-list" data-reveal-group data-reveal-stagger="0.07">
+    {
+      list.map((e) => {
+        const { day, month: m } = dayMonth(e.data.date.toISOString());
+        return (
+          <li data-reveal data-event-day={e.data.date.getUTCDate()}>
+            <a href={`/agenda/${e.id}`} class="agenda-entry">
+              <span class="entry-date" aria-hidden="true">
+                <span class="entry-day tnum">{day}</span>
+                <span class="entry-month">{m}</span>
+              </span>
+
+              <span class="entry-body">
+                <span class="entry-meta">
+                  <span class="chip chip-teal">{e.data.type}</span>
+                  {e.data.time && <span class="tnum muted">{e.data.time}</span>}
+                  <span class="muted">{e.data.location}</span>
+                </span>
+                <span class="entry-title">{e.data.title}</span>
+              </span>
+
+              <span class="entry-go" aria-hidden="true">
+                <svg viewBox="0 0 16 16" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.8">
+                  <path d="M2 8h11M9 4l4 4-4 4" stroke-linecap="round" stroke-linejoin="round" />
+                </svg>
+              </span>
+            </a>
+          </li>
+        );
+      })
+    }
+  </ol>
+</div>
+
+<script>
+  /* El calendario y la lista se resaltan entre sí. */
+  const days = document.querySelectorAll<HTMLElement>('.cal-day.is-event');
+  const entries = document.querySelectorAll<HTMLElement>('[data-event-day]');
+
+  const link = (day: string | undefined, on: boolean): void => {
+    if (!day) return;
+    days.forEach((d) => d.dataset.day === day && d.classList.toggle('is-active', on));
+    entries.forEach((e) => e.dataset.eventDay === day && e.classList.toggle('is-active', on));
+  };
+
+  days.forEach((d) => {
+    d.addEventListener('mouseenter', () => link(d.dataset.day, true));
+    d.addEventListener('mouseleave', () => link(d.dataset.day, false));
+    d.addEventListener('focus', () => link(d.dataset.day, true));
+    d.addEventListener('blur', () => link(d.dataset.day, false));
+  });
+
+  entries.forEach((e) => {
+    e.addEventListener('mouseenter', () => link(e.dataset.eventDay, true));
+    e.addEventListener('mouseleave', () => link(e.dataset.eventDay, false));
+  });
+</script>
+
+<style>
+  .agenda {
+    display: grid;
+    gap: 40px;
+  }
+  @media (min-width: 980px) {
+    .agenda {
+      grid-template-columns: minmax(0, 340px) minmax(0, 1fr);
+      gap: 64px;
+      align-items: start;
+    }
+  }
+
+  /* --- calendario --- */
+  .cal {
+    border: 1px solid var(--line, var(--line-light));
+    border-radius: var(--radius-md) clamp(28px, 5vw, 56px) var(--radius-md) var(--radius-md);
+    padding: 22px 22px 18px;
+  }
+
+  /* Sobre el azul petróleo el calendario se remata en dorado: es la pieza
+     que manda en esa sección y conviene que destaque. */
+  .surface-deep .cal,
+  .surface-dark .cal {
+    border-color: color-mix(in srgb, #d29a28 38%, transparent);
+    background: color-mix(in srgb, #d29a28 5%, transparent);
+  }
+  .surface-deep .cal-head,
+  .surface-dark .cal-head { border-bottom-color: color-mix(in srgb, #d29a28 30%, transparent); }
+
+  .surface-deep .cal-month,
+  .surface-dark .cal-month { color: var(--color-gold-300); }
+
+  .surface-deep .cal-grid th,
+  .surface-dark .cal-grid th { color: color-mix(in srgb, #e5bb6b 76%, transparent); }
+
+  .surface-deep .cal-legend,
+  .surface-dark .cal-legend { border-top-color: color-mix(in srgb, #d29a28 24%, transparent); }
+
+  .cal-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 12px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid var(--line, var(--line-light));
+  }
+  .cal-month {
+    font-family: var(--font-display);
+    font-size: 1.5rem;
+    letter-spacing: -0.015em;
+  }
+  .cal-year { font-size: 12px; letter-spacing: 0.14em; }
+
+  .cal-grid {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 14px;
+  }
+  .cal-grid th {
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--muted);
+    padding-bottom: 8px;
+  }
+  .cal-grid td { text-align: center; padding: 2px; }
+
+  .cal-day {
+    display: grid;
+    place-items: center;
+    width: 100%;
+    aspect-ratio: 1;
+    max-width: 38px;
+    margin-inline: auto;
+    border-radius: 999px;
+    font-size: 13px;
+    color: color-mix(in srgb, currentColor 55%, transparent);
+    transition: background-color 220ms ease, color 220ms ease, transform 220ms ease;
+  }
+
+  .cal-day.is-event {
+    color: inherit;
+    font-weight: 600;
+    border: 1px solid color-mix(in srgb, #d29a28 55%, transparent);
+    position: relative;
+  }
+  .cal-day.is-event::after {
+    content: '';
+    position: absolute;
+    bottom: 4px;
+    width: 3px;
+    height: 3px;
+    border-radius: 999px;
+    background: var(--color-gold);
+  }
+  .cal-day.is-event:hover,
+  .cal-day.is-event.is-active {
+    background: var(--color-gold);
+    border-color: var(--color-gold);
+    color: var(--color-ink);
+    transform: scale(1.08);
+  }
+  .cal-day.is-event:hover::after,
+  .cal-day.is-event.is-active::after { background: var(--color-ink); }
+
+  .cal-legend {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 16px;
+    padding-top: 14px;
+    border-top: 1px solid var(--line, var(--line-light));
+    font-size: 11px;
+  }
+  .cal-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 999px;
+    background: var(--color-gold);
+  }
+
+  /* --- lista --- */
+  .agenda-list { list-style: none; margin: 0; padding: 0; }
+  .agenda-list li { border-top: 1px solid var(--line, var(--line-light)); }
+  .agenda-list li:last-child { border-bottom: 1px solid var(--line, var(--line-light)); }
+
+  .agenda-entry {
+    display: grid;
+    grid-template-columns: 62px minmax(0, 1fr) 28px;
+    align-items: center;
+    gap: 20px;
+    padding-block: 20px;
+    transition: transform 240ms cubic-bezier(0.22, 0.61, 0.36, 1),
+      background-color 240ms ease;
+  }
+  .agenda-list li.is-active .agenda-entry,
+  .agenda-entry:hover {
+    transform: translateX(6px);
+  }
+
+  .entry-date {
+    display: grid;
+    justify-items: start;
+    line-height: 1;
+  }
+  .entry-day {
+    font-family: var(--font-display);
+    font-size: 2.1rem;
+    letter-spacing: -0.025em;
+    transition: color 240ms ease;
+  }
+  .agenda-list li.is-active .entry-day,
+  .agenda-entry:hover .entry-day { color: var(--color-gold); }
+  .entry-month {
+    margin-top: 5px;
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.14em;
+    color: var(--color-gold);
+  }
+
+  .entry-body { display: grid; gap: 8px; }
+  .entry-meta {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px 12px;
+    font-size: 12px;
+  }
+  .entry-title {
+    font-family: var(--font-display);
+    font-size: clamp(1.08rem, 1.5vw, 1.3rem);
+    line-height: 1.24;
+  }
+
+  .entry-go {
+    justify-self: end;
+    color: var(--color-gold);
+    opacity: 0;
+    transform: translateX(-6px);
+    transition: opacity 220ms ease, transform 240ms cubic-bezier(0.22, 0.61, 0.36, 1);
+  }
+  .agenda-entry:hover .entry-go,
+  .agenda-entry:focus-visible .entry-go,
+  .agenda-list li.is-active .entry-go { opacity: 1; transform: none; }
+
+  @media (max-width: 560px) {
+    .agenda-entry { grid-template-columns: 52px minmax(0, 1fr); gap: 14px; }
+    .entry-go { display: none; }
+  }
+</style>

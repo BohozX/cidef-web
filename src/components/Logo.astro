@@ -1,0 +1,69 @@
+---
+import { site } from '../site.config';
+
+/**
+ * Marca institucional CIDEF.
+ *
+ * Sirve las variantes oficiales generadas por `tools/prepare_assets.py`
+ * a partir del archivo original. El logo no se rediseña: se elige la
+ * composición (horizontal, apilada o solo símbolo) y la versión adecuada
+ * al fondo (color sobre claro, reversa sobre oscuro).
+ */
+
+export interface Props {
+  /** `light` para fondos oscuros, `color` para fondos claros. */
+  variant?: 'light' | 'color';
+  layout?: 'horizontal' | 'stacked' | 'mark';
+  height?: number;
+  class?: string;
+  /** La marca del header debe cargarse de inmediato; el resto puede diferirse. */
+  eager?: boolean;
+}
+
+const {
+  variant = 'light',
+  layout = 'horizontal',
+  height = 40,
+  class: className = '',
+  eager = false,
+} = Astro.props;
+
+const key =
+  layout === 'mark'
+    ? 'mark'
+    : layout === 'stacked'
+      ? variant === 'light'
+        ? 'stackedInverse'
+        : 'stacked'
+      : variant === 'light'
+        ? 'horizontalInverse'
+        : 'horizontal';
+
+const src = site.logos[key] ?? site.logos.horizontal;
+
+/* Relación de aspecto de cada variante (evita saltos de layout). */
+const ratios: Record<string, number> = {
+  horizontal: 758 / 220,
+  horizontalInverse: 758 / 220,
+  stacked: 653 / 720,
+  stackedInverse: 653 / 720,
+  mark: 512 / 482,
+};
+const ratio = ratios[key] ?? 758 / 220;
+---
+
+{
+  src && (
+    <img
+      src={src}
+      alt={`${site.name} — ${site.legalName}`}
+      class={className}
+      width={Math.round(height * ratio)}
+      height={height}
+      style={`height:${height}px;width:auto`}
+      loading={eager ? 'eager' : 'lazy'}
+      fetchpriority={eager ? 'high' : 'auto'}
+      decoding="async"
+    />
+  )
+}

@@ -1,0 +1,335 @@
+---
+import type { GetStaticPaths } from 'astro';
+
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import PageHero from '../../components/PageHero.astro';
+import IndicatorChart from '../../components/IndicatorChart.astro';
+import IndicatorCard from '../../components/IndicatorCard.astro';
+import Newsletter from '../../components/Newsletter.astro';
+
+import { indicators, byCategory, categoryName, type Indicator } from '../../lib/indicators';
+import { deltaLabel, direction, longDate, monthYear, num, shortDate } from '../../lib/format';
+import { site } from '../../site.config';
+
+export const getStaticPaths: GetStaticPaths = () =>
+  indicators.map((ind) => ({ params: { id: ind.id }, props: { ind } }));
+
+const { ind } = Astro.props as { ind: Indicator };
+
+const related = byCategory(ind.category)
+  .filter((i) => i.id !== ind.id)
+  .slice(0, 4);
+
+const suffix = ind.unit === '%' || ind.unit === '% PIB' ? '%' : '';
+const prefix = ind.unit === 'Bs' ? 'Bs ' : '';
+
+const facts = [
+  { label: 'Categoría', value: categoryName(ind.category) },
+  { label: 'Frecuencia', value: ind.frequency },
+  { label: 'Fuente', value: ind.source },
+  { label: 'Actualizado', value: shortDate(ind.updated) },
+];
+
+const jsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'Dataset',
+  name: ind.name,
+  description: ind.description,
+  license: 'https://creativecommons.org/licenses/by/4.0/',
+  creator: { '@type': 'Organization', name: site.legalName },
+  temporalCoverage: `${ind.history[0]?.d ?? ''}/${ind.date}`,
+  variableMeasured: { '@type': 'PropertyValue', name: ind.name, unitText: ind.unit },
+  isAccessibleForFree: true,
+};
+---
+
+<BaseLayout
+  title={ind.name}
+  description={ind.description}
+  jsonLd={jsonLd}
+>
+  <PageHero
+    eyebrow={`Radar Económico · ${categoryName(ind.category)}`}
+    title={ind.name}
+    parent={{ label: 'Radar Económico', href: '/radar' }}
+    facts={facts}
+  >
+    <div slot="actions" class="ind-headline" data-hero-item>
+      <p class="ind-big metric">
+        <span
+          data-count={ind.value}
+          data-count-decimals={ind.decimals}
+          data-count-prefix={prefix}
+          data-count-suffix={suffix}
+        >{prefix}{num(ind.value, ind.decimals)}{suffix}</span>
+        {suffix === '' && prefix === '' && <span class="ind-big-unit">{ind.unit}</span>}
+      </p>
+
+      <div class="ind-headline-meta">
+        <p class:list={['tnum', 'ind-delta', `delta-${direction(ind.change)}`]}>
+          {deltaLabel(ind.change, ind.changeUnit, ind.decimals)}
+        </p>
+        <p class="muted tnum">Dato de {monthYear(ind.date)}</p>
+        {
+          ind.ciLow !== undefined && ind.ciHigh !== undefined && (
+            <p class="muted tnum">
+              Intervalo de confianza: {num(ind.ciLow, ind.decimals)} a {num(ind.ciHigh, ind.decimals)}
+            </p>
+          )
+        }
+        <p class="ind-tags">
+          {ind.own ? (
+            <span class="chip chip-gold">Estimación del Centro</span>
+          ) : (
+            <span class="chip chip-teal">Fuente oficial</span>
+          )}
+          {ind.demo && <span class="chip chip-demo">Serie de demostración</span>}
+        </p>
+      </div>
+    </div>
+  </PageHero>
+
+  <!-- GRÁFICO -------------------------------------------------------------- -->
+  <section class="surface-light section" aria-labelledby="serie">
+    <div class="wrap">
+      <h2 id="serie" class="eyebrow eyebrow-gold block-h" data-reveal>Serie histórica</h2>
+
+      <div data-reveal>
+        <IndicatorChart
+          id={ind.id}
+          name={ind.name}
+          unit={ind.unit}
+          decimals={ind.decimals}
+          history={ind.history}
+          own={ind.own}
+          source={ind.source}
+          height={420}
+        />
+      </div>
+    </div>
+  </section>
+
+  <!-- FICHA ---------------------------------------------------------------- -->
+  <section class="surface-tint section" aria-labelledby="ficha">
+    <div class="wrap">
+      <div class="rule rule-draw"></div>
+
+      <div class="meta-grid">
+        <div class="meta-main">
+          <h2 id="ficha" class="eyebrow eyebrow-gold block-h" data-reveal>Descripción</h2>
+          <p class="meta-desc" data-reveal>{ind.description}</p>
+
+          <h3 class="eyebrow eyebrow-gold block-h meta-sub" data-reveal>Metodología</h3>
+          <p class="meta-text muted" data-reveal>{ind.methodology}</p>
+
+          {
+            ind.own && (
+              <p class="own-warning" data-reveal>
+                Indicador producido por el centro. <strong>No constituye una cifra
+                oficial.</strong> Las revisiones se publican como versiones
+                independientes y no reemplazan a las estimaciones anteriores.
+              </p>
+            )
+          }
+
+          {
+            ind.vintages && ind.vintages.length > 0 && (
+              <div class="vintage-table" data-reveal>
+                <h3 class="eyebrow eyebrow-gold block-h meta-sub">Historial de versiones</h3>
+                <table>
+                  <caption class="sr-only">Versiones anteriores de la estimación</caption>
+                  <thead>
+                    <tr>
+                      <th scope="col">Versión</th>
+                      <th scope="col">Fecha</th>
+                      <th scope="col">Valor</th>
+                      <th scope="col">Nota</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {ind.vintages.map((v) => (
+                      <tr>
+                        <td class="tnum">{v.version}</td>
+                        <td class="tnum">{shortDate(v.date)}</td>
+                        <td class="tnum vintage-val">
+                          {num(v.value, ind.decimals)}
+                          {suffix}
+                        </td>
+                        <td class="muted">{v.note ?? '—'}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )
+          }
+        </div>
+
+        <aside class="meta-side" data-reveal aria-label="Metadatos del indicador">
+          <dl>
+            <div><dt class="muted">Identificador</dt><dd class="tnum">{ind.id}</dd></div>
+            <div><dt class="muted">Unidad</dt><dd>{ind.unit}</dd></div>
+            <div><dt class="muted">Periodicidad</dt><dd>{ind.periodicity}</dd></div>
+            <div><dt class="muted">Observaciones</dt><dd class="tnum">{ind.history.length}</dd></div>
+            <div>
+              <dt class="muted">Cobertura</dt>
+              <dd class="tnum">{monthYear(ind.history[0]?.d ?? ind.date)} — {monthYear(ind.date)}</dd>
+            </div>
+            <div>
+              <dt class="muted">Fuente</dt>
+              <dd>
+                {ind.sourceUrl ? (
+                  <a href={ind.sourceUrl} class="link-underline" rel="noopener noreferrer" target="_blank">{ind.source}</a>
+                ) : (
+                  ind.source
+                )}
+              </dd>
+            </div>
+            {ind.version && <div><dt class="muted">Versión</dt><dd class="tnum">{ind.version}</dd></div>}
+            {ind.authors && (
+              <div><dt class="muted">Autoría</dt><dd>{ind.authors.join(', ')}</dd></div>
+            )}
+            <div>
+              <dt class="muted">Última actualización</dt>
+              <dd class="tnum">{longDate(ind.updated)}</dd>
+            </div>
+          </dl>
+        </aside>
+      </div>
+    </div>
+  </section>
+
+  <!-- RELACIONADOS ---------------------------------------------------------- -->
+  {
+    related.length > 0 && (
+      <section class="surface-deep section" aria-labelledby="relacionados">
+        <div class="wrap">
+          <div class="rule rule-draw"></div>
+          <h2 id="relacionados" class="display-3 rel-title" data-reveal>
+            Más de {categoryName(ind.category).toLowerCase()}
+          </h2>
+          <div class="rel-grid" data-reveal-group data-reveal-stagger="0.06">
+            {related.map((item) => <IndicatorCard indicator={item} />)}
+          </div>
+        </div>
+      </section>
+    )
+  }
+
+  <Newsletter />
+</BaseLayout>
+
+<style>
+  .ind-headline {
+    display: grid;
+    gap: 18px;
+    margin-top: 34px;
+  }
+  @media (min-width: 760px) {
+    .ind-headline { grid-template-columns: auto minmax(0, 1fr); gap: 44px; align-items: center; }
+  }
+
+  .ind-big {
+    font-size: clamp(3.4rem, 9vw, 6rem);
+    color: var(--color-gold);
+    display: flex;
+    align-items: baseline;
+    gap: 12px;
+  }
+  .ind-big-unit {
+    font-family: var(--font-sans);
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: color-mix(in srgb, #f5f3ed 62%, transparent);
+  }
+
+  .ind-headline-meta { display: grid; gap: 7px; font-size: 13.5px; }
+  .ind-delta { font-weight: 600; }
+  .ind-tags { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 6px; }
+
+  .block-h { display: block; margin-bottom: 16px; }
+
+  .meta-grid {
+    display: grid;
+    gap: 40px;
+    padding-top: 34px;
+  }
+  @media (min-width: 1000px) {
+    .meta-grid { grid-template-columns: minmax(0, 1fr) 300px; gap: 68px; align-items: start; }
+  }
+
+  .meta-desc {
+    font-family: var(--font-display);
+    font-size: clamp(1.1rem, 1.7vw, 1.3rem);
+    line-height: 1.55;
+    max-width: 58ch;
+  }
+  .meta-sub { margin-top: 40px; }
+  .meta-text { font-size: 14.5px; line-height: 1.68; max-width: 66ch; }
+
+  .own-warning {
+    margin-top: 28px;
+    padding: 16px 18px;
+    border: 1px solid color-mix(in srgb, #d29a28 40%, transparent);
+    background: color-mix(in srgb, #d29a28 8%, transparent);
+    border-radius: var(--radius-md);
+    font-size: 13px;
+    line-height: 1.6;
+    max-width: 74ch;
+  }
+
+  .vintage-table { margin-top: 40px; overflow-x: auto; }
+  .vintage-table table {
+    width: 100%;
+    min-width: 520px;
+    border-collapse: collapse;
+    font-size: 13px;
+  }
+  .vintage-table th {
+    text-align: left;
+    font-size: 10.5px;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--line-light);
+  }
+  .vintage-table td {
+    padding-block: 12px;
+    border-bottom: 1px solid var(--line-light);
+    vertical-align: top;
+  }
+  .vintage-val { color: var(--color-gold); font-weight: 600; }
+
+  .meta-side {
+    border-top: 1px solid var(--line-light);
+    padding-top: 24px;
+  }
+  @media (min-width: 1000px) {
+    .meta-side {
+      border-top: 0;
+      border-left: 1px solid var(--line-light);
+      padding: 4px 0 4px 34px;
+      position: sticky;
+      top: 96px;
+    }
+  }
+  .meta-side dl { display: grid; gap: 16px; margin: 0; font-size: 13.5px; }
+  .meta-side dt {
+    font-size: 10.5px;
+    font-weight: 600;
+    letter-spacing: 0.13em;
+    text-transform: uppercase;
+    margin-bottom: 5px;
+  }
+  .meta-side dd { margin: 0; line-height: 1.5; }
+
+  .rel-title { margin: 26px 0 32px; }
+  .rel-grid {
+    display: grid;
+    gap: 16px;
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 250px), 1fr));
+  }
+</style>

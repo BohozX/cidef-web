@@ -1,0 +1,355 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import PageHero from '../../components/PageHero.astro';
+import IndicatorCard from '../../components/IndicatorCard.astro';
+import OwnIndicatorSpotlight from '../../components/OwnIndicatorSpotlight.astro';
+import Newsletter from '../../components/Newsletter.astro';
+import { categories, featured, indicators, lastUpdated } from '../../lib/indicators';
+import { shortDate } from '../../lib/format';
+
+const panorama = featured();
+const updated = shortDate(lastUpdated());
+
+const sections = categories
+  .filter((c) => c.id !== 'panorama')
+  .map((c) => ({ ...c, items: indicators.filter((i) => i.category === c.id) }))
+  .filter((c) => c.items.length > 0);
+
+const frequencies = [...new Set(indicators.map((i) => i.frequency))].sort();
+const sources = [...new Set(indicators.map((i) => i.source))].sort();
+
+const facts = [
+  { label: 'Indicadores', value: String(indicators.length) },
+  { label: 'Categorías', value: String(sections.length) },
+  { label: 'Propios del centro', value: String(indicators.filter((i) => i.own).length) },
+  { label: 'Actualizado', value: updated },
+];
+---
+
+<BaseLayout
+  title="Radar Económico"
+  description="Plataforma de indicadores de la economía boliviana: precios, actividad, sector externo, monetario, fiscal, mercado laboral, comercio y estimaciones propias del CIDEF."
+>
+  <PageHero
+    eyebrow="Radar Económico"
+    title="La economía boliviana, en un tablero."
+    lede="Indicadores de fuentes oficiales y estimaciones propias del centro, con su serie histórica, su metodología y su descarga. Cada ficha declara de dónde viene el dato."
+    facts={facts}
+  />
+
+  <!-- PANORAMA GENERAL ---------------------------------------------------- -->
+  <section class="surface-deep section" aria-labelledby="panorama">
+    <div class="wrap">
+      <div class="radar-sec-head">
+        <div>
+          <p class="eyebrow eyebrow-gold" data-reveal>Panorama general</p>
+          <h2 id="panorama" class="display-3 radar-sec-title" data-reveal>
+            Lectura transversal de la economía.
+          </h2>
+        </div>
+        <p class="radar-sec-note muted" data-reveal>
+          Los seis indicadores que el centro considera mínimos para una lectura
+          de coyuntura. Series de demostración.
+        </p>
+      </div>
+
+      <div class="ind-grid" data-reveal-group data-reveal-stagger="0.06">
+        {panorama.map((ind) => <IndicatorCard indicator={ind} />)}
+      </div>
+    </div>
+  </section>
+
+  <!-- ESTIMACIÓN DESTACADA DEL CENTRO -------------------------------------- -->
+  <OwnIndicatorSpotlight id="nowcast-pib" />
+
+  <!-- BUSCADOR Y CATEGORÍAS ----------------------------------------------- -->
+  <section class="surface-light section" aria-label="Todos los indicadores">
+    <div class="wrap">
+      <form class="radar-filters no-print" role="search" data-reveal>
+        <div class="radar-search">
+          <svg viewBox="0 0 20 20" width="16" height="16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.6">
+            <circle cx="8.6" cy="8.6" r="5.4" />
+            <path d="M12.6 12.6 17 17" stroke-linecap="round" />
+          </svg>
+          <label class="sr-only" for="rd-q">Buscar indicador</label>
+          <input
+            id="rd-q"
+            type="search"
+            class="radar-input"
+            placeholder="Buscar indicador…"
+            autocomplete="off"
+            data-rd-query
+          />
+        </div>
+
+        <div class="radar-selects">
+          <label class="sr-only" for="rd-cat">Categoría</label>
+          <select id="rd-cat" class="field" data-rd-cat>
+            <option value="">Todas las categorías</option>
+            {sections.map((c) => <option value={c.id}>{c.name}</option>)}
+          </select>
+
+          <label class="sr-only" for="rd-freq">Frecuencia</label>
+          <select id="rd-freq" class="field" data-rd-freq>
+            <option value="">Toda frecuencia</option>
+            {frequencies.map((f) => <option value={f}>{f}</option>)}
+          </select>
+
+          <label class="sr-only" for="rd-src">Fuente</label>
+          <select id="rd-src" class="field" data-rd-src>
+            <option value="">Todas las fuentes</option>
+            {sources.map((s) => <option value={s}>{s}</option>)}
+          </select>
+        </div>
+      </form>
+
+      <nav class="cat-nav no-print" aria-label="Ir a categoría" data-reveal>
+        {sections.map((c) => <a href={`#${c.id}`} class="cat-chip">{c.name}</a>)}
+      </nav>
+
+      <p class="radar-count muted" data-rd-count aria-live="polite">
+        {indicators.length} indicadores
+      </p>
+
+      {
+        sections.map((c) => (
+          <section
+            id={c.id}
+            class:list={['cat-section', c.id === 'centro' && 'is-own']}
+            data-rd-section={c.id}
+            aria-labelledby={`h-${c.id}`}
+          >
+            <div class="rule rule-draw"></div>
+
+            <header class="cat-head">
+              <div>
+                <h2 id={`h-${c.id}`} class="cat-title" data-reveal>
+                  {c.name}
+                  {c.id === 'centro' && <span class="chip chip-gold cat-badge">Estimaciones propias</span>}
+                </h2>
+                <p class="cat-desc muted" data-reveal>{c.description}</p>
+              </div>
+              <p class="cat-count tnum muted" data-reveal>
+                {c.items.length} {c.items.length === 1 ? 'indicador' : 'indicadores'}
+              </p>
+            </header>
+
+            {c.id === 'centro' && (
+              <p class="own-note" data-reveal>
+                Estos indicadores <strong>no son cifras oficiales</strong>: son
+                estimaciones producidas por el centro. Cada ficha publica su
+                metodología, su versión, sus autores y —cuando corresponde— su
+                intervalo de confianza y el historial de revisiones.
+              </p>
+            )}
+
+            <div class="ind-grid" data-reveal-group data-reveal-stagger="0.05">
+              {c.items.map((ind) => (
+                <div
+                  class="ind-entry"
+                  data-cat={ind.category}
+                  data-freq={ind.frequency}
+                  data-src={ind.source}
+                  data-haystack={`${ind.name} ${ind.shortName} ${ind.source} ${ind.frequency} ${ind.description}`.toLowerCase()}
+                >
+                  <IndicatorCard indicator={ind} />
+                </div>
+              ))}
+            </div>
+          </section>
+        ))
+      }
+
+      <p class="radar-empty muted" data-rd-empty hidden>
+        Ningún indicador coincide con la búsqueda.
+      </p>
+    </div>
+  </section>
+
+  <Newsletter />
+</BaseLayout>
+
+<script>
+  const query = document.querySelector<HTMLInputElement>('[data-rd-query]');
+  const selCat = document.querySelector<HTMLSelectElement>('[data-rd-cat]');
+  const selFreq = document.querySelector<HTMLSelectElement>('[data-rd-freq]');
+  const selSrc = document.querySelector<HTMLSelectElement>('[data-rd-src]');
+  const count = document.querySelector<HTMLElement>('[data-rd-count]');
+  const empty = document.querySelector<HTMLElement>('[data-rd-empty]');
+
+  if (query && selCat && selFreq && selSrc && count && empty) {
+    const entries = Array.from(document.querySelectorAll<HTMLElement>('.ind-entry'));
+    const sections = Array.from(document.querySelectorAll<HTMLElement>('[data-rd-section]'));
+
+    const normalize = (s: string): string =>
+      s.toLowerCase().normalize('NFD').replace(/\p{Diacritic}/gu, '');
+
+    const apply = (): void => {
+      const q = normalize(query.value.trim());
+      let visible = 0;
+
+      for (const el of entries) {
+        const hay = normalize(el.dataset.haystack ?? '');
+        const ok =
+          (q.length === 0 || q.split(/\s+/).every((t) => hay.includes(t))) &&
+          (selCat.value === '' || el.dataset.cat === selCat.value) &&
+          (selFreq.value === '' || el.dataset.freq === selFreq.value) &&
+          (selSrc.value === '' || el.dataset.src === selSrc.value);
+        el.hidden = !ok;
+        if (ok) visible += 1;
+      }
+
+      // Una categoría sin resultados se oculta por completo.
+      for (const section of sections) {
+        const any = Array.from(section.querySelectorAll<HTMLElement>('.ind-entry')).some(
+          (el) => !el.hidden,
+        );
+        section.hidden = !any;
+      }
+
+      count.textContent = visible === 1 ? '1 indicador' : `${visible} indicadores`;
+      empty.hidden = visible > 0;
+    };
+
+    query.addEventListener('input', apply);
+    [selCat, selFreq, selSrc].forEach((el) => el.addEventListener('change', apply));
+    query.closest('form')?.addEventListener('submit', (e) => e.preventDefault());
+
+    // Enlace directo: /radar?cat=centro
+    const requested = new URLSearchParams(window.location.search).get('cat');
+    if (requested && Array.from(selCat.options).some((o) => o.value === requested)) {
+      selCat.value = requested;
+      apply();
+      document.getElementById(requested)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  }
+</script>
+
+<style>
+  .radar-sec-head {
+    display: grid;
+    gap: 18px;
+    padding-bottom: 34px;
+  }
+  @media (min-width: 900px) {
+    .radar-sec-head {
+      grid-template-columns: minmax(0, 1.3fr) minmax(0, 0.7fr);
+      gap: 48px;
+      align-items: end;
+    }
+  }
+  .radar-sec-title { margin-top: 14px; max-width: 20ch; }
+  .radar-sec-note { font-size: 13px; max-width: 42ch; }
+
+  .ind-grid {
+    display: grid;
+    gap: 16px;
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 258px), 1fr));
+  }
+
+  /* --- filtros --- */
+  .radar-filters {
+    display: grid;
+    gap: 18px;
+    padding-bottom: 22px;
+  }
+  .radar-search {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    border-bottom: 1px solid var(--line-light);
+    padding-bottom: 12px;
+    color: var(--muted);
+  }
+  .radar-input {
+    flex: 1;
+    background: transparent;
+    border: 0;
+    color: var(--color-ink);
+    font-family: var(--font-display);
+    font-size: clamp(1.2rem, 2.4vw, 1.7rem);
+    padding: 0;
+  }
+  .radar-input:focus { outline: none; }
+  .radar-input::-webkit-search-cancel-button { display: none; }
+
+  .radar-selects { display: flex; flex-wrap: wrap; gap: 10px; }
+  .radar-selects select { flex: 1 1 180px; max-width: 260px; }
+
+  .cat-nav {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    padding-bottom: 26px;
+  }
+  .cat-chip {
+    padding: 6px 14px;
+    border: 1px solid var(--line-light);
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 500;
+    transition: border-color 200ms ease, color 200ms ease;
+  }
+  .cat-chip:hover { border-color: var(--color-teal); color: var(--color-teal-600); }
+
+  .radar-count {
+    font-size: 11.5px;
+    font-weight: 600;
+    letter-spacing: 0.13em;
+    text-transform: uppercase;
+    padding-bottom: 8px;
+  }
+
+  /* --- categorías --- */
+  .cat-section {
+    padding-top: clamp(40px, 5vw, 64px);
+    scroll-margin-top: 96px;
+  }
+  .cat-head {
+    display: grid;
+    gap: 12px;
+    padding-block: 22px 26px;
+  }
+  @media (min-width: 760px) {
+    .cat-head {
+      grid-template-columns: minmax(0, 1fr) auto;
+      align-items: baseline;
+      gap: 32px;
+    }
+  }
+  .cat-title {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 14px;
+    font-size: clamp(1.5rem, 2.6vw, 2rem);
+  }
+  .cat-badge { font-family: var(--font-sans); }
+  .cat-desc { margin-top: 8px; font-size: 13.5px; max-width: 60ch; }
+  .cat-count {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.13em;
+    text-transform: uppercase;
+  }
+
+  .cat-section.is-own {
+    border-left: 2px solid var(--color-gold);
+    padding-left: clamp(18px, 3vw, 34px);
+    margin-top: clamp(24px, 4vw, 48px);
+  }
+
+  .own-note {
+    margin-bottom: 26px;
+    padding: 16px 18px;
+    border: 1px solid color-mix(in srgb, #d29a28 40%, transparent);
+    background: color-mix(in srgb, #d29a28 7%, transparent);
+    border-radius: var(--radius-md);
+    font-size: 13px;
+    line-height: 1.6;
+    max-width: 78ch;
+  }
+  .own-note strong { font-weight: 600; }
+
+  .radar-empty { padding-block: 52px; font-size: 14px; }
+</style>

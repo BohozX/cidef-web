@@ -1,0 +1,295 @@
+---
+import { getCollection } from 'astro:content';
+
+/**
+ * Archivo Vivo: buscador, filtros y orden. Todo el filtrado ocurre en el
+ * cliente sobre el listado ya renderizado, de modo que la página funciona
+ * (y es indexable) aunque JavaScript no se ejecute.
+ */
+
+const entries = (await getCollection('archivo')).sort((a, b) => b.data.year - a.data.year);
+
+const KINDS = [
+  'Todo',
+  'Publicación',
+  'Base de datos',
+  'Presentación',
+  'Documento histórico',
+  'Metodología',
+  'Libro',
+  'Recurso',
+] as const;
+
+const counts = new Map<string, number>();
+for (const e of entries) counts.set(e.data.kind, (counts.get(e.data.kind) ?? 0) + 1);
+
+const stats = [
+  { label: 'Publicaciones', value: counts.get('Publicación') ?? 0 },
+  { label: 'Bases de datos', value: counts.get('Base de datos') ?? 0 },
+  { label: 'Presentaciones', value: counts.get('Presentación') ?? 0 },
+  { label: 'Documentos históricos', value: counts.get('Documento histórico') ?? 0 },
+];
+---
+
+<div class="archive">
+  <div class="archive-stats" data-reveal-group data-reveal-stagger="0.05">
+    {
+      stats.map((s) => (
+        <div class="archive-stat" data-reveal>
+          <span class="archive-stat-value metric" data-count={s.value}>{s.value}</span>
+          <span class="archive-stat-label eyebrow muted">{s.label}</span>
+        </div>
+      ))
+    }
+  </div>
+
+  <div class="rule"></div>
+
+  <form class="archive-controls no-print" role="search" data-reveal>
+    <div class="archive-search">
+      <svg viewBox="0 0 20 20" width="16" height="16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.6">
+        <circle cx="8.6" cy="8.6" r="5.4" />
+        <path d="M12.6 12.6 17 17" stroke-linecap="round" />
+      </svg>
+      <label class="sr-only" for="archive-q">Buscar en el Archivo Vivo</label>
+      <input
+        id="archive-q"
+        type="search"
+        class="archive-input"
+        placeholder="Buscar en el Archivo Vivo…"
+        autocomplete="off"
+        data-archive-query
+      />
+    </div>
+
+    <div class="archive-selects">
+      <div>
+        <label class="sr-only" for="archive-kind">Tipo de recurso</label>
+        <select id="archive-kind" class="field" data-archive-kind>
+          {KINDS.map((k) => <option value={k}>{k === 'Todo' ? 'Todos los tipos' : k}</option>)}
+        </select>
+      </div>
+      <div>
+        <label class="sr-only" for="archive-sort">Ordenar</label>
+        <select id="archive-sort" class="field" data-archive-sort>
+          <option value="recent">Más reciente</option>
+          <option value="old">Más antiguo</option>
+          <option value="views">Más consultado</option>
+          <option value="alpha">Alfabético</option>
+        </select>
+      </div>
+    </div>
+  </form>
+
+  <p class="archive-count muted" data-archive-count aria-live="polite">
+    {entries.length} recursos
+  </p>
+
+  <ul class="archive-list row-list" data-archive-list>
+    {
+      entries.map((e) => (
+        <li
+          class="row-item archive-item"
+          data-reveal
+          data-kind={e.data.kind}
+          data-year={e.data.year}
+          data-views={e.data.views}
+          data-title={e.data.title.toLowerCase()}
+          data-haystack={`${e.data.title} ${e.data.kind} ${e.data.author ?? ''} ${e.data.description} ${e.data.topics.join(' ')}`.toLowerCase()}
+        >
+          <a href={e.data.href ?? '#'} class="archive-link">
+            <span class="archive-kind">{e.data.kind}</span>
+
+            <span class="archive-body">
+              <span class="archive-title">{e.data.title}</span>
+              <span class="archive-desc muted">{e.data.description}</span>
+              <span class="archive-tags muted">
+                {e.data.author && <span>{e.data.author}</span>}
+                {e.data.format && <span>· {e.data.format}</span>}
+                {e.data.size && <span>· {e.data.size}</span>}
+                {e.data.demo && <span class="chip chip-demo archive-demo">Ejemplo</span>}
+              </span>
+            </span>
+
+            <span class="archive-side tnum muted">
+              <span>{e.data.year}</span>
+              <span class="archive-views">{e.data.views} consultas</span>
+            </span>
+          </a>
+        </li>
+      ))
+    }
+  </ul>
+
+  <p class="archive-empty muted" data-archive-empty hidden>
+    Ningún recurso coincide con la búsqueda. Prueba con otro término o cambia
+    el filtro de tipo.
+  </p>
+</div>
+
+<script>
+  const list = document.querySelector<HTMLElement>('[data-archive-list]');
+  const query = document.querySelector<HTMLInputElement>('[data-archive-query]');
+  const kind = document.querySelector<HTMLSelectElement>('[data-archive-kind]');
+  const sort = document.querySelector<HTMLSelectElement>('[data-archive-sort]');
+  const count = document.querySelector<HTMLElement>('[data-archive-count]');
+  const empty = document.querySelector<HTMLElement>('[data-archive-empty]');
+
+  if (list && query && kind && sort && count && empty) {
+    const items = Array.from(list.querySelectorAll<HTMLElement>('.archive-item'));
+
+    const normalize = (s: string): string =>
+      s.toLowerCase().normalize('NFD').replace(/\p{Diacritic}/gu, '');
+
+    const apply = (): void => {
+      const q = normalize(query.value.trim());
+      const k = kind.value;
+      let visible = 0;
+
+      for (const item of items) {
+        const hay = normalize(item.dataset.haystack ?? '');
+        const okQuery = q.length === 0 || q.split(/\s+/).every((t) => hay.includes(t));
+        const okKind = k === 'Todo' || item.dataset.kind === k;
+        const show = okQuery && okKind;
+        item.hidden = !show;
+        if (show) visible += 1;
+      }
+
+      const order = sort.value;
+      const sorted = [...items].sort((a, b) => {
+        if (order === 'recent') return Number(b.dataset.year) - Number(a.dataset.year);
+        if (order === 'old') return Number(a.dataset.year) - Number(b.dataset.year);
+        if (order === 'views') return Number(b.dataset.views) - Number(a.dataset.views);
+        return (a.dataset.title ?? '').localeCompare(b.dataset.title ?? '', 'es');
+      });
+      sorted.forEach((el) => list.appendChild(el));
+
+      count.textContent = visible === 1 ? '1 recurso' : `${visible} recursos`;
+      empty.hidden = visible > 0;
+    };
+
+    query.addEventListener('input', apply);
+    kind.addEventListener('change', apply);
+    sort.addEventListener('change', apply);
+
+    // El formulario no se envía: el filtrado es inmediato.
+    query.closest('form')?.addEventListener('submit', (e) => e.preventDefault());
+  }
+</script>
+
+<style>
+  .archive-stats {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 26px 20px;
+    padding-bottom: 34px;
+  }
+  @media (min-width: 760px) {
+    .archive-stats { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  }
+  .archive-stat { display: flex; flex-direction: column; gap: 8px; }
+  .archive-stat-value { font-size: clamp(2.2rem, 4vw, 3.1rem); }
+
+  .archive-controls {
+    display: grid;
+    gap: 14px;
+    padding-block: 26px;
+  }
+  @media (min-width: 800px) {
+    .archive-controls { grid-template-columns: minmax(0, 1fr) auto; align-items: center; }
+  }
+
+  .archive-search {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    border-bottom: 1px solid var(--line, var(--line-light));
+    padding-bottom: 10px;
+    color: var(--muted);
+  }
+  .archive-input {
+    flex: 1;
+    background: transparent;
+    border: 0;
+    color: var(--color-ink);
+    font-family: var(--font-display);
+    font-size: clamp(1.15rem, 2.2vw, 1.6rem);
+    padding: 0;
+  }
+  .surface-dark .archive-input, .surface-deep .archive-input { color: var(--color-paper); }
+  .archive-input:focus { outline: none; }
+  .archive-input::-webkit-search-cancel-button { display: none; }
+
+  .archive-selects { display: flex; gap: 10px; }
+  .archive-selects select { min-width: 168px; }
+
+  .archive-count {
+    font-size: 11.5px;
+    font-weight: 600;
+    letter-spacing: 0.13em;
+    text-transform: uppercase;
+    padding-bottom: 12px;
+  }
+
+  .archive-list { list-style: none; margin: 0; padding: 0; }
+
+  .archive-link {
+    display: grid;
+    gap: 10px;
+    padding-block: 20px;
+  }
+  @media (min-width: 900px) {
+    .archive-link {
+      grid-template-columns: 176px minmax(0, 1fr) 150px;
+      gap: 30px;
+      align-items: start;
+      padding-block: 22px;
+    }
+  }
+
+  .archive-kind {
+    font-size: 10.5px;
+    font-weight: 600;
+    letter-spacing: 0.13em;
+    text-transform: uppercase;
+    color: var(--color-teal-600);
+  }
+  .surface-dark .archive-kind, .surface-deep .archive-kind { color: var(--color-teal-300); }
+
+  .archive-body { display: block; }
+  .archive-title {
+    display: block;
+    font-family: var(--font-display);
+    font-size: 1.14rem;
+    line-height: 1.28;
+    max-width: 46ch;
+  }
+  .archive-desc {
+    display: block;
+    margin-top: 7px;
+    font-size: 13px;
+    line-height: 1.55;
+    max-width: 66ch;
+  }
+  .archive-tags {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px;
+    margin-top: 9px;
+    font-size: 11.5px;
+  }
+  .archive-demo { margin-left: 4px; }
+
+  .archive-side {
+    display: flex;
+    gap: 14px;
+    font-size: 12px;
+  }
+  @media (min-width: 900px) {
+    .archive-side { flex-direction: column; align-items: flex-end; gap: 5px; text-align: right; }
+  }
+  .archive-views { font-size: 11px; }
+
+  .archive-empty { padding-block: 44px; font-size: 14px; }
+</style>

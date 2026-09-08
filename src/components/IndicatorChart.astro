@@ -1,0 +1,382 @@
+---
+import type { HistoryPoint } from '../lib/indicators';
+
+export interface Props {
+  id: string;
+  name: string;
+  unit: string;
+  decimals: number;
+  history: HistoryPoint[];
+  own?: boolean;
+  source: string;
+  /** Muestra el selector 1A / 5A / 10A / MAX. */
+  ranges?: boolean;
+  height?: number;
+  /** El gráfico se dibuja sobre superficie oscura. */
+  dark?: boolean;
+}
+
+const {
+  id,
+  name,
+  unit,
+  decimals,
+  history,
+  own = false,
+  source,
+  ranges = true,
+  height = 380,
+  dark = false,
+} = Astro.props;
+
+const payload = { id, name, unit, decimals, history, own, dark };
+const spanYears =
+  history.length > 0
+    ? (new Date(history[history.length - 1]!.d).getTime() - new Date(history[0]!.d).getTime()) /
+      (365.25 * 24 * 3600 * 1000)
+    : 0;
+
+const options = [
+  { key: '1', label: '1A', show: spanYears > 1 },
+  { key: '5', label: '5A', show: spanYears > 5 },
+  { key: '10', label: '10A', show: spanYears > 10 },
+  { key: 'max', label: 'MAX', show: true },
+];
+---
+
+<figure class="chart-figure" data-chart-root>
+  {
+    ranges && (
+      <div class="chart-toolbar no-print">
+        <div class="chart-ranges" role="group" aria-label="Rango temporal">
+          {options
+            .filter((o) => o.show)
+            .map((o, i, arr) => (
+              <button
+                type="button"
+                class="range-btn"
+                data-range={o.key}
+                aria-pressed={i === arr.length - 1 ? 'true' : 'false'}
+              >
+                {o.label}
+              </button>
+            ))}
+        </div>
+
+        <div class="chart-actions">
+          <button type="button" class="mini-btn" data-download="csv">CSV</button>
+          <button type="button" class="mini-btn" data-download="xlsx">XLSX</button>
+          <button type="button" class="mini-btn" data-download="png">Gráfico</button>
+          <button type="button" class="mini-btn" data-copy-link>Copiar enlace</button>
+        </div>
+      </div>
+    )
+  }
+
+  <div
+    class="chart-canvas"
+    data-chart
+    style={`height:${height}px`}
+    role="img"
+    aria-label={`Evolución histórica de ${name}`}
+  >
+    <noscript>
+      <p class="muted chart-noscript">
+        El gráfico interactivo requiere JavaScript. Los datos están disponibles
+        en la descarga CSV.
+      </p>
+    </noscript>
+  </div>
+
+  <figcaption class="chart-caption muted">
+    Fuente: {source} · Elaboración: CIDEF
+    <span class="chart-status" data-chart-status role="status" aria-live="polite"></span>
+  </figcaption>
+</figure>
+
+<script type="application/json" data-chart-data is:inline set:html={JSON.stringify(payload)}></script>
+
+<script>
+  type Point = { d: string; v: number };
+  type Payload = {
+    id: string;
+    name: string;
+    unit: string;
+    decimals: number;
+    history: Point[];
+    own: boolean;
+    dark: boolean;
+  };
+
+  const roots = document.querySelectorAll<HTMLElement>('[data-chart-root]');
+
+  roots.forEach((root, i) => {
+    const holder = root.querySelector<HTMLElement>('[data-chart]');
+    const json = document.querySelectorAll<HTMLElement>('[data-chart-data]')[i];
+    if (!holder || !json) return;
+
+    const data: Payload = JSON.parse(json.textContent ?? '{}');
+    let chart: import('../lib/echarts').ECharts | null = null;
+    let current: Point[] = data.history;
+
+    const palette = {
+      line: data.own ? '#d29a28' : '#008c85',
+      text: data.dark ? 'rgba(245,243,237,0.62)' : 'rgba(3,26,36,0.6)',
+      grid: data.dark ? 'rgba(245,243,237,0.10)' : 'rgba(3,26,36,0.09)',
+      axis: data.dark ? 'rgba(245,243,237,0.22)' : 'rgba(3,26,36,0.18)',
+      tipBg: data.dark ? '#04313a' : '#ffffff',
+      tipText: data.dark ? '#f5f3ed' : '#031a24',
+    };
+
+    const fmt = (v: number): string =>
+      new Intl.NumberFormat('es-BO', {
+        minimumFractionDigits: data.decimals,
+        maximumFractionDigits: data.decimals,
+      }).format(v);
+
+    const monthLabel = (iso: string): string => {
+      const dt = new Date(`${iso}T12:00:00Z`);
+      return `${String(dt.getUTCMonth() + 1).padStart(2, '0')}/${dt.getUTCFullYear()}`;
+    };
+
+    function slice(range: string): Point[] {
+      if (range === 'max') return data.history;
+      const years = Number(range);
+      const last = new Date(`${data.history[data.history.length - 1]!.d}T12:00:00Z`);
+      const from = new Date(last);
+      from.setUTCFullYear(from.getUTCFullYear() - years);
+      return data.history.filter((p) => new Date(`${p.d}T12:00:00Z`) >= from);
+    }
+
+    function optionFor(points: Point[]) {
+      return {
+        animationDuration: 700,
+        animationEasing: 'cubicOut' as const,
+        backgroundColor: 'transparent',
+        textStyle: { fontFamily: 'Inter, system-ui, sans-serif' },
+        grid: { left: 8, right: 14, top: 18, bottom: 6, containLabel: true },
+        tooltip: {
+          trigger: 'axis',
+          backgroundColor: palette.tipBg,
+          borderColor: palette.grid,
+          borderWidth: 1,
+          padding: [9, 12],
+          textStyle: { color: palette.tipText, fontSize: 12 },
+          axisPointer: { type: 'line', lineStyle: { color: palette.axis, width: 1 } },
+          formatter: (params: any) => {
+            const p = Array.isArray(params) ? params[0] : params;
+            const unit = data.unit === '%' || data.unit === '% PIB' ? '%' : ` ${data.unit}`;
+            return `<div style="font-size:10px;letter-spacing:.12em;text-transform:uppercase;opacity:.65">${monthLabel(
+              p.value[0],
+            )}</div><div style="font-size:16px;margin-top:3px">${fmt(p.value[1])}${unit}</div>`;
+          },
+        },
+        xAxis: {
+          type: 'time',
+          axisLine: { lineStyle: { color: palette.axis } },
+          axisTick: { show: false },
+          axisLabel: { color: palette.text, fontSize: 11, hideOverlap: true },
+          splitLine: { show: false },
+        },
+        yAxis: {
+          type: 'value',
+          scale: true,
+          axisLine: { show: false },
+          axisTick: { show: false },
+          axisLabel: { color: palette.text, fontSize: 11, formatter: (v: number) => fmt(v) },
+          splitLine: { lineStyle: { color: palette.grid, type: [4, 4] as [number, number] } },
+        },
+        series: [
+          {
+            type: 'line',
+            name: data.name,
+            showSymbol: false,
+            smooth: 0.12,
+            lineStyle: { width: 2, color: palette.line },
+            itemStyle: { color: palette.line },
+            areaStyle: {
+              color: {
+                type: 'linear' as const,
+                x: 0, y: 0, x2: 0, y2: 1,
+                colorStops: [
+                  { offset: 0, color: `${palette.line}2e` },
+                  { offset: 1, color: `${palette.line}00` },
+                ],
+              },
+            },
+            data: points.map((p) => [p.d, p.v]),
+          },
+        ],
+      };
+    }
+
+    async function boot(): Promise<void> {
+      /* Carga diferida del módulo de gráficos: ECharts nunca bloquea el
+         renderizado inicial y solo se descarga si hay un gráfico visible. */
+      const { init } = await import('../lib/echarts');
+      chart = init(holder, undefined, { renderer: 'canvas' });
+      chart.setOption(optionFor(current));
+      window.addEventListener('resize', () => chart?.resize(), { passive: true });
+    }
+
+    const io = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((e) => e.isIntersecting)) {
+          io.disconnect();
+          void boot();
+        }
+      },
+      { rootMargin: '200px' },
+    );
+    io.observe(holder);
+
+    /* ------------------------------------------------------------ rangos */
+    root.querySelectorAll<HTMLButtonElement>('[data-range]').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        root.querySelectorAll<HTMLButtonElement>('[data-range]').forEach((b) =>
+          b.setAttribute('aria-pressed', String(b === btn)),
+        );
+        current = slice(btn.dataset.range ?? 'max');
+        chart?.setOption(optionFor(current));
+      });
+    });
+
+    /* ---------------------------------------------------------- descargas */
+    const status = root.querySelector<HTMLElement>('[data-chart-status]');
+
+    const saveBlob = (blob: Blob, filename: string): void => {
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    };
+
+    root.querySelectorAll<HTMLButtonElement>('[data-download]').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const kind = btn.dataset.download;
+
+        if (kind === 'png') {
+          if (!chart) return;
+          const url = chart.getDataURL({ pixelRatio: 2, backgroundColor: data.dark ? '#031a24' : '#f5f3ed' });
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = `${data.id}.png`;
+          a.click();
+          return;
+        }
+
+        const rows = [['fecha', 'valor', 'unidad', 'indicador']].concat(
+          current.map((p) => [p.d, String(p.v), data.unit, data.name]),
+        );
+
+        if (kind === 'csv') {
+          const csv = rows.map((r) => r.map((c) => `"${c.replace(/"/g, '""')}"`).join(',')).join('\r\n');
+          saveBlob(new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8' }), `${data.id}.csv`);
+          return;
+        }
+
+        if (kind === 'xlsx') {
+          /* Hoja de cálculo XML (SpreadsheetML): Excel y LibreOffice la abren
+             sin necesidad de cargar una librería adicional. */
+          const esc = (s: string) =>
+            s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+          const body = rows
+            .map(
+              (r, idx) =>
+                `<Row>${r
+                  .map((c, ci) =>
+                    idx > 0 && ci === 1
+                      ? `<Cell><Data ss:Type="Number">${c}</Data></Cell>`
+                      : `<Cell><Data ss:Type="String">${esc(c)}</Data></Cell>`,
+                  )
+                  .join('')}</Row>`,
+            )
+            .join('');
+          const xml = `<?xml version="1.0"?><Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet" xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet"><Worksheet ss:Name="${esc(
+            data.id,
+          )}"><Table>${body}</Table></Worksheet></Workbook>`;
+          saveBlob(new Blob([xml], { type: 'application/vnd.ms-excel' }), `${data.id}.xls`);
+        }
+      });
+    });
+
+    root.querySelector<HTMLButtonElement>('[data-copy-link]')?.addEventListener('click', async () => {
+      try {
+        await navigator.clipboard.writeText(window.location.href);
+        if (status) status.textContent = '· Enlace copiado';
+      } catch {
+        if (status) status.textContent = '· No se pudo copiar el enlace';
+      }
+      window.setTimeout(() => status && (status.textContent = ''), 2600);
+    });
+  });
+</script>
+
+<style>
+  .chart-figure { margin: 0; }
+
+  .chart-toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px 20px;
+    padding-bottom: 16px;
+  }
+
+  .chart-ranges { display: flex; gap: 2px; }
+  .range-btn {
+    padding: 6px 13px;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    border: 1px solid var(--line, var(--line-light));
+    border-radius: var(--radius-xs);
+    background: transparent;
+    color: inherit;
+    cursor: pointer;
+    transition: background-color 180ms ease, color 180ms ease, border-color 180ms ease;
+  }
+  .range-btn + .range-btn { margin-left: -1px; }
+  .range-btn:hover { border-color: currentColor; }
+  .range-btn[aria-pressed='true'] {
+    background: var(--color-gold);
+    border-color: var(--color-gold);
+    color: var(--color-ink);
+  }
+
+  .chart-actions { display: flex; flex-wrap: wrap; gap: 6px; }
+  .mini-btn {
+    padding: 6px 11px;
+    font-size: 10.5px;
+    font-weight: 600;
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+    border: 1px solid var(--line, var(--line-light));
+    border-radius: var(--radius-xs);
+    background: transparent;
+    color: inherit;
+    cursor: pointer;
+    transition: border-color 180ms ease, background-color 180ms ease;
+  }
+  .mini-btn:hover {
+    border-color: currentColor;
+    background: color-mix(in srgb, currentColor 7%, transparent);
+  }
+
+  .chart-canvas { width: 100%; }
+  .chart-noscript { padding: 24px 0; font-size: 13px; }
+
+  .chart-caption {
+    margin-top: 14px;
+    padding-top: 12px;
+    border-top: 1px solid var(--line, var(--line-light));
+    font-size: 11.5px;
+    letter-spacing: 0.03em;
+  }
+  .chart-status { color: var(--color-gold); margin-left: 4px; }
+</style>

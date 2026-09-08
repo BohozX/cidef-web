@@ -1,0 +1,84 @@
+---
+/**
+ * Arco decorativo. Retoma el trazo abierto del símbolo institucional y sirve
+ * para romper la retícula de rectángulos sin meter ruido: es un solo trazo
+ * finísimo que gira muy despacio y se dibuja al entrar en viewport.
+ */
+
+export interface Props {
+  /** Diámetro en píxeles. */
+  size?: number;
+  /** Posición absoluta respecto del contenedor (que debe ser `relative`). */
+  top?: string;
+  left?: string;
+  right?: string;
+  bottom?: string;
+  opacity?: number;
+  /** Número de anillos concéntricos. */
+  rings?: number;
+  /** Segundos por vuelta. 0 desactiva el giro. */
+  spin?: number;
+  class?: string;
+}
+
+const {
+  size = 520,
+  top,
+  left,
+  right,
+  bottom,
+  opacity = 0.13,
+  rings = 3,
+  spin = 90,
+  class: className = '',
+} = Astro.props;
+
+const pos = [
+  top !== undefined && `top:${top}`,
+  left !== undefined && `left:${left}`,
+  right !== undefined && `right:${right}`,
+  bottom !== undefined && `bottom:${bottom}`,
+]
+  .filter(Boolean)
+  .join(';');
+
+const circles = Array.from({ length: rings }, (_, i) => {
+  const r = 46 - i * 11;
+  const dash = 2 * Math.PI * r;
+  return { r, gap: dash * (0.2 + i * 0.06), dash: dash * (0.62 - i * 0.05), w: 0.5 + i * 0.15 };
+});
+---
+
+<div
+  class={`arc ${className}`}
+  style={`${pos};width:${size}px;height:${size}px;opacity:${opacity};${spin ? `--spin:${spin}s` : ''}`}
+  aria-hidden="true"
+>
+  <svg viewBox="0 0 100 100" class={spin ? 'is-spinning' : ''}>
+    {
+      circles.map((c) => (
+        <circle
+          cx="50"
+          cy="50"
+          r={c.r}
+          stroke-width={c.w}
+          stroke-dasharray={`${c.dash} ${c.gap}`}
+          stroke-linecap="round"
+        />
+      ))
+    }
+  </svg>
+</div>
+
+<style>
+  .is-spinning {
+    animation: arcSpin var(--spin, 90s) linear infinite;
+    transform-origin: 50% 50%;
+  }
+  @keyframes arcSpin {
+    to { transform: rotate(360deg); }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .is-spinning { animation: none; }
+  }
+</style>

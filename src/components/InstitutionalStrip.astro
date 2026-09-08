@@ -1,0 +1,100 @@
+---
+import Logo from './Logo.astro';
+import { site } from '../site.config';
+
+export interface Props {
+  /** Superficie sobre la que se monta el bloque. */
+  tone?: 'light' | 'tint';
+}
+
+const { tone = 'tint' } = Astro.props;
+---
+
+<section class:list={[tone === 'tint' ? 'surface-tint' : 'surface-light', 'section-tight', 'inst']} aria-labelledby="inst-title">
+  <div class="wrap">
+    <div class="rule rule-draw"></div>
+
+    <div class="inst-grid">
+      <div class="inst-brand" data-reveal>
+        <Logo variant="color" layout="stacked" height={168} class="inst-logo" />
+      </div>
+
+      <div class="inst-body">
+        <p class="eyebrow eyebrow-gold" data-reveal>Respaldo institucional</p>
+        <h2 id="inst-title" class="display-3 inst-title" data-reveal>
+          {site.legalName}
+        </h2>
+        <p class="inst-text muted" data-reveal>
+          El centro produce investigación económica aplicada, construye y publica
+          datos propios, y desarrolla formación de posgrado junto a instituciones
+          académicas y gremiales de Bolivia.
+        </p>
+
+        <ul class="inst-partners" data-reveal-group data-reveal-stagger="0.06">
+          {
+            site.partners.map((p, i) => (
+              <li data-reveal>
+                <span class="index-num">{String(i + 1).padStart(2, '0')}</span>
+                <span class="inst-partner-name">{p.name}</span>
+                <span class="inst-partner-role muted">{p.role}</span>
+              </li>
+            ))
+          }
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<style>
+  .inst-grid {
+    display: grid;
+    gap: 36px;
+    padding-top: 32px;
+    align-items: center;
+  }
+  @media (min-width: 900px) {
+    .inst-grid {
+      grid-template-columns: minmax(0, 0.72fr) minmax(0, 1.28fr);
+      gap: 64px;
+    }
+  }
+
+  .inst-brand { display: flex; justify-content: flex-start; }
+  @media (min-width: 900px) {
+    .inst-brand { justify-content: center; }
+  }
+  .inst-logo { max-width: 100%; }
+
+  .inst-title { margin-top: 14px; max-width: 24ch; }
+  .inst-text { margin-top: 16px; font-size: 14.5px; line-height: 1.65; max-width: 56ch; }
+
+  .inst-partners {
+    list-style: none;
+    margin: 28px 0 0;
+    padding: 0;
+    display: grid;
+    gap: 0;
+  }
+  .inst-partners li {
+    display: grid;
+    grid-template-columns: 34px minmax(0, 1fr) auto;
+    gap: 4px 10px;
+    align-items: baseline;
+    padding-block: 14px;
+    border-top: 1px solid var(--line-light);
+  }
+  .inst-partners li:last-child { border-bottom: 1px solid var(--line-light); }
+  .inst-partner-name { font-size: 14px; font-weight: 500; }
+  .inst-partner-role {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.11em;
+    text-transform: uppercase;
+    justify-self: end;
+  }
+  @media (max-width: 560px) {
+    .inst-partners li { grid-template-columns: 30px minmax(0, 1fr); }
+    .inst-partner-role { grid-column: 2; justify-self: start; }
+  }
+</style>

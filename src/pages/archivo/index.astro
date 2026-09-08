@@ -1,0 +1,84 @@
+---
+import { getCollection } from 'astro:content';
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import PageHero from '../../components/PageHero.astro';
+import ArchiveSearch from '../../components/ArchiveSearch.astro';
+import Newsletter from '../../components/Newsletter.astro';
+
+const entries = await getCollection('archivo');
+const years = entries.map((e) => e.data.year);
+
+const facts = [
+  { label: 'Recursos', value: String(entries.length) },
+  { label: 'Tipos', value: String(new Set(entries.map((e) => e.data.kind)).size) },
+  { label: 'Desde', value: String(Math.min(...years)) },
+  { label: 'Acceso', value: 'Abierto' },
+];
+---
+
+<BaseLayout
+  title="Archivo Vivo"
+  description="Repositorio abierto y en constante crecimiento de investigación, datos y documentos económicos sobre Bolivia."
+>
+  <PageHero
+    eyebrow="Archivo Vivo"
+    title="Un repositorio abierto y en constante crecimiento."
+    lede="Investigación, bases de datos, presentaciones, metodologías y documentos históricos sobre la economía boliviana. Todo el material es de consulta libre y citable."
+    facts={facts}
+  />
+
+  <section class="surface-light section">
+    <div class="wrap">
+      <ArchiveSearch />
+    </div>
+  </section>
+
+  <section class="surface-tint section-tight">
+    <div class="wrap">
+      <div class="rule rule-draw"></div>
+      <div class="use-grid">
+        <div>
+          <p class="eyebrow eyebrow-gold" data-reveal>Condiciones de uso</p>
+          <h2 class="display-3 use-title" data-reveal>Los datos son para usarse.</h2>
+        </div>
+        <div class="use-body">
+          <p class="muted" data-reveal>
+            El material del Archivo Vivo puede descargarse, citarse y
+            redistribuirse con atribución al centro. Cuando un recurso proviene
+            de una fuente externa, la fuente original se declara en la ficha y
+            prevalecen sus condiciones.
+          </p>
+          <p class="muted" data-reveal>
+            Formato de atribución sugerido:
+            <span class="use-cite">Centro de Inteligencia en Desarrollo Económico y Financiero (CIDEF), Archivo Vivo, [nombre del recurso], [año].</span>
+          </p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <Newsletter />
+</BaseLayout>
+
+<style>
+  .use-grid {
+    display: grid;
+    gap: 26px;
+    padding-top: 30px;
+  }
+  @media (min-width: 900px) {
+    .use-grid { grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr); gap: 64px; }
+  }
+  .use-title { margin-top: 14px; max-width: 16ch; }
+  .use-body { display: grid; gap: 16px; font-size: 14px; line-height: 1.7; max-width: 62ch; }
+  .use-cite {
+    display: block;
+    margin-top: 8px;
+    font-family: var(--font-mono);
+    font-size: 12.5px;
+    line-height: 1.6;
+    color: var(--color-ink);
+    border-left: 2px solid var(--color-gold);
+    padding-left: 14px;
+  }
+</style>

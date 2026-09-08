@@ -1,0 +1,100 @@
+---
+export interface Props {
+  eyebrow: string;
+  title: string;
+  lede?: string;
+  /** Migas de pan opcionales. */
+  parent?: { label: string; href: string };
+  /** Datos de cabecera: pares etiqueta / valor. */
+  facts?: { label: string; value: string }[];
+}
+
+const { eyebrow, title, lede, parent, facts = [] } = Astro.props;
+---
+
+<section class="surface-deep page-hero">
+  <div class="wrap">
+    {
+      parent && (
+        <nav class="page-crumb" aria-label="Ruta de navegación">
+          <a href={parent.href} class="link-arrow page-crumb-link">
+            <svg class="arw" viewBox="0 0 16 16" width="12" height="12" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.7">
+              <path d="M14 8H3M7 4L3 8l4 4" stroke-linecap="round" stroke-linejoin="round" />
+            </svg>
+            {parent.label}
+          </a>
+        </nav>
+      )
+    }
+
+    <p class="eyebrow eyebrow-gold page-eyebrow" data-hero-item>{eyebrow}</p>
+    <h1 class:list={['display-1', 'page-title', title.length > 58 && 'is-long']} data-hero-item>{title}</h1>
+    {lede && <p class="lede page-lede" data-hero-item>{lede}</p>}
+
+    <slot name="actions" />
+
+    {
+      facts.length > 0 && (
+        <dl class="page-facts" data-hero-item>
+          {facts.map((f) => (
+            <div>
+              <dt class="eyebrow muted">{f.label}</dt>
+              <dd class="tnum">{f.value}</dd>
+            </div>
+          ))}
+        </dl>
+      )
+    }
+
+    <div class="rule page-rule"></div>
+  </div>
+</section>
+
+<style>
+  .page-hero {
+    padding-top: clamp(104px, 13vh, 158px);
+    padding-bottom: 0;
+  }
+
+  .page-crumb { margin-bottom: 26px; }
+  .page-crumb-link .arw { transition: transform 240ms cubic-bezier(0.22, 0.61, 0.36, 1); }
+  .page-crumb-link:hover .arw { transform: translateX(-4px); }
+
+  .page-title {
+    margin-top: 20px;
+    max-width: 18ch;
+  }
+  /* Los titulos largos (publicaciones academicas) bajan de escala para no
+     dominar la pagina ni romper el ritmo de lectura. */
+  .page-title.is-long {
+    font-size: clamp(2.1rem, 4.2vw, 3.4rem);
+    line-height: 1.08;
+    max-width: 24ch;
+  }
+
+  .page-lede {
+    margin-top: 22px;
+    max-width: 56ch;
+    color: color-mix(in srgb, #f5f3ed 78%, transparent);
+  }
+
+  .page-facts {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 22px 24px;
+    margin-top: 40px;
+    max-width: 760px;
+  }
+  @media (min-width: 720px) {
+    .page-facts { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  }
+  .page-facts dt { margin-bottom: 7px; }
+  .page-facts dd {
+    margin: 0;
+    font-family: var(--font-display);
+    font-size: 1.24rem;
+    letter-spacing: -0.01em;
+  }
+
+  .page-rule { margin-top: clamp(40px, 5vw, 64px); }
+</style>
