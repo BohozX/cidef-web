@@ -135,11 +135,11 @@ import { covers } from '../../site.config';
           </p>
 
           <p class="bp-texto" data-reveal>
-            Integramos información de organismos oficiales y fuentes especializadas
-            en una base económica estructurada por sectores: histórico, comparación
-            y transformación de series, descargas, y los indicadores exclusivos del
-            Centro —estimaciones, proyecciones y variables no observables— en un
-            mismo entorno.
+            Reunimos la información de organismos oficiales y de fuentes
+            especializadas en una sola base, ordenada por sectores. Ahí puedes ver
+            el histórico completo, comparar y transformar series, descargarlas y
+            consultar los indicadores propios del Centro: estimaciones,
+            proyecciones y variables que no se observan directamente.
           </p>
 
           <div class="bp-acciones no-print" data-reveal>
@@ -157,7 +157,7 @@ import { covers } from '../../site.config';
             argumento de venta y tiene que pesar más que el párrafo de al
             lado. El color vive en el filo de cada nivel, no en el relleno. */}
         <div class="bp-niveles surface-dark" data-reveal>
-          <p class="bp-niveles-tit">Dos niveles de profundidad, una misma economía</p>
+          <h3 class="bp-niveles-tit">Dos niveles de profundidad, una misma economía</h3>
 
           <div class="bp-nivel">
             <span class="bp-nivel-etq">Atlas Económico</span>
@@ -202,11 +202,18 @@ import { covers } from '../../site.config';
     display: grid;
     gap: clamp(32px, 4vw, 60px);
   }
+
+  /* En bandera, no justificado. Aqui las medidas son cortas y las frases
+     tambien: justificarlas abria calles entre las palabras y cada bloque
+     parecia escrito con otra letra que el titulo de al lado. */
+  .bp p,
+  .bp-cierre p { text-align: left; }
   @media (min-width: 940px) {
-    /* La tarjeta iguala el alto de la columna de texto y reparte su
-       contenido: recortada arriba dejaba un socavón a la derecha. */
+    /* La tarjeta iguala el alto de la columna de texto —recortada arriba
+       dejaba un socavón a la derecha— y su contenido se centra en bloque.
+       Repartido de extremo a extremo abría un vacío justo en medio. */
     .bp { grid-template-columns: minmax(0, 1.02fr) minmax(0, 0.98fr); align-items: stretch; }
-    .bp-niveles { display: flex; flex-direction: column; justify-content: space-between; }
+    .bp-niveles { display: flex; flex-direction: column; justify-content: center; }
   }
 
   .bp-eyebrow { color: var(--color-teal-600); }
@@ -218,14 +225,12 @@ import { covers } from '../../site.config';
     display: flex;
     align-items: center;
     gap: 12px;
-    margin-top: 18px;
-    font-size: 11.5px;
-    font-weight: 700;
-    letter-spacing: 0.15em;
-    text-transform: uppercase;
+    margin-top: 16px;
+    font-size: clamp(14px, 1.2vw, 15.5px);
+    font-weight: 500;
     color: var(--color-teal-600);
   }
-  .bp-regla { width: 30px; height: 1px; background: currentColor; opacity: 0.55; }
+  .bp-regla { width: 26px; height: 1px; background: currentColor; opacity: 0.6; }
 
   .bp-lede {
     margin-top: 24px;
@@ -249,10 +254,8 @@ import { covers } from '../../site.config';
     box-shadow: 0 36px 70px -50px rgb(3 26 36 / 0.75);
   }
   .bp-niveles-tit {
-    font-family: var(--font-display);
     font-size: clamp(20px, 2.1vw, 26px);
     line-height: 1.22;
-    letter-spacing: -0.025em;
     max-width: 20ch;
   }
 
@@ -297,8 +300,10 @@ import { covers } from '../../site.config';
   .bp-cierre-frase {
     font-family: var(--font-display);
     font-size: clamp(22px, 3.2vw, 38px);
+    font-weight: 600;
     line-height: 1.18;
     letter-spacing: -0.03em;
+    text-wrap: balance;
     max-width: 20ch;
   }
   .bp-cierre-frase em { font-style: normal; color: var(--color-teal-600); }
