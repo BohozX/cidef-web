@@ -48,7 +48,7 @@ modules:
 faculty:
   - name: "Equipo de Datos CIDEF"
     highlights:
-      - "Responsable del Nowcast del PIB publicado en el Radar Económico"
+      - "Responsable del Nowcast del PIB publicado en el Atlas Económico"
 certification: "Certificado de aprobación emitido por el Centro de Inteligencia en Desarrollo Económico y Financiero, con detalle de contenidos y carga horaria."
 certificates:
   - "Experto en Nowcasting Macroeconómico"

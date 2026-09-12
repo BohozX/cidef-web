@@ -7,7 +7,7 @@ authors:
   - "Equipo de Coyuntura CIDEF"
 abstract: >-
   Documenta la especificación del modelo de factores dinámicos con frecuencia
-  mixta que sustenta el Nowcast del PIB publicado en el Radar Económico:
+  mixta que sustenta el Nowcast del PIB publicado en el Atlas Económico:
   conjunto de información, tratamiento de datos faltantes, evaluación fuera de
   muestra y la política de archivo de versiones (vintages) que garantiza que
   ninguna estimación previa se sobrescriba.
@@ -34,7 +34,7 @@ files:
     href: "#"
     kind: "codigo"
   - label: "Historial de vintages"
-    href: "/radar/nowcast-pib"
+    href: "/atlas/nowcast-pib"
     kind: "datos"
 featured: false
 demo: true

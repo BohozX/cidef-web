@@ -2,7 +2,7 @@
 import { withBase } from '../lib/url';
 import type { Indicator } from '../lib/indicators';
 import { ETIQUETA, higherIsBetter } from '../lib/indicators';
-import { num, shortDate } from '../lib/format';
+import { num, periodoCorto } from '../lib/format';
 import { linea, barras, divergentes, conProyeccion } from '../lib/graficos';
 
 /**
@@ -15,6 +15,10 @@ import { linea, barras, divergentes, conProyeccion } from '../lib/graficos';
  *
  * El tamaño lo decide el tablero, no la tarjeta: `size` cambia el hueco que
  * ocupa y el alto del gráfico, no el contenido.
+ *
+ * El color sale del sector (`data-sector`, definido en `global.css`), no del
+ * tipo de dato ni del tamaño: son dos canales con un trabajo cada uno. El
+ * color dice de qué sector viene la serie; el sello, qué es el dato.
  */
 
 export interface Props {
@@ -49,20 +53,137 @@ const g =
         ? barras(valores, ancho, alto)
         : linea(valores, ancho, alto, item.viz === 'area');
 
-const sube = item.change >= 0;
-const bueno = sube === higherIsBetter(item.id);
-/* Una serie administrada —el tipo de cambio oficial— o una diaria muy estable
-   puede no moverse entre dos publicaciones. «▲ 0,00» se lee como un error;
-   «sin cambio» es lo que de verdad pasó. */
-const plano = Math.abs(item.change) < 0.5 / 10 ** item.decimals;
-const uid = `g-${item.id}`;
+/* --- cómo se nombra el período ------------------------------------------
+   Una serie mensual fechada el 01/08/2026 no es «1 de agosto»: es agosto.
+   Una trimestral fechada el 01/04 es el segundo trimestre. Solo las diarias
+   y semanales se fechan al día. */
+const periodoDe = (iso: string): string => periodoCorto(iso, item.frequency);
+
+/* «Dato de agosto 2026», pero «Dato del II trim. 2026». */
+const llevaEl = (p: string): boolean => /^(I{1,3}|IV)\s/.test(p) || /^\d{1,2}[\s/]/.test(p);
+const deP = (p: string): string => `${llevaEl(p) ? 'del' : 'de'} ${p}`;
+const aP = (p: string): string => `${llevaEl(p) ? 'al' : 'a'} ${p}`;
+
+const periodoActual = periodoDe(item.date);
+const uid = `g-${item.id}-${size}`;
+
+/* --- la variación, a la distancia que se elija --------------------------
+   «▼ 0,40 pp» no dice nada por sí solo: puede ser contra el mes pasado o
+   contra el año pasado, y son dos noticias distintas. En vez de bautizar la
+   cifra con jerga —intermensual, interanual— la tarjeta nombra el período
+   contra el que compara, y el tablero deja elegir a qué distancia mirar.
+
+   Para cada horizonte se busca la observación real más cercana a esa fecha,
+   no un múltiplo supuesto de la frecuencia: así una serie diaria con huecos,
+   feriados o semanas sin dato sigue comparando contra algo que existe. Si a
+   esa altura no hay observación —un horizonte de un mes en una serie
+   trimestral— ese horizonte sencillamente no está disponible en esa pieza, y
+   se muestra la comparación contra la observación anterior. */
+const aMedioDia = (iso: string): number => Date.parse(`${iso.slice(0, 10)}T12:00:00Z`);
+const DIA = 86_400_000;
+
+type Variacion = { flecha: string; texto: string; contra: string; clase: string };
+
+const compararCon = (base: { d: string; v: number }): Variacion => {
+  const delta = item.value - base.v;
+  const plano = Math.abs(delta) < 0.5 / 10 ** item.decimals;
+  const sube = delta >= 0;
+  const bueno = sube === higherIsBetter(item.id);
+  return {
+    flecha: plano ? '—' : sube ? '▲' : '▼',
+    /* Una serie administrada —el tipo de cambio oficial— o una diaria muy
+       estable puede no moverse entre dos publicaciones. «▲ 0,00» se lee como
+       un error; «sin cambio» es lo que de verdad pasó. */
+    texto: plano
+      ? 'sin cambio'
+      : `${num(Math.abs(delta), item.decimals)} ${item.changeUnit}`,
+    contra: `respecto ${aP(periodoDe(base.d))}`,
+    clase: plano ? 'es-plano' : bueno ? 'es-bueno' : 'es-malo',
+  };
+};
+
+/** La observación más cercana a N meses atrás, si de verdad hay una ahí. */
+const baseA = (meses: number): { d: string; v: number } | null => {
+  const objetivo = new Date(aMedioDia(item.date));
+  objetivo.setUTCMonth(objetivo.getUTCMonth() - meses);
+  const diana = objetivo.getTime();
+  /* Cuatro décimas del salto: a un mes admite doce días de desvío, a un año
+     admite cinco meses. Sin esa holgura una serie diaria no encontraría
+     nunca «hace un mes»; con más, una trimestral fingiría tenerlo. */
+  const holgura = meses * 30 * DIA * 0.4;
+  let mejor: { p: { d: string; v: number }; dist: number } | null = null;
+  for (const p of item.history) {
+    if (p.d >= item.date) continue;
+    const dist = Math.abs(aMedioDia(p.d) - diana);
+    if (dist <= holgura && (mejor === null || dist < mejor.dist)) mejor = { p, dist };
+  }
+  return mejor?.p ?? null;
+};
+
+const HORIZONTES = [
+  { id: 'mes', meses: 1 },
+  { id: 'trimestre', meses: 3 },
+  { id: 'anio', meses: 12 },
+] as const;
+
+const porHorizonte = new Map<string, Variacion>();
+for (const h of HORIZONTES) {
+  const base = baseA(h.meses);
+  if (base) porHorizonte.set(h.id, compararCon(base));
+}
+
+/* La red: contra la observación anterior. Se comprobó serie por serie que el
+   `change` publicado es exactamente esa diferencia, así que coincide con lo
+   que venía mostrando la tarjeta hasta ahora. */
+const anterior = item.history.at(-2);
+const porDefecto: Variacion | null = anterior ? compararCon(anterior) : null;
+
+/* Lo que se dibuja en el servidor es el horizonte que abre el tablero. */
+const inicial = porHorizonte.get('mes') ?? porDefecto;
+const comoDato = (v: Variacion | null | undefined): string | null =>
+  v ? [v.flecha, v.texto, v.contra, v.clase].join('|') : null;
+
+/* --- la capa de hover ---------------------------------------------------
+   El gráfico se dibuja al compilar y no lleva JavaScript. Lo único que viaja
+   al navegador son las coordenadas de cada observación y su etiqueta ya
+   formateada, para que el puntero se ancle al dato y no al píxel. El formato
+   se hace aquí, en el servidor, y no en el cliente: así el globo dice
+   exactamente lo mismo que la tarjeta. */
+const puntos: [number, number][] =
+  item.viz === 'barras'
+    ? (g as any[]).map((b) => [b.x + b.w / 2, b.y] as [number, number])
+    : item.viz === 'divergente'
+      ? (g as any).barras.map(
+          (b: any) => [b.x + b.w / 2, b.positiva ? b.y : b.y + b.h] as [number, number],
+        )
+      : ((g as any).puntos as [number, number][]);
+
+/* Si por lo que sea no hay una coordenada por observación, no se monta el
+   hover: es preferible un gráfico mudo a un globo que miente. */
+const hover = conGrafico && puntos.length === serie.length && serie.length > 1;
+const anchoBanda =
+  item.viz === 'barras'
+    ? ((g as any[])[0]?.w ?? 0)
+    : item.viz === 'divergente'
+      ? ((g as any).barras[0]?.w ?? 0)
+      : 0;
 ---
 
-<article class:list={['panel-ind', `is-${size}`, `es-${item.kind}`]} data-reveal>
-  <a href={withBase(`/radar/${item.id}`)} class="pi-link">
+<article
+  class:list={['panel-ind', `is-${size}`, `es-${item.kind}`]}
+  data-sector={item.category}
+  data-reveal
+>
+  <a href={withBase(`/atlas/${item.id}`)} class="pi-link">
     <header class="pi-head">
       <p class="pi-nombre">{item.shortName}</p>
-      <span class:list={['pi-sello', `sello-${item.kind}`]}>{ETIQUETA[item.kind]}</span>
+      {/* El sello solo aparece cuando dice algo. Casi todo el Atlas es dato
+          oficial: repetirlo en cada tarjeta era ruido, y de paso hacía que lo
+          que sí hay que distinguir —lo que calcula o proyecta el centro—
+          pasara desapercibido entre veintinueve etiquetas iguales. */}
+      {item.kind !== 'oficial' && (
+        <span class:list={['pi-sello', `sello-${item.kind}`]}>{ETIQUETA[item.kind]}</span>
+      )}
     </header>
 
     <p class="pi-valor">
@@ -70,114 +191,154 @@ const uid = `g-${item.id}`;
       <span class="pi-unidad">{item.unit}</span>
     </p>
 
-    <p class:list={['pi-var', 'tnum', plano ? 'es-plano' : bueno ? 'es-bueno' : 'es-malo']}>
-      <span class="pi-flecha" aria-hidden="true">{plano ? '—' : sube ? '▲' : '▼'}</span>
-      {plano ? 'sin cambio' : `${num(Math.abs(item.change), item.decimals)} ${item.changeUnit}`}
-      <span class="pi-fecha muted">· {shortDate(item.date)}</span>
-    </p>
+    {/* Los tres horizontes viajan ya formateados en la propia tarjeta: el
+        selector del tablero solo cambia de cuál se lee, sin recalcular nada
+        ni volver a pedir datos. */}
+    {inicial && (
+      <p
+        class:list={['pi-var', inicial.clase]}
+        data-pi-var
+        data-h-mes={comoDato(porHorizonte.get('mes'))}
+        data-h-trimestre={comoDato(porHorizonte.get('trimestre'))}
+        data-h-anio={comoDato(porHorizonte.get('anio'))}
+        data-h-def={comoDato(porDefecto)}
+      >
+        <span class="pi-flecha" aria-hidden="true">{inicial.flecha}</span>
+        <span class="pi-delta tnum">{inicial.texto}</span>
+        <span class="pi-contra">{inicial.contra}</span>
+      </p>
+    )}
 
-    <div class="pi-grafico" aria-hidden="true" hidden={!conGrafico}>
-      <svg viewBox={`0 0 ${ancho} ${alto}`} preserveAspectRatio="none" width="100%" height={alto}>
-        {
-          (item.viz === 'linea' || item.viz === 'area') && (
-            <>
-              {item.viz === 'area' && (
-                <>
-                  <defs>
-                    <linearGradient id={uid} x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0" stop-color="currentColor" stop-opacity="0.28" />
-                      <stop offset="1" stop-color="currentColor" stop-opacity="0" />
-                    </linearGradient>
-                  </defs>
-                  <path d={(g as any).area} fill={`url(#${uid})`} />
-                </>
-              )}
-              <path
-                d={(g as any).linea}
-                fill="none"
-                stroke="currentColor"
-                stroke-width={size === 'chico' ? 3 : 2.4}
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                vector-effect="non-scaling-stroke"
-              />
-              <circle cx={(g as any).ultimoX} cy={(g as any).ultimoY} r="3.4" fill="currentColor" />
-            </>
-          )
-        }
+    <p class="pi-periodo muted">Dato {deP(periodoActual)}</p>
 
-        {
-          item.viz === 'barras' &&
-            (g as any[]).map((b) => (
-              <rect x={b.x} y={b.y} width={b.w} height={b.h} fill="currentColor" fill-opacity="0.72" />
-            ))
-        }
-
-        {
-          item.viz === 'divergente' && (
-            <>
-              <line
-                x1="0"
-                y1={(g as any).cero}
-                x2={ancho}
-                y2={(g as any).cero}
-                stroke="currentColor"
-                stroke-opacity="0.28"
-                stroke-width="1"
-                vector-effect="non-scaling-stroke"
-              />
-              {(g as any).barras.map((b: any) => (
-                <rect
-                  x={b.x}
-                  y={b.y}
-                  width={b.w}
-                  height={b.h}
-                  fill="currentColor"
-                  fill-opacity={b.positiva ? 0.78 : 0.34}
+    {conGrafico && (
+      <div class="pi-grafico">
+        <div
+          class="pi-lienzo"
+          data-pi-graf={hover ? '' : null}
+          data-ancho={hover ? String(ancho) : null}
+          data-banda={hover ? String(Math.round(anchoBanda)) : null}
+          data-unidad={hover ? item.unit : null}
+          data-xs={hover ? puntos.map(([x]) => Math.round(x)).join(',') : null}
+          data-ys={hover ? puntos.map(([, y]) => Math.round(y)).join(',') : null}
+          data-vs={hover ? serie.map((p) => num(p.v, item.decimals)).join('|') : null}
+          data-ps={hover ? serie.map((p) => periodoDe(p.d)).join('|') : null}
+        >
+          <svg
+            viewBox={`0 0 ${ancho} ${alto}`}
+            preserveAspectRatio="none"
+            width="100%"
+            height={alto}
+            aria-hidden="true"
+          >
+            {(item.viz === 'linea' || item.viz === 'area') && (
+              <>
+                {item.viz === 'area' && (
+                  <>
+                    <defs>
+                      <linearGradient id={uid} x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0" stop-color="currentColor" stop-opacity="0.28" />
+                        <stop offset="1" stop-color="currentColor" stop-opacity="0" />
+                      </linearGradient>
+                    </defs>
+                    <path d={(g as any).area} fill={`url(#${uid})`} />
+                  </>
+                )}
+                <path
+                  d={(g as any).linea}
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width={size === 'chico' ? 3 : 2.4}
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  vector-effect="non-scaling-stroke"
                 />
-              ))}
-            </>
-          )
-        }
+                <circle cx={(g as any).ultimoX} cy={(g as any).ultimoY} r="3.4" fill="currentColor" />
+              </>
+            )}
 
-        {
-          item.viz === 'proyeccion' && (
+            {item.viz === 'barras' &&
+              (g as any[]).map((b) => (
+                <rect x={b.x} y={b.y} width={b.w} height={b.h} fill="currentColor" fill-opacity="0.72" />
+              ))}
+
+            {item.viz === 'divergente' && (
+              <>
+                <line
+                  x1="0"
+                  y1={(g as any).cero}
+                  x2={ancho}
+                  y2={(g as any).cero}
+                  stroke="currentColor"
+                  stroke-opacity="0.28"
+                  stroke-width="1"
+                  vector-effect="non-scaling-stroke"
+                />
+                {(g as any).barras.map((b: any) => (
+                  <rect
+                    x={b.x}
+                    y={b.y}
+                    width={b.w}
+                    height={b.h}
+                    fill="currentColor"
+                    fill-opacity={b.positiva ? 0.78 : 0.34}
+                  />
+                ))}
+              </>
+            )}
+
+            {item.viz === 'proyeccion' && (
+              <>
+                <line
+                  x1={(g as any).corteX}
+                  y1="0"
+                  x2={(g as any).corteX}
+                  y2={alto}
+                  stroke="currentColor"
+                  stroke-opacity="0.3"
+                  stroke-width="1"
+                  stroke-dasharray="4 5"
+                  vector-effect="non-scaling-stroke"
+                />
+                <path
+                  d={(g as any).observado}
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2.4"
+                  stroke-linecap="round"
+                  vector-effect="non-scaling-stroke"
+                />
+                <path
+                  d={(g as any).proyectado}
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2.4"
+                  stroke-dasharray="6 5"
+                  stroke-linecap="round"
+                  stroke-opacity="0.75"
+                  vector-effect="non-scaling-stroke"
+                />
+                <circle cx={(g as any).ultimoX} cy={(g as any).ultimoY} r="3.4" fill="currentColor" />
+              </>
+            )}
+          </svg>
+
+          {/* Las marcas del hover van en HTML y no dentro del SVG: el SVG se
+              estira sin guardar proporción, así que un círculo dibujado ahí
+              saldría aplastado y una línea de 1 px, de grosor variable. */}
+          {hover && (
             <>
-              <line
-                x1={(g as any).corteX}
-                y1="0"
-                x2={(g as any).corteX}
-                y2={alto}
-                stroke="currentColor"
-                stroke-opacity="0.3"
-                stroke-width="1"
-                stroke-dasharray="4 5"
-                vector-effect="non-scaling-stroke"
-              />
-              <path
-                d={(g as any).observado}
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2.4"
-                stroke-linecap="round"
-                vector-effect="non-scaling-stroke"
-              />
-              <path
-                d={(g as any).proyectado}
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2.4"
-                stroke-dasharray="6 5"
-                stroke-linecap="round"
-                stroke-opacity="0.75"
-                vector-effect="non-scaling-stroke"
-              />
-              <circle cx={(g as any).ultimoX} cy={(g as any).ultimoY} r="3.4" fill="currentColor" />
+              <span class="pi-cruz" aria-hidden="true"></span>
+              <span class="pi-marca" aria-hidden="true"></span>
+              <div class="pi-tip" aria-hidden="true">
+                <span class="pi-tip-val tnum"></span>
+                <span class="pi-tip-per"></span>
+              </div>
             </>
-          )
-        }
-      </svg>
-    </div>
+          )}
+        </div>
+      </div>
+    )}
 
     <footer class="pi-pie">
       <span class="pi-fuente muted">{item.source}</span>
@@ -186,12 +347,103 @@ const uid = `g-${item.id}`;
   </a>
 </article>
 
+<script>
+  /**
+   * Hover de los gráficos del tablero.
+   *
+   * No dibuja nada: mueve tres elementos que ya están en la página hasta la
+   * observación más cercana al puntero. El lector apunta a una fecha, no a
+   * una línea de 1 px.
+   *
+   * Se usan eventos de ratón a propósito. En pantalla táctil la tarjeta
+   * entera es un enlace a la ficha, donde el gráfico sí es interactivo de
+   * verdad; un globo que apareciera al tocar competiría con esa navegación.
+   */
+  const enteros = (s: string | undefined): number[] =>
+    (s ?? '').split(',').filter(Boolean).map(Number);
+
+  document.querySelectorAll<HTMLElement>('[data-pi-graf]').forEach((lienzo) => {
+    const xs = enteros(lienzo.dataset.xs);
+    const ys = enteros(lienzo.dataset.ys);
+    const vs = (lienzo.dataset.vs ?? '').split('|');
+    const ps = (lienzo.dataset.ps ?? '').split('|');
+    const ancho = Number(lienzo.dataset.ancho) || 600;
+    const banda = Number(lienzo.dataset.banda) || 0;
+    const unidad = lienzo.dataset.unidad ?? '';
+
+    const cruz = lienzo.querySelector<HTMLElement>('.pi-cruz');
+    const marca = lienzo.querySelector<HTMLElement>('.pi-marca');
+    const tip = lienzo.querySelector<HTMLElement>('.pi-tip');
+    const valor = lienzo.querySelector<HTMLElement>('.pi-tip-val');
+    const periodo = lienzo.querySelector<HTMLElement>('.pi-tip-per');
+    const svg = lienzo.querySelector<SVGSVGElement>('svg');
+    if (!cruz || !marca || !tip || !valor || !periodo || !svg || xs.length === 0) return;
+
+    /* Las coordenadas vienen en unidades del viewBox; se pasan a porcentaje
+       de la caja, que es lo que el navegador escala junto con el SVG. */
+    const altoVB = svg.viewBox.baseVal.height || 1;
+
+    /* En barras la marca es la barra: en vez de una línea se resalta la
+       columna entera, que es lo que el puntero está señalando. */
+    if (banda > 0) {
+      cruz.classList.add('es-banda');
+      cruz.style.width = `${(banda / ancho) * 100}%`;
+    }
+
+    let ultimo = -1;
+
+    const mover = (e: MouseEvent) => {
+      const caja = lienzo.getBoundingClientRect();
+      if (caja.width === 0) return;
+      const x = ((e.clientX - caja.left) / caja.width) * ancho;
+
+      /* El punto más cercano, no el que esté justo debajo: con noventa y seis
+         observaciones en seiscientas unidades, exigir puntería sobre el dato
+         sería inutilizable. */
+      let i = 0;
+      for (let k = 1; k < xs.length; k += 1) {
+        if (Math.abs(xs[k]! - x) < Math.abs(xs[i]! - x)) i = k;
+      }
+      if (i === ultimo) return;
+      ultimo = i;
+
+      const izq = (xs[i]! / ancho) * 100;
+      const arriba = (ys[i]! / altoVB) * 100;
+
+      cruz.style.left = `${izq}%`;
+      marca.style.left = `${izq}%`;
+      marca.style.top = `${arriba}%`;
+
+      valor.textContent = unidad ? `${vs[i]} ${unidad}` : (vs[i] ?? '');
+      periodo.textContent = ps[i] ?? '';
+
+      /* El globo se centra sobre el punto pero no se sale de la tarjeta: en
+         los extremos se recuesta contra el borde. */
+      const mitad = tip.offsetWidth / 2;
+      const centro = (xs[i]! / ancho) * caja.width;
+      const limitado = Math.min(Math.max(centro, mitad + 2), caja.width - mitad - 2);
+      tip.style.left = `${limitado}px`;
+      tip.style.top = `${arriba}%`;
+    };
+
+    lienzo.addEventListener('mouseenter', () => lienzo.classList.add('es-hover'));
+    lienzo.addEventListener('mousemove', mover);
+    lienzo.addEventListener('mouseleave', () => {
+      lienzo.classList.remove('es-hover');
+      ultimo = -1;
+    });
+  });
+</script>
+
 <style>
   .panel-ind {
     display: flex;
     border: 1px solid var(--line, var(--line-light));
     border-radius: 18px;
     overflow: hidden;
+    /* La tarjeta no se tiñe. El color del sector es del trazo del gráfico y
+       de nada más: en cuanto el fondo se pinta, once tableros seguidos se
+       convierten en once fondos de colores y la cifra deja de mandar. */
     background: color-mix(in srgb, currentColor 2%, transparent);
     transition: transform 320ms cubic-bezier(0.22, 0.61, 0.36, 1),
       box-shadow 320ms ease, border-color 240ms ease;
@@ -241,7 +493,6 @@ const uid = `g-${item.id}`;
     white-space: nowrap;
     padding-top: 2px;
   }
-  .sello-oficial { color: var(--muted); }
   .sello-estimacion { color: var(--color-teal-600); }
   .sello-proyeccion { color: var(--color-gold); }
   :global(.surface-dark) .sello-estimacion,
@@ -265,12 +516,22 @@ const uid = `g-${item.id}`;
   .is-chico .pi-cifra { font-size: 1.55rem; }
   .pi-unidad { font-size: 12px; color: var(--muted); }
 
+  /* --- la variación ------------------------------------------------------
+     Tres datos en dos renglones: cuánto se movió, contra qué período, y de
+     cuándo es la cifra de arriba. La referencia va en tono apagado, porque
+     el color pertenece al signo y no a la comparación. */
   .pi-var {
-    margin-top: 8px;
+    display: flex;
+    align-items: baseline;
+    flex-wrap: wrap;
+    gap: 0 5px;
+    margin-top: 9px;
     font-size: 12px;
     text-align: left;
+    line-height: 1.45;
   }
   .pi-flecha { font-size: 9px; }
+  .pi-contra { color: var(--muted); font-size: 11.5px; }
   .es-plano { color: var(--muted); }
   .es-bueno { color: var(--color-teal-600); }
   .es-malo { color: #b4531f; }
@@ -278,23 +539,87 @@ const uid = `g-${item.id}`;
   :global(.surface-deep) .es-bueno { color: var(--color-teal-300); }
   :global(.surface-dark) .es-malo,
   :global(.surface-deep) .es-malo { color: #e0a06a; }
-  .pi-fecha { font-size: 11px; }
 
-  /* El gráfico toma el color de la familia del dato. */
+  .pi-periodo {
+    margin-top: 3px;
+    font-size: 11px;
+    text-align: left;
+  }
+
+  /* --- el gráfico --------------------------------------------------------
+     El color lo pone el sector. Si la pieza apareciera fuera de un tablero,
+     el verde del centro es el que había antes y sigue de red. */
   .pi-grafico {
+    display: flex;
     margin-top: auto;
     padding-top: 16px;
-    color: var(--color-teal-600);
+    color: var(--serie, var(--color-teal-600));
   }
-  .es-estimacion .pi-grafico { color: var(--color-teal); }
-  .es-proyeccion .pi-grafico { color: var(--color-gold); }
-  :global(.surface-dark) .pi-grafico,
-  :global(.surface-deep) .pi-grafico { color: var(--color-teal-300); }
-  .pi-grafico svg { display: block; width: 100%; }
+  .pi-lienzo { position: relative; width: 100%; }
+  /* El gráfico se apila por encima de la banda del hover: pintada encima, la
+     banda lavaba la barra que el puntero estaba señalando justamente. */
+  .pi-lienzo svg { display: block; width: 100%; position: relative; z-index: 1; }
   /* La pieza grande ocupa dos filas del tablero, así que le sobra alto: el
      gráfico se estira hasta el pie en vez de dejar un hueco en el medio. */
-  .is-grande .pi-grafico { display: flex; flex: 1; align-items: stretch; }
-  .is-grande .pi-grafico svg { height: 100%; min-height: 210px; }
+  .is-grande .pi-grafico { flex: 1; align-items: stretch; }
+  .is-grande .pi-lienzo { display: flex; }
+  .is-grande .pi-lienzo svg { height: 100%; min-height: 210px; }
+
+  /* --- marcas de hover --------------------------------------------------- */
+  .pi-cruz,
+  .pi-marca,
+  .pi-tip {
+    position: absolute;
+    pointer-events: none;
+    visibility: hidden;
+  }
+  .es-hover .pi-cruz,
+  .es-hover .pi-marca,
+  .es-hover .pi-tip { visibility: visible; }
+
+  .pi-cruz {
+    z-index: 0;
+    top: 0;
+    bottom: 0;
+    width: 1px;
+    background: currentColor;
+    opacity: 0.34;
+    transform: translateX(-0.5px);
+  }
+  /* En barras no hay línea que seguir: se ilumina la columna señalada. Va
+     detrás del dibujo, así que puede ser más franca sin tapar el dato. */
+  .pi-cruz.es-banda {
+    opacity: 0.22;
+    transform: translateX(-50%);
+    border-radius: 2px;
+  }
+
+  .pi-marca {
+    z-index: 2;
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    background: currentColor;
+    box-shadow: 0 0 0 2px var(--color-paper);
+    transform: translate(-50%, -50%);
+  }
+
+  /* El valor manda y el período acompaña: quien pasa el puntero ya sabe qué
+     serie mira, lo que busca es la cifra. */
+  .pi-tip {
+    z-index: 3;
+    transform: translate(-50%, calc(-100% - 12px));
+    display: grid;
+    gap: 1px;
+    padding: 6px 9px;
+    border-radius: 7px;
+    background: var(--color-ink);
+    color: var(--color-paper);
+    white-space: nowrap;
+    box-shadow: 0 12px 26px -14px rgb(3 26 36 / 0.7);
+  }
+  .pi-tip-val { font-size: 13px; font-weight: 600; letter-spacing: -0.01em; }
+  .pi-tip-per { font-size: 10px; opacity: 0.66; }
 
   .pi-pie {
     display: flex;
@@ -318,11 +643,10 @@ const uid = `g-${item.id}`;
     align-items: flex-start;
     gap: 5px;
   }
-  .is-cifra .pi-sello { padding-top: 0; }
+  .is-cifra .pi-sello { padding-top: 0; font-size: 8px; }
   .is-cifra .pi-link { padding: 15px 16px 14px; }
   .is-cifra .pi-cifra { font-size: 1.35rem; }
   .is-cifra .pi-valor { margin-top: 10px; }
   .is-cifra .pi-var { margin-top: 5px; font-size: 11px; }
   .is-cifra .pi-pie { display: none; }
-  .is-cifra .pi-sello { font-size: 8px; }
 </style>

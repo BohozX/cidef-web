@@ -86,7 +86,7 @@ const total = grupos.reduce((s, g) => s + g.series.length, 0);
           {g.series.map((i) => (
             <a
               class="cat-fila cat-serie"
-              href={withBase(`/radar/${i.id}`)}
+              href={withBase(`/atlas/${i.id}`)}
               data-serie
               data-tipo={i.kind}
               data-frecuencia={i.frequency}

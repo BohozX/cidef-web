@@ -4,7 +4,7 @@ import PanelDona from './PanelDona.astro';
 import { byId, categories, SECTORES, type Indicator } from '../lib/indicators';
 
 /**
- * Los tableros del Radar: el panorama y uno por sector.
+ * Los tableros del Atlas: el panorama y uno por sector.
  *
  * Cada tablero está compuesto a mano, no repartido por una regla automática.
  * Un sector no es una lista de series: tiene una que abre —la que contesta la
@@ -170,24 +170,62 @@ const tableros = [...TABLEROS]
   }));
 ---
 
-<nav id="tableros" class="tab-sectores no-print" aria-label="Sectores del Radar" data-reveal>
-  {
-    tableros.map((t, i) => (
-      <button
-        type="button"
-        class:list={['tab-sector', i === 0 && 'is-on']}
-        data-tablero={t.id}
-        aria-pressed={i === 0 ? 'true' : 'false'}
-      >
-        {t.nombre}
-      </button>
-    ))
-  }
-</nav>
+<div id="tableros" class="sector-rail no-print" data-reveal>
+  <div class="tab-sectores" role="tablist" aria-label="Sectores del Atlas">
+    {
+      tableros.map((t, i) => (
+        <button
+          type="button"
+          role="tab"
+          id={`tab-${t.id}`}
+          class:list={['tab-sector', i === 0 && 'is-on']}
+          data-tablero={t.id}
+          data-sector={t.id}
+          aria-selected={i === 0 ? 'true' : 'false'}
+          aria-controls={`panel-${t.id}`}
+          tabindex={i === 0 ? 0 : -1}
+        >
+          <span class="tab-punto" aria-hidden="true" />
+          {t.nombre}
+        </button>
+      ))
+    }
+  </div>
+</div>
+
+{/* Una sola fila de controles encima de los tableros, no uno por tarjeta:
+    lo que se elige aquí vale para todas las piezas, y así las cifras de un
+    mismo tablero siempre se leen a la misma distancia. */}
+<div class="tablero-barra no-print" data-reveal>
+  <span class="tb-etq">Variación respecto a</span>
+  <div class="tb-grupo" role="group" aria-label="Período contra el que se compara la variación">
+    <button type="button" class="tb-op is-on" data-horizonte="mes" aria-pressed="true">
+      Un mes
+    </button>
+    <button type="button" class="tb-op" data-horizonte="trimestre" aria-pressed="false">
+      Un trimestre
+    </button>
+    <button type="button" class="tb-op" data-horizonte="anio" aria-pressed="false">
+      Un año
+    </button>
+  </div>
+  <p class="tb-nota muted">
+    Cada tarjeta escribe el período exacto con el que compara. Donde la serie no
+    llega a esa distancia, se compara con el dato anterior.
+  </p>
+</div>
 
 {
   tableros.map((t, i) => (
-    <div class="tab-panel" data-panel={t.id} hidden={i !== 0}>
+    <div
+      class="tab-panel"
+      role="tabpanel"
+      id={`panel-${t.id}`}
+      aria-labelledby={`tab-${t.id}`}
+      tabindex="0"
+      data-panel={t.id}
+      hidden={i !== 0}
+    >
       {t.descripcion && <p class="tab-desc muted">{t.descripcion}</p>}
 
       <div class="tablero">
@@ -215,7 +253,10 @@ const tableros = [...TABLEROS]
     botones.forEach((otro) => {
       const activo = otro === boton;
       otro.classList.toggle('is-on', activo);
-      otro.setAttribute('aria-pressed', String(activo));
+      otro.setAttribute('aria-selected', String(activo));
+      /* Una sola parada de tabulador en toda la barra: dentro se recorre con
+         las flechas, como cualquier control de pestañas. */
+      otro.tabIndex = activo ? 0 : -1;
     });
     /* La barra de pestañas se desplaza en horizontal: si el sector elegido
        queda fuera de la vista, el usuario no ve cuál quedó activo. */
@@ -224,6 +265,22 @@ const tableros = [...TABLEROS]
   };
 
   botones.forEach((b) => b.addEventListener('click', () => abrir(b.dataset.tablero!)));
+
+  /* Flechas para moverse entre sectores, inicio y fin para ir a los extremos. */
+  const PASOS: Record<string, number> = { ArrowRight: 1, ArrowDown: 1, ArrowLeft: -1, ArrowUp: -1 };
+  botones.forEach((b) =>
+    b.addEventListener('keydown', (e) => {
+      const actual = botones.indexOf(b);
+      let destino = -1;
+      if (e.key in PASOS) destino = (actual + PASOS[e.key]! + botones.length) % botones.length;
+      else if (e.key === 'Home') destino = 0;
+      else if (e.key === 'End') destino = botones.length - 1;
+      if (destino === -1) return;
+      e.preventDefault();
+      abrir(botones[destino]!.dataset.tablero!);
+      botones[destino]!.focus();
+    }),
+  );
 
   /* Los enlaces del mapa de sectores abren su tablero y bajan hasta él. */
   document.querySelectorAll<HTMLElement>('[data-ir-sector]').forEach((enlace) =>
@@ -236,7 +293,45 @@ const tableros = [...TABLEROS]
     }),
   );
 
-  /* Un enlace externo puede apuntar a un sector concreto: /radar#sector-fiscal. */
+  /* --- a qué distancia se mide la variación -----------------------------
+     Las tres lecturas ya vienen escritas en cada tarjeta; cambiar de
+     horizonte es leer otro atributo, no recalcular ni pedir nada. */
+  const opciones = Array.from(document.querySelectorAll<HTMLButtonElement>('[data-horizonte]'));
+  const variaciones = Array.from(document.querySelectorAll<HTMLElement>('[data-pi-var]'));
+  const SIGNOS = ['es-bueno', 'es-malo', 'es-plano'];
+  const clave = (h: string) => `h${h.charAt(0).toUpperCase()}${h.slice(1)}`;
+
+  const medirDesde = (horizonte: string) => {
+    variaciones.forEach((v) => {
+      /* Si la serie no llega a ese horizonte se cae a la comparación con la
+         observación anterior: la tarjeta siempre dice contra qué compara, así
+         que nunca queda una cifra sin explicar. */
+      const crudo = v.dataset[clave(horizonte)] ?? v.dataset.hDef;
+      if (!crudo) return;
+      const [flecha, texto, contra, clase] = crudo.split('|');
+      const puesto = (sel: string, txt: string | undefined) => {
+        const el = v.querySelector(sel);
+        if (el && txt !== undefined) el.textContent = txt;
+      };
+      puesto('.pi-flecha', flecha);
+      puesto('.pi-delta', texto);
+      puesto('.pi-contra', contra);
+      v.classList.remove(...SIGNOS);
+      if (clase) v.classList.add(clase);
+    });
+
+    opciones.forEach((o) => {
+      const activo = o.dataset.horizonte === horizonte;
+      o.classList.toggle('is-on', activo);
+      o.setAttribute('aria-pressed', String(activo));
+    });
+  };
+
+  opciones.forEach((o) =>
+    o.addEventListener('click', () => medirDesde(o.dataset.horizonte!)),
+  );
+
+  /* Un enlace externo puede apuntar a un sector concreto: /atlas#sector-fiscal. */
   const desdeElHash = () => {
     const m = location.hash.match(/^#sector-([a-z-]+)$/);
     if (m) abrir(m[1]);
@@ -246,49 +341,136 @@ const tableros = [...TABLEROS]
 </script>
 
 <style>
-  /* --- navegación por sector -------------------------------------------- */
+  /* --- navegación por sector --------------------------------------------
+     Una barra de pestañas, no once botones sueltos. Las píldoras flotaban
+     sobre el fondo y no se veía a qué pertenecían; ahora se apoyan sobre una
+     línea continua que las ata al tablero de abajo, y la pestaña abierta se
+     marca subrayándose con el color de su propio sector. El punto de color
+     repite ese código en las cerradas: al recorrer la barra ya se sabe de qué
+     color va a venir cada tablero.
+
+     Ninguna superficie se tiñe —ni la pestaña ni la tarjeta—: el color vive
+     en el trazo y en la línea, que es donde significa algo. */
+  .sector-rail {
+    position: relative;
+    margin-bottom: 24px;
+    border-bottom: 1px solid var(--line, var(--line-light));
+    scroll-margin-top: 96px;
+  }
+
   .tab-sectores {
     display: flex;
     flex-wrap: nowrap;
-    gap: 6px;
-    margin-bottom: 26px;
+    gap: 2px;
     overflow-x: auto;
     scrollbar-width: none;
-    padding: 6px 2px 10px;
-    margin-inline: -2px;
-    scroll-margin-top: 96px;
+    /* El subrayado de la activa se monta sobre la línea del carril. */
+    margin-bottom: -1px;
   }
   .tab-sectores::-webkit-scrollbar { width: 0; height: 0; }
 
   .tab-sector {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
     flex: 0 0 auto;
-    padding: 8px 16px;
-    border: 1px solid var(--line, var(--line-light));
-    border-radius: 999px;
+    padding: 11px 14px 12px;
+    border: 0;
+    border-bottom: 2px solid transparent;
     background: transparent;
-    color: inherit;
-    font-size: 12px;
+    color: var(--muted);
+    font: inherit;
+    font-size: 12.5px;
     font-weight: 500;
     white-space: nowrap;
     cursor: pointer;
-    transition: transform 260ms cubic-bezier(0.22, 0.61, 0.36, 1),
-      border-color 220ms ease, background-color 220ms ease, color 220ms ease,
-      box-shadow 260ms ease;
+    transition: color 200ms ease, border-color 200ms ease, background-color 200ms ease;
   }
-  .tab-sector:hover,
+  .tab-sector:hover { color: inherit; }
   .tab-sector:focus-visible {
-    transform: translateY(-2px);
-    border-color: var(--color-gold);
-    box-shadow: 0 10px 20px -12px rgb(3 26 36 / 0.4);
+    outline: 2px solid var(--serie);
+    outline-offset: -3px;
+    color: inherit;
   }
   .tab-sector.is-on {
+    color: inherit;
+    font-weight: 600;
+    border-bottom-color: var(--serie);
+  }
+
+  /* El punto lleva el color del sector: encendido en la pestaña abierta,
+     atenuado en las demás. El nombre sigue ahí, así que el color nunca es lo
+     único que distingue una pestaña de otra. */
+  .tab-punto {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--serie);
+    opacity: 0.4;
+    transition: opacity 200ms ease;
+  }
+  .tab-sector:hover .tab-punto { opacity: 0.75; }
+  .tab-sector.is-on .tab-punto { opacity: 1; }
+
+  /* La barra se desplaza en horizontal cuando no caben los once sectores:
+     un degradado en el borde avisa de que sigue habiendo sectores. */
+  .sector-rail::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 1px;
+    width: 40px;
+    pointer-events: none;
+    background: linear-gradient(90deg, transparent, var(--color-paper) 80%);
+  }
+  @media (min-width: 1240px) { .sector-rail::after { display: none; } }
+
+  .tab-panel:focus-visible { outline: none; }
+
+  /* --- la barra de herramientas del tablero ------------------------------
+     Neutra a propósito: el color de esta página es de las series, y un
+     control que se pintara de un sector diría algo que no es cierto. */
+  .tablero-barra {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 10px 16px;
+    margin-bottom: 22px;
+  }
+  .tb-etq {
+    font-size: 9.5px;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+  .tb-grupo {
+    display: inline-flex;
+    border: 1px solid var(--line, var(--line-light));
+    border-radius: 7px;
+    overflow: hidden;
+  }
+  .tb-op {
+    padding: 7px 14px;
+    border: 0;
+    border-left: 1px solid var(--line, var(--line-light));
+    background: transparent;
+    color: var(--muted);
+    font: inherit;
+    font-size: 12px;
+    white-space: nowrap;
+    cursor: pointer;
+    transition: color 180ms ease, background-color 180ms ease;
+  }
+  .tb-op:first-child { border-left: 0; }
+  .tb-op:hover { color: inherit; }
+  .tb-op.is-on {
     background: var(--color-ink);
-    border-color: var(--color-ink);
     color: var(--color-paper);
+    font-weight: 600;
   }
-  @media (prefers-reduced-motion: reduce) {
-    .tab-sector:hover, .tab-sector:focus-visible { transform: none; }
-  }
+  .tb-nota { font-size: 11.5px; max-width: 52ch; }
 
   .tab-desc {
     margin-bottom: 20px;

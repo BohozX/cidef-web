@@ -6,7 +6,7 @@ date: 2026-08-20
 authors:
   - "Equipo de Coyuntura CIDEF"
 abstract: >-
-  Lectura integrada del trimestre a partir de los indicadores del Radar
+  Lectura integrada del trimestre a partir de los indicadores del Atlas
   Económico: precios, actividad, sector externo y condiciones monetarias. El
   reporte discute el comportamiento reciente de la inflación, la evolución de
   las reservas y el desempeño del comercio exterior, y cierra con los riesgos

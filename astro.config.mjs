@@ -9,17 +9,20 @@ import tailwindcss from '@tailwindcss/vite';
 // variable el build sigue siendo exactamente el de Cloudflare.
 const enGitHubPages = process.env.GITHUB_PAGES === 'true';
 
-/* Las redirecciones de /analisis existen para los enlaces antiguos del dominio
-   propio. Astro aplica el `base` al origen de una redirección pero no a su
-   destino, y el destino tiene que ser una ruta interna sin prefijo —si se le
-   antepone, deja de reconocerla como ruta y pide getStaticPaths—. En la copia
-   de GitHub Pages, que es una previsualización sin enlaces entrantes, se
-   apagan; en Cloudflare siguen igual. */
+/* Las redirecciones cubren los nombres anteriores de dos secciones: /analisis
+   antes de ser /publicaciones, y /radar antes de ser el Atlas Económico.
+   Astro aplica el `base` al origen de una redirección pero no a su destino, y
+   el destino tiene que ser una ruta interna sin prefijo —si se le antepone,
+   deja de reconocerla como ruta y pide getStaticPaths—. En la copia de GitHub
+   Pages, que es una previsualización sin enlaces entrantes, se apagan; en
+   Cloudflare siguen igual. */
 const redirecciones = enGitHubPages
   ? {}
   : {
       '/analisis': '/publicaciones',
       '/analisis/[...id]': '/publicaciones/[...id]',
+      '/radar': '/atlas',
+      '/radar/[id]': '/atlas/[id]',
     };
 
 export default defineConfig({

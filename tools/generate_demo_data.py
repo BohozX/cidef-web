@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-Genera los datos DEMO del Radar Económico.
+Genera los datos DEMO del Atlas Económico.
 
 IMPORTANTE
 ----------

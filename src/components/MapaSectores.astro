@@ -2,7 +2,7 @@
 import { sectores, indicators } from '../lib/indicators';
 
 /**
- * El mapa del Radar: qué sectores hay, qué contesta cada uno y por dónde
+ * El mapa del Atlas: qué sectores hay, qué contesta cada uno y por dónde
  * entrar.
  *
  * Sirve a dos destinos distintos. En el tablero abre el sector sin recargar
@@ -35,14 +35,14 @@ const encabezado = titulo ?? `La economía boliviana, repartida en ${enLetra(lis
 const entrada =
   lede ??
   (alTablero
-    ? `Cada sector responde una pregunta y reúne las series que la contestan. Hoy el Radar sigue ${totalSeries} series, ${propias} de ellas elaboradas por el centro. Elige un sector para abrir su tablero.`
+    ? `Cada sector responde una pregunta y reúne las series que la contestan. Hoy el Atlas sigue ${totalSeries} series, ${propias} de ellas elaboradas por el centro. Elige un sector para abrir su tablero.`
     : `Cada sector reúne sus series completas: histórico, metadatos y descarga. Son ${totalSeries} series, ${propias} de ellas elaboradas por el centro. Elige un sector para ver todo lo que hay dentro.`);
 ---
 
 <div class="mapa-head">
   <div>
     <p class="eyebrow mapa-eyebrow" data-reveal>
-      {alTablero ? 'Cómo está organizado el Radar' : 'Catálogo por sector'}
+      {alTablero ? 'Cómo está organizado el Atlas' : 'Catálogo por sector'}
     </p>
     <h2 id="mapa" class="display-3 mapa-title" data-reveal>{encabezado}</h2>
   </div>

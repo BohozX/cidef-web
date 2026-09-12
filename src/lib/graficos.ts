@@ -49,6 +49,8 @@ export type Linea = {
   area: string;
   ultimoX: number;
   ultimoY: number;
+  /** Coordenadas de cada observación, para anclar el hover al dato. */
+  puntos: [number, number][];
 };
 
 export function linea(
@@ -58,7 +60,14 @@ export function linea(
   area = false,
 ): Linea {
   if (valores.length < 2) {
-    return { tipo: area ? 'area' : 'linea', linea: '', area: '', ultimoX: ancho, ultimoY: alto / 2 };
+    return {
+      tipo: area ? 'area' : 'linea',
+      linea: '',
+      area: '',
+      ultimoX: ancho,
+      ultimoY: alto / 2,
+      puntos: [],
+    };
   }
   const e = escala(valores, alto, 6);
   const paso = ancho / (valores.length - 1);
@@ -70,6 +79,7 @@ export function linea(
     area: `${d} L ${num(ancho)} ${alto} L 0 ${alto} Z`,
     ultimoX: pts[pts.length - 1][0],
     ultimoY: pts[pts.length - 1][1],
+    puntos: pts,
   };
 }
 
@@ -177,5 +187,8 @@ export function conProyeccion(
     corteX: pts[corte - 1][0],
     ultimoX: pts[pts.length - 1][0],
     ultimoY: pts[pts.length - 1][1],
+    puntos: pts,
+    /** Desde este índice el dato ya no está medido, sino proyectado. */
+    desdeProyectado: corte - 1,
   };
 }

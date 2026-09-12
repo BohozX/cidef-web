@@ -143,3 +143,20 @@ export function periodoRef(iso: string, frecuencia: string): string {
   if (frecuencia === 'Diaria' || frecuencia === 'Semanal') return longDate(iso);
   return `${MONTHS[mes]} de ${anio}`;
 }
+
+/**
+ * El mismo período, en forma corta, para las tarjetas del tablero.
+ *
+ * «agosto 2026» en vez de «agosto de 2026», «II trim. 2026» en vez de
+ * «II trimestre 2026». En una pieza del tablero la variación y el período
+ * conviven en dos renglones cortos, y la forma larga los parte en cuatro.
+ */
+export function periodoCorto(iso: string, frecuencia: string): string {
+  const d = parseISO(iso);
+  const mes = d.getUTCMonth();
+  const anio = d.getUTCFullYear();
+  if (frecuencia === 'Anual') return String(anio);
+  if (frecuencia === 'Trimestral') return `${ROMANOS[Math.floor(mes / 3)]} trim. ${anio}`;
+  if (frecuencia === 'Diaria' || frecuencia === 'Semanal') return shortDate(iso);
+  return `${MONTHS[mes]} ${anio}`;
+}

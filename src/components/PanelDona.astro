@@ -1,5 +1,6 @@
 ---
 import composiciones from '../data/composiciones.json';
+import { byId } from '../lib/indicators';
 import { dona } from '../lib/graficos';
 import { num } from '../lib/format';
 
@@ -49,14 +50,18 @@ const arcos = porciones.map((p) => {
    cada vez que el elemento pasa de oculto a visible: al cambiar de sector, la
    dona se dibuja otra vez sin una línea de JavaScript. */
 
-/* Cinco tonos de la paleta, del más saturado al más claro: el orden de la
-   dona ya jerarquiza, el color solo acompaña. */
-const TONOS = ['#005c59', '#007a75', '#008c85', '#4fb3ac', '#8ccdc7', '#c2e2df'];
+/* Los cinco pasos son los del sector de la serie, del trozo mayor al menor
+   (`--t1`…`--t5`, definidos en `global.css`). Una dona en verde dentro de un
+   tablero rojo se lee como si midiera otra cosa. El verde del centro queda de
+   red por si la pieza apareciera sin sector. */
+const RED = ['#005c59', '#007a75', '#008c85', '#4fb3ac', '#8ccdc7'];
+const tono = (i: number): string => `var(--t${(i % 5) + 1}, ${RED[i % 5]})`;
+const sector = byId(id)?.category;
 ---
 
 {
   c && (
-    <article class:list={['panel-dona', `is-${size}`]} data-reveal>
+    <article class:list={['panel-dona', `is-${size}`]} data-sector={sector} data-reveal>
       <p class="pd-titulo">{c.titulo}</p>
 
       <div class="pd-cuerpo">
@@ -73,7 +78,7 @@ const TONOS = ['#005c59', '#007a75', '#008c85', '#4fb3ac', '#8ccdc7', '#c2e2df']
               class="pd-arco"
               d={p.d}
               fill="none"
-              stroke={TONOS[i % TONOS.length]}
+              stroke={tono(i)}
               stroke-linecap="butt"
               style={`--largo:${p.largo.toFixed(1)}; animation-delay:${p.retardo}ms; animation-duration:${p.duracion}ms`}
             />
@@ -83,7 +88,7 @@ const TONOS = ['#005c59', '#007a75', '#008c85', '#4fb3ac', '#8ccdc7', '#c2e2df']
         <ul class="pd-leyenda">
           {arcos.map((p, i) => (
             <li style={`--i:${i}`}>
-              <span class="pd-punto" style={`background:${TONOS[i % TONOS.length]}`} aria-hidden="true" />
+              <span class="pd-punto" style={`background:${tono(i)}`} aria-hidden="true" />
               <span class="pd-nombre">{p.nombre}</span>
               <span class="pd-valor tnum">{num(p.porcentaje, 1)}%</span>
             </li>

@@ -55,26 +55,26 @@ const facts = [
 ---
 
 <BaseLayout
-  title="Radar Económico"
+  title="Atlas Económico"
   description="Plataforma de indicadores de la economía boliviana: actividad, precios, monetario y financiero, mercado cambiario, sector externo, fiscal, empleo, indicadores sociales, economía internacional y estimaciones propias del CIDEF."
   bleed
 >
   <PageHero
-    eyebrow="Radar Económico"
+    eyebrow="Atlas Económico"
     title="La economía boliviana, en un tablero"
     lede="Explora los principales indicadores macroeconómicos, financieros y sectoriales de Bolivia, junto con las estimaciones, índices y proyecciones que elabora el centro."
-    cover={covers.radar}
+    cover={covers.atlas}
   >
-    <div slot="actions" class="radar-acciones" data-hero-item>
+    <div slot="actions" class="atlas-acciones" data-hero-item>
       {/* Atajos: qué mide, cuánto y de cuándo. Sin cinta de bolsa: seis
           series, y cada una dice su período de referencia. */}
-      <ul class="radar-tira">
+      <ul class="atlas-tira">
         {tira.map(({ i, periodo: p }) => {
           const sube = i.change >= 0;
           const bueno = sube === higherIsBetter(i.id);
           return (
             <li>
-              <a href={withBase(`/radar/${i.id}`)}>
+              <a href={withBase(`/atlas/${i.id}`)}>
                 <span class="tira-nombre">{i.name}</span>
                 <span class="tira-linea">
                   <span class="tira-valor tnum">{num(i.value, i.decimals)}</span>
@@ -95,14 +95,14 @@ const facts = [
   <!-- LOS TABLEROS ---------------------------------------------------------- -->
   <section class="surface-light section" aria-labelledby="panorama">
     <div class="wrap">
-      <div class="radar-sec-head">
+      <div class="atlas-sec-head">
         <div>
           <p class="eyebrow eyebrow-gold" data-reveal>Panorama económico</p>
-          <h2 id="panorama" class="display-3 radar-sec-title" data-reveal>
+          <h2 id="panorama" class="display-3 atlas-sec-title" data-reveal>
             Qué está pasando en la economía boliviana
           </h2>
         </div>
-        <p class="radar-sec-note muted" data-reveal>
+        <p class="atlas-sec-note muted" data-reveal>
           Cada pieza usa el gráfico que su dato pide: el crecimiento en barras,
           el tipo de cambio en línea, las reservas en área y el saldo comercial
           a ambos lados del cero. Series de demostración.
@@ -113,8 +113,8 @@ const facts = [
 
       <LeyendaSellos />
 
-      <div class="radar-mas" data-reveal>
-        <p class="radar-mas-texto">
+      <div class="atlas-mas" data-reveal>
+        <p class="atlas-mas-texto">
           Cada tablero muestra una selección de su sector. El catálogo completo
           —todas las series, con su frecuencia, su fuente y su histórico— está en
           la Base de Datos Profesional.
@@ -174,7 +174,7 @@ const facts = [
       </div>
 
       <p class="base-nota muted" data-reveal>
-        El Radar sirve para <strong>descubrir, visualizar y entender</strong>. La base
+        El Atlas sirve para <strong>descubrir, visualizar y entender</strong>. La base
         profesional, para <strong>investigar, comparar, transformar y modelar</strong>.
         Lo que se ve aquí seguirá siendo público y actualizado.
       </p>
@@ -198,7 +198,7 @@ const facts = [
   .base-acciones { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 28px; }
 
   /* Sobre plomo el dorado gritaba. El acento pasa al verde del centro, que
-     es el color con el que se lee todo lo demás del Radar. */
+     es el color con el que se lee todo lo demás del Atlas. */
   .base-eyebrow { color: var(--color-teal-600); }
   .base-h { display: block; margin-bottom: 16px; }
   .base-lista { list-style: none; margin: 0; padding: 0; }
@@ -226,8 +226,8 @@ const facts = [
   }
   .base-nota strong { color: var(--color-teal-600); font-weight: 600; }
 
-  /* --- cabecera del Radar ---------------------------------------------- */
-  .radar-acciones {
+  /* --- cabecera del Atlas ---------------------------------------------- */
+  .atlas-acciones {
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -239,7 +239,7 @@ const facts = [
   /* Cada atajo es una ficha mínima: qué mide, cuánto, y de qué período. */
   /* Las seis en un renglón: repartidas por ancho disponible se partían en
      cinco y una, y la huérfana parecía un dato de otra categoría. */
-  .radar-tira {
+  .atlas-tira {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 18px clamp(14px, 2.2vw, 32px);
@@ -249,17 +249,17 @@ const facts = [
     width: 100%;
     max-width: 1180px;
   }
-  @media (min-width: 640px) { .radar-tira { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
-  @media (min-width: 1040px) { .radar-tira { grid-template-columns: repeat(6, minmax(0, 1fr)); } }
+  @media (min-width: 640px) { .atlas-tira { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+  @media (min-width: 1040px) { .atlas-tira { grid-template-columns: repeat(6, minmax(0, 1fr)); } }
 
-  .radar-tira a {
+  .atlas-tira a {
     display: grid;
     align-content: start;
     gap: 5px;
     text-align: center;
     transition: color 200ms ease;
   }
-  .radar-tira a:hover { color: var(--color-gold); }
+  .atlas-tira a:hover { color: var(--color-gold); }
 
   /* Dos líneas reservadas para el nombre: con nombres de largo distinto, las
      cifras se descolocaban unas respecto de otras. */
@@ -292,13 +292,13 @@ const facts = [
   }
 
   /* --- sectores --------------------------------------------------------- */
-  .radar-sectores {
+  .atlas-sectores {
     display: flex;
     flex-wrap: wrap;
     gap: 8px;
     margin-top: clamp(26px, 3vw, 40px);
   }
-  .radar-sector {
+  .atlas-sector {
     padding: 8px 16px;
     border: 1px solid var(--line, var(--line-light));
     border-radius: 999px;
@@ -308,32 +308,32 @@ const facts = [
     transition: transform 260ms cubic-bezier(0.22, 0.61, 0.36, 1),
       border-color 220ms ease, color 220ms ease;
   }
-  .radar-sector:hover {
+  .atlas-sector:hover {
     transform: translateY(-2px);
     border-color: var(--color-gold);
     color: var(--color-gold);
   }
   @media (prefers-reduced-motion: reduce) {
-    .radar-sector:hover { transform: none; }
+    .atlas-sector:hover { transform: none; }
   }
 
-  .radar-sec-head {
+  .atlas-sec-head {
     display: grid;
     gap: 18px;
     padding-bottom: 34px;
   }
   @media (min-width: 900px) {
-    .radar-sec-head {
+    .atlas-sec-head {
       grid-template-columns: minmax(0, 1.3fr) minmax(0, 0.7fr);
       gap: 48px;
       align-items: end;
     }
   }
-  .radar-sec-title { margin-top: 14px; max-width: 20ch; }
+  .atlas-sec-title { margin-top: 14px; max-width: 20ch; }
 
   /* La puerta a la base profesional: cierra el tablero y explica por qué hay
      más al otro lado, en vez de un botón suelto sin motivo. */
-  .radar-mas {
+  .atlas-mas {
     display: grid;
     gap: 16px;
     justify-items: start;
@@ -342,14 +342,14 @@ const facts = [
     border-top: 1px solid var(--line, var(--line-light));
   }
   @media (min-width: 860px) {
-    .radar-mas {
+    .atlas-mas {
       grid-template-columns: minmax(0, 1fr) auto;
       align-items: center;
       gap: 34px;
     }
   }
-  .radar-mas-texto { font-size: 13px; max-width: 72ch; }
-  .radar-sec-note { font-size: 13px; max-width: 42ch; }
+  .atlas-mas-texto { font-size: 13px; max-width: 72ch; }
+  .atlas-sec-note { font-size: 13px; max-width: 42ch; }
 
   .ind-grid {
     display: grid;
@@ -358,12 +358,12 @@ const facts = [
   }
 
   /* --- filtros --- */
-  .radar-filters {
+  .atlas-filters {
     display: grid;
     gap: 18px;
     padding-bottom: 22px;
   }
-  .radar-search {
+  .atlas-search {
     display: flex;
     align-items: center;
     gap: 12px;
@@ -371,7 +371,7 @@ const facts = [
     padding-bottom: 12px;
     color: var(--muted);
   }
-  .radar-input {
+  .atlas-input {
     flex: 1;
     background: transparent;
     border: 0;
@@ -380,11 +380,11 @@ const facts = [
     font-size: clamp(1.2rem, 2.4vw, 1.7rem);
     padding: 0;
   }
-  .radar-input:focus { outline: none; }
-  .radar-input::-webkit-search-cancel-button { display: none; }
+  .atlas-input:focus { outline: none; }
+  .atlas-input::-webkit-search-cancel-button { display: none; }
 
-  .radar-selects { display: flex; flex-wrap: wrap; gap: 10px; }
-  .radar-selects select { flex: 1 1 180px; max-width: 260px; }
+  .atlas-selects { display: flex; flex-wrap: wrap; gap: 10px; }
+  .atlas-selects select { flex: 1 1 180px; max-width: 260px; }
 
   .cat-nav {
     display: flex;
@@ -402,7 +402,7 @@ const facts = [
   }
   .cat-chip:hover { border-color: var(--color-teal); color: var(--color-teal-600); }
 
-  .radar-count {
+  .atlas-count {
     font-size: 11.5px;
     font-weight: 700;
     letter-spacing: 0.13em;
@@ -461,5 +461,5 @@ const facts = [
   }
   .own-note strong { font-weight: 600; }
 
-  .radar-empty { padding-block: 52px; font-size: 14px; }
+  .atlas-empty { padding-block: 52px; font-size: 14px; }
 </style>

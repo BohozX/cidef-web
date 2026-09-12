@@ -23,8 +23,8 @@ BASE = "http://localhost:4321"
 
 PAGES = [
     ("home", "/"),
-    ("radar", "/radar"),
-    ("radar-indicador", "/radar/nowcast-pib"),
+    ("atlas", "/atlas"),
+    ("atlas-indicador", "/atlas/nowcast-pib"),
     ("analisis", "/analisis"),
     ("publicacion", "/analisis/wp-001-usdt-incertidumbre"),
     ("archivo", "/archivo"),

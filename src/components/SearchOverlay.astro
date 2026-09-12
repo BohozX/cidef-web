@@ -44,11 +44,11 @@ const indexRaw: Entry[] = [
   })),
   ...indicators.map((i) => ({
     t: i.name,
-    u: `/radar/${i.id}`,
+    u: `/atlas/${i.id}`,
     k: 'Indicador',
     d: `${i.frequency} · ${i.source}`,
   })),
-  { t: 'Radar Económico', u: '/radar', k: 'Sección', d: 'Indicadores de la economía boliviana' },
+  { t: 'Atlas Económico', u: '/atlas', k: 'Sección', d: 'Indicadores de la economía boliviana' },
   { t: 'Publicaciones', u: '/publicaciones', k: 'Sección', d: 'Informes, reportes, working papers, notas y memorias' },
   { t: 'Archivo Vivo', u: '/archivo', k: 'Sección', d: 'Repositorio abierto' },
   { t: 'Formación', u: '/formacion', k: 'Sección', d: 'Diplomados y oferta académica' },
@@ -84,7 +84,7 @@ const index: Entry[] = indexRaw.map((e) => ({ ...e, u: withBase(e.u) }));
     <div class="rule" style="margin-top: 14px"></div>
     <p class="search-hint muted" data-search-hint>
       Escribe al menos dos caracteres. Se buscan publicaciones, indicadores del
-      Radar, eventos, programas y recursos del Archivo Vivo.
+      Atlas, eventos, programas y recursos del Archivo Vivo.
     </p>
     <ul class="search-results" data-search-results role="listbox" aria-label="Resultados"></ul>
   </div>

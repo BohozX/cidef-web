@@ -69,12 +69,12 @@ src/
 ├── scripts/motion.ts       GSAP + ScrollTrigger (reveal, contadores, parallax)
 ├── lib/
 │   ├── format.ts           Formato es-BO de números y fechas, citas
-│   ├── indicators.ts       Capa de acceso al Radar (hoy JSON, mañana API)
+│   ├── indicators.ts       Capa de acceso al Atlas (hoy JSON, mañana API)
 │   ├── sparkline.ts        Sparklines SVG generadas en build
 │   └── echarts.ts          Registro único y tree-shakeable de ECharts
 ├── data/
 │   ├── indicators.json     20 indicadores DEMO con serie histórica
-│   ├── categories.json     Categorías del Radar
+│   ├── categories.json     Categorías del Atlas
 │   └── archivo.json        Recursos del Archivo Vivo
 ├── content/
 │   ├── publicaciones/      Análisis (Markdown)
@@ -89,7 +89,7 @@ src/
 ### Componentes
 
 `Header` · `Footer` · `Logo` · `SearchOverlay` · `Hero` · `FeaturedResearch` ·
-`EconomicRadar` · `IndicatorCard` · `Sparkline` · `IndicatorChart` ·
+`AtlasEconomico` · `IndicatorCard` · `Sparkline` · `IndicatorChart` ·
 `OwnIndicatorSpotlight` · `ResearchCard` · `ArchiveSearch` · `AgendaItem` ·
 `ResearcherCard` · `ProgramCard` · `InstitutionalStrip` · `Newsletter` ·
 `SectionHeader` · `PageHero`
@@ -99,8 +99,8 @@ src/
 | Ruta | Contenido |
 |---|---|
 | `/` | Portada |
-| `/radar` | Plataforma de indicadores (panorama + categorías + filtros) |
-| `/radar/[id]` | Ficha del indicador: serie histórica, metadatos, descargas, vintages |
+| `/atlas` | Plataforma de indicadores (panorama + categorías + filtros) |
+| `/atlas/[id]` | Ficha del indicador: serie histórica, metadatos, descargas, vintages |
 | `/analisis` | Listado con buscador, filtros y vista lista/cuadrícula |
 | `/analisis/[id]` | Publicación: resumen, hallazgos, descargas, cita APA/BibTeX/RIS |
 | `/archivo` | Archivo Vivo: buscador, filtros y orden |
@@ -117,7 +117,7 @@ src/
 
 ### Estado actual: DEMO
 
-**Los 20 indicadores del Radar son series sintéticas**, generadas con
+**Los 20 indicadores del Atlas son series sintéticas**, generadas con
 `tools/generate_demo_data.py`. Cada uno lleva `"demo": true` y la interfaz lo
 muestra con la etiqueta *Demo*. El pie de página repite el aviso. Ninguna cifra
 debe presentarse como oficial.

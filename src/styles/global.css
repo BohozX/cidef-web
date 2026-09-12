@@ -156,6 +156,55 @@
     --muted: color-mix(in srgb, #031a24 62%, transparent);
   }
 
+  /* --- color por sector ----------------------------------------------
+     Cada sector del Atlas tiene su tono, y la serie de un indicador se
+     dibuja siempre con el de su sector. En el panorama, donde conviven
+     piezas de sectores distintos, el color dice de dónde viene cada una
+     sin tener que leer la etiqueta. El sello sigue diciendo qué es el
+     dato: color y sello son dos canales, cada uno con un solo trabajo.
+
+     Los tonos no se eligieron a ojo. La secuencia pasó el comprobador de
+     paletas —banda de luminosidad, piso de croma, separación bajo
+     protanopia y deuteranopia en ΔE OKLab, y contraste contra la
+     superficie— en sus dos versiones. Si se cambia un tono, hay que
+     volver a pasarla: el orden es parte de la garantía, no un capricho. */
+  [data-sector='actividad']     { --serie-claro: #00907f; --serie-oscuro: #1f9c8e; }
+  [data-sector='precios']       { --serie-claro: #c0562a; --serie-oscuro: #c96f3c; }
+  [data-sector='monetario']     { --serie-claro: #3560ad; --serie-oscuro: #6685cc; }
+  [data-sector='cambiario']     { --serie-claro: #b13a44; --serie-oscuro: #c9646d; }
+  [data-sector='externo']       { --serie-claro: #0b7fa5; --serie-oscuro: #3293b6; }
+  [data-sector='fiscal']        { --serie-claro: #6b8a2b; --serie-oscuro: #7ea341; }
+  [data-sector='laboral']       { --serie-claro: #9c3f86; --serie-oscuro: #b563a2; }
+  [data-sector='social']        { --serie-claro: #b8763a; --serie-oscuro: #bd8442; }
+  [data-sector='internacional'] { --serie-claro: #6a5fc0; --serie-oscuro: #837bcc; }
+  [data-sector='centro']        { --serie-claro: #d29a28; --serie-oscuro: #b58d3d; }
+
+  [data-sector] { --serie: var(--serie-claro); }
+  .surface-dark [data-sector],
+  .surface-deep [data-sector] { --serie: var(--serie-oscuro); }
+
+  /* El panorama no es un sector: es la portada del tablero. Lleva el azul
+     noche institucional para que la pestaña no finja pertenecer a uno. */
+  [data-sector='panorama'] { --serie-claro: #0b2d3a; --serie-oscuro: #cddde2; }
+
+  /* Rampa de composición: los cinco pasos de la dona de cada sector, del
+     trozo mayor al menor. No son mezclas a ojo con blanco —el mismo
+     porcentaje aclara el oro mucho antes que el índigo—: se fijó la
+     luminosidad en OKLCH, 0,40 a 0,72 de ocho en ocho, conservando tono y
+     croma, y se recortó el croma solo donde se salía del gamut. Los diez
+     sectores pasan el comprobador en modo ordinal: progresión monótona,
+     saltos visibles y el extremo claro por encima de 2:1 contra el papel. */
+  [data-sector='actividad'] { --t1: #00554a; --t2: #006e60; --t3: #008877; --t4: #28a18f; --t5: #49baa8; }
+  [data-sector='precios'] { --t1: #841c00; --t2: #9e3700; --t3: #b95023; --t4: #d5693e; --t5: #f08257; }
+  [data-sector='monetario'] { --t1: #1a438d; --t2: #305aa7; --t3: #4672c1; --t4: #5d8bdc; --t5: #75a4f7; }
+  [data-sector='cambiario'] { --t1: #870a23; --t2: #a22c38; --t3: #be464e; --t4: #da5f65; --t5: #f6787d; }
+  [data-sector='externo'] { --t1: #00506d; --t2: #00688b; --t3: #0d80a6; --t4: #3598bf; --t5: #51b1d9; }
+  [data-sector='fiscal'] { --t1: #3a5100; --t2: #4c6900; --t3: #628120; --t4: #79993c; --t5: #91b356; }
+  [data-sector='laboral'] { --t1: #761963; --t2: #90347b; --t3: #aa4c93; --t4: #c464ac; --t5: #df7dc5; }
+  [data-sector='social'] { --t1: #6e3700; --t2: #8a4c00; --t3: #a36325; --t4: #bd7b3f; --t5: #d89358; }
+  [data-sector='internacional'] { --t1: #443491; --t2: #594cab; --t3: #6f64c5; --t4: #857ce0; --t5: #9d95fc; }
+  [data-sector='centro'] { --t1: #604100; --t2: #7c5500; --t3: #996b00; --t4: #b78100; --t5: #d19927; }
+
   /* Tonos claros teñidos con los colores del centro. Muy poca saturación:
      dan identidad a cada sección sin romper el registro institucional. */
   .surface-teal {
@@ -413,7 +462,7 @@
   .arc svg { width: 100%; height: 100%; overflow: visible; }
   .arc circle { fill: none; stroke: currentColor; }
 
-  /* --- carril horizontal (radar en móvil) --------------------------- */
+  /* --- carril horizontal (atlas en móvil) --------------------------- */
   .rail {
     display: flex;
     gap: 14px;

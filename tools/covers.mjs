@@ -3,7 +3,7 @@
  *
  * Dos oficios en un mismo archivo:
  *
- *  1. Dibuja las portadas que conviene dibujar —hoy, el fan chart del Radar—.
+ *  1. Dibuja las portadas que conviene dibujar —hoy, el fan chart del Atlas—.
  *     Un gráfico vectorial trazado con los datos a la vista queda más limpio
  *     que cualquier fotografía de un gráfico, y no envejece.
  *
@@ -12,7 +12,7 @@
  *     al reducir y exportación en tres formatos y cuatro anchos.
  *
  *   node tools/covers.mjs            todas
- *   node tools/covers.mjs radar      solo una
+ *   node tools/covers.mjs atlas      solo una
  */
 
 import sharp from 'sharp';
@@ -259,4 +259,4 @@ if (trabajo.length === 0) {
 }
 
 console.log('\nListo. Las rutas van en `covers` dentro de src/site.config.ts');
-if (!existsSync(join(SALIDA, 'radar.jpg'))) console.log('AVISO: falta radar.jpg');
+if (!existsSync(join(SALIDA, 'atlas.jpg'))) console.log('AVISO: falta atlas.jpg');

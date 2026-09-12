@@ -24,8 +24,8 @@ const BASE = 'http://localhost:4321';
 
 const PAGINAS = {
   portada: '/',
-  radar: '/radar',
-  indicador: '/radar/nowcast-pib',
+  atlas: '/atlas',
+  indicador: '/atlas/nowcast-pib',
   analisis: '/analisis',
   publicacion: '/analisis/wp-001-usdt-incertidumbre',
   archivo: '/archivo',

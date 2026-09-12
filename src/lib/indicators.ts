@@ -2,7 +2,7 @@ import raw from '../data/indicators.json';
 import cats from '../data/categories.json';
 
 /**
- * Capa de acceso a los datos del Radar Económico.
+ * Capa de acceso a los datos del Atlas Económico.
  *
  * Hoy lee un JSON local generado por `tools/generate_demo_data.py`.
  * Para conectar una API basta con reemplazar `raw` por la respuesta del
@@ -121,7 +121,7 @@ export const lastUpdated = (): string =>
  * ayuda por si se quiere invertir la semántica en el futuro.
  */
 /**
- * Los sectores del Radar, en el orden en que se recorren. El panorama abre y
+ * Los sectores del Atlas, en el orden en que se recorren. El panorama abre y
  * los indicadores del centro cierran; en medio, la economía por bloques.
  *
  * El orden no es alfabético ni por tamaño: va de lo que se produce a lo que

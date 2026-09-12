@@ -46,7 +46,7 @@ def main() -> int:
         # --- portada -------------------------------------------------------
         print("Portada")
         page.goto(f"{BASE}/", wait_until="networkidle")
-        check(page.locator(".ind-card").count() == 6, "seis indicadores en el Radar de portada")
+        check(page.locator(".ind-card").count() == 6, "seis indicadores en el Atlas de portada")
         check(page.locator("header img").count() == 1, "logo presente en el header")
         check(
             page.locator(".hero-img").get_attribute("src").endswith(".jpg"),
@@ -90,15 +90,15 @@ def main() -> int:
         page.wait_for_timeout(200)
         check(page.locator("[data-an-grid]").is_visible(), "vista de cuadrícula se activa")
 
-        # --- radar: filtros -------------------------------------------------
-        print("Radar Económico")
-        page.goto(f"{BASE}/radar", wait_until="networkidle")
+        # --- atlas: filtros -------------------------------------------------
+        print("Atlas Económico")
+        page.goto(f"{BASE}/atlas", wait_until="networkidle")
         page.select_option("[data-rd-cat]", "centro")
         page.wait_for_timeout(250)
         vis = page.locator(".ind-entry:not([hidden])").count()
         check(vis == 3, f"filtro por categoría deja los 3 indicadores propios ({vis})")
 
-        page.goto(f"{BASE}/radar?cat=precios", wait_until="networkidle")
+        page.goto(f"{BASE}/atlas?cat=precios", wait_until="networkidle")
         page.wait_for_timeout(500)
         check(
             page.input_value("[data-rd-cat]") == "precios",
@@ -107,7 +107,7 @@ def main() -> int:
 
         # --- ficha de indicador: gráfico ------------------------------------
         print("Ficha de indicador")
-        page.goto(f"{BASE}/radar/nowcast-pib", wait_until="networkidle")
+        page.goto(f"{BASE}/atlas/nowcast-pib", wait_until="networkidle")
         page.wait_for_selector("[data-chart] canvas", timeout=15000)
         check(True, "ECharts dibuja el gráfico")
         page.click('[data-range="1"]')

@@ -80,7 +80,7 @@ export type NavItem = {
 
 export const nav: NavItem[] = [
   { label: 'Inicio', href: '/', description: 'Portada del centro' },
-  { label: 'Radar Económico', href: '/radar', description: 'Indicadores de la economía boliviana' },
+  { label: 'Atlas Económico', href: '/atlas', description: 'Indicadores de la economía boliviana' },
   {
     label: 'Publicaciones',
     href: '/publicaciones',
@@ -96,7 +96,7 @@ export const nav: NavItem[] = [
  *
  * Cada página principal abre con una imagen a sangre, como la portada del
  * sitio. Los archivos se generan con `node tools/covers.mjs`: unas se dibujan
- * —el abanico del Radar— y otras salen de una fotografía dejada en
+ * —el abanico del Atlas— y otras salen de una fotografía dejada en
  * `.design/secciones/`. Una sección sin entrada aquí conserva la cabecera
  * sobria de siempre, así que se pueden ir añadiendo de una en una.
  */
@@ -128,8 +128,8 @@ const cover = (nombre: string, alt: string, alto: number): Cover => {
 };
 
 export const covers = {
-  radar: cover(
-    'radar',
+  atlas: cover(
+    'atlas',
     'Gráfico de abanico: una serie observada que se abre en bandas de probabilidad hacia la proyección, sobre notación econométrica',
     1351,
   ),

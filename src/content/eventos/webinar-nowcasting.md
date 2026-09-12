@@ -8,7 +8,7 @@ modality: "Virtual"
 summary: >-
   Taller sobre modelos de frecuencia mixta aplicados a economías con series
   cortas y publicación rezagada. Incluye una demostración práctica con el
-  Nowcast del PIB del Radar Económico.
+  Nowcast del PIB del Atlas Económico.
 speakers:
   - name: "Equipo de Coyuntura CIDEF"
 registerUrl: "#"

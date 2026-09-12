@@ -40,7 +40,7 @@ const esperar = (ms) => pagina.waitForTimeout(ms);
 /* --- portada ---------------------------------------------------------- */
 console.log('Portada');
 await ir('/');
-check((await pagina.locator('.ind-card').count()) === 6, 'seis indicadores en el Radar de portada');
+check((await pagina.locator('.ind-card').count()) === 6, 'seis indicadores en el Atlas de portada');
 check((await pagina.locator('header img').count()) === 1, 'logo presente en el header');
 check(
   (await pagina.locator('.hero-img').getAttribute('src')).endsWith('.jpg'),
@@ -162,12 +162,12 @@ check(
   'las zonas laterales mueven el estante del equipo',
 );
 
-/* --- radar: el tablero --------------------------------------------------- */
-console.log('Radar Económico');
-await ir('/radar');
-check((await pagina.locator('.radar-tira li').count()) === 6, 'seis atajos en la cabecera');
+/* --- atlas: el tablero --------------------------------------------------- */
+console.log('Atlas Económico');
+await ir('/atlas');
+check((await pagina.locator('.atlas-tira li').count()) === 6, 'seis atajos en la cabecera');
 check(
-  (await pagina.innerText('.radar-tira li')).includes('2026'),
+  (await pagina.innerText('.atlas-tira li')).includes('2026'),
   'cada atajo declara su período de referencia',
 );
 
@@ -213,17 +213,17 @@ check(
   'cada pieza declara si el dato es oficial o del centro',
 );
 
-check((await pagina.locator('.sellos li').count()) === 3, 'el Radar explica los tres sellos del dato');
+check((await pagina.locator('.sellos li').count()) === 3, 'el Atlas explica los tres sellos del dato');
 check(
   (await pagina.locator('.mapa-card').count()) === 0,
   'el mapa de sectores no está en la parte gratuita',
 );
 check(
-  (await pagina.getAttribute('.radar-mas a', 'href')) === '/base',
+  (await pagina.getAttribute('.atlas-mas a', 'href')) === '/base',
   'el botón «ver más datos» lleva a la base profesional',
 );
 
-await ir('/radar#sector-fiscal');
+await ir('/atlas#sector-fiscal');
 await esperar(500);
 check(
   await pagina.locator('[data-panel="fiscal"]').isVisible(),
@@ -269,7 +269,7 @@ check(
 
 /* --- ficha de indicador: gráfico ---------------------------------------- */
 console.log('Ficha de indicador');
-await ir('/radar/nowcast-pib');
+await ir('/atlas/nowcast-pib');
 await pagina.waitForSelector('[data-chart] canvas', { timeout: 15000 });
 check(true, 'ECharts dibuja el gráfico');
 await pagina.click('[data-range="1"]');

@@ -1,5 +1,5 @@
 {
-  "_nota": "Composiciones de demostración para los gráficos de dona del Radar. Cada bloque suma 100 y declara la serie a la que acompaña. Se reemplazan por la desagregación real cuando se conecte la base.",
+  "_nota": "Composiciones de demostración para los gráficos de dona del Atlas. Cada bloque suma 100 y declara la serie a la que acompaña. Se reemplazan por la desagregación real cuando se conecte la base.",
   "inflacion-interanual": {
     "titulo": "Aporte por división del IPC",
     "unidad": "% del total",

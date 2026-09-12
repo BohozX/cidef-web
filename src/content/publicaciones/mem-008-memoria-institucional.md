@@ -12,7 +12,7 @@ abstract: >-
   las series propias y la política de revisiones que las rige.
 findings:
   - "El centro publicó documentos en las nueve familias editoriales que mantiene abiertas."
-  - "Tres de los indicadores del Radar Económico son de elaboración propia y se publican con su historial de versiones."
+  - "Tres de los indicadores del Atlas Económico son de elaboración propia y se publican con su historial de versiones."
   - "La formación de posgrado se dicta con certificación universitaria y docentes en ejercicio."
 topics:
   - "Política pública"

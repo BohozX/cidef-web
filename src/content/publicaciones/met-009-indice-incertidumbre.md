@@ -6,7 +6,7 @@ date: 2026-07-30
 authors:
   - "Equipo de Datos CIDEF"
 abstract: >-
-  Documento de referencia del índice que el centro publica en el Radar
+  Documento de referencia del índice que el centro publica en el Atlas
   Económico. Detalla el corpus de prensa utilizado, el diccionario de términos,
   el procedimiento de normalización, el tratamiento de los días sin cobertura y
   las reglas por las que una versión del índice puede revisarse sin sobrescribir
