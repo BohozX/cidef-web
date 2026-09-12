@@ -113,31 +113,36 @@ import { covers } from '../../site.config';
   </section>
 
   <!-- LA BASE DE DATOS PROFESIONAL ----------------------------------------
-       El Atlas es la puerta; esto es el producto. La sección abre diciendo
-       qué se lleva quien entra, y solo después explica cómo está hecho. -->
+       El Atlas es la puerta; esto es el producto. Un solo bloque: a la
+       izquierda qué se lleva quien entra, a la derecha en qué se diferencian
+       el tablero abierto y la base de pago, y debajo la frase que cierra.
+       Iban separados y se leían como dos avisos sueltos. -->
   <section class="surface-mist section edge-tr" aria-labelledby="base-titulo">
     <div class="wrap">
-      <div class="base-copy">
-          <p class="eyebrow base-eyebrow" data-reveal>Base de datos económica</p>
-          <h2 id="base-titulo" class="display-2 base-title" data-reveal>
+      <div class="bp">
+        <div class="bp-copy">
+          <p class="eyebrow bp-eyebrow" data-reveal>Base de datos económica</p>
+          <h2 id="base-titulo" class="display-2 bp-titulo" data-reveal>
             Datos para entender, comparar y anticipar la economía
           </h2>
-          <p class="base-claim" data-reveal>Más allá del dato visible</p>
+          <p class="bp-claim" data-reveal>
+            <span class="bp-regla" aria-hidden="true"></span>Más allá del dato visible
+          </p>
 
-          <p class="base-lede" data-reveal>
+          <p class="bp-lede" data-reveal>
             Explora series históricas, compara indicadores y accede a estimaciones
             que no encontrarás directamente en las fuentes tradicionales.
           </p>
 
-          <p class="base-text" data-reveal>
+          <p class="bp-texto" data-reveal>
             Integramos información de organismos oficiales y fuentes especializadas
-            en una base económica estructurada por sectores. Consulta datos
-            históricos, transforma y compara series, descarga información y accede a
-            indicadores exclusivos desarrollados por el Centro, incluyendo
-            estimaciones, proyecciones y variables no observables.
+            en una base económica estructurada por sectores: histórico, comparación
+            y transformación de series, descargas, y los indicadores exclusivos del
+            Centro —estimaciones, proyecciones y variables no observables— en un
+            mismo entorno.
           </p>
 
-          <div class="base-acciones no-print" data-reveal>
+          <div class="bp-acciones no-print" data-reveal>
             <a href={withBase('/base')} class="btn btn-solid">
               Explorar la Base de Datos
               <svg class="arw" viewBox="0 0 16 16" width="13" height="13" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8">
@@ -146,32 +151,39 @@ import { covers } from '../../site.config';
             </a>
             <a href={withBase('/base#proximo')} class="btn btn-outline">Ver qué incluye</a>
           </div>
+        </div>
 
-          <p class="base-remate" data-reveal>
-            <strong>De consultar datos a entender la economía.</strong>
-            Información oficial, series armonizadas y análisis propio en un mismo
-            entorno.
-          </p>
+        {/* La comparación va en oscuro dentro de la sección clara: es el
+            argumento de venta y tiene que pesar más que el párrafo de al
+            lado. El color vive en el filo de cada nivel, no en el relleno. */}
+        <div class="bp-niveles surface-dark" data-reveal>
+          <p class="bp-niveles-tit">Dos niveles de profundidad, una misma economía</p>
+
+          <div class="bp-nivel">
+            <span class="bp-nivel-etq">Atlas Económico</span>
+            <p class="bp-nivel-frase">Descubre <strong>qué</strong> está ocurriendo.</p>
+            <p class="bp-nivel-texto">
+              El tablero abierto: el último dato de cada serie, su gráfico y su
+              ficha. Seguirá siendo público y actualizado.
+            </p>
+          </div>
+
+          <div class="bp-nivel es-pro">
+            <span class="bp-nivel-etq">Base de Datos Profesional</span>
+            <p class="bp-nivel-frase">Investiga <strong>por qué</strong> está ocurriendo.</p>
+            <p class="bp-nivel-texto">
+              Histórico completo, comparación entre fuentes, transformación de
+              series, indicadores propios y los datos que sustentan nuestros
+              análisis.
+            </p>
+          </div>
+        </div>
       </div>
 
-      <!-- GRATUITO Y PROFESIONAL -->
-      <div class="base-dos" data-reveal>
-        <h3 class="display-3 base-dos-titulo">Dos niveles de profundidad, una misma economía</h3>
-        <div class="base-dos-grid">
-          <p class="base-dos-item">
-            <span class="base-dos-etq">Atlas Económico</span>
-            te permite descubrir <strong>qué</strong> está ocurriendo.
-          </p>
-          <p class="base-dos-item">
-            <span class="base-dos-etq base-dos-pro">Base de Datos Profesional</span>
-            te permite investigar <strong>por qué</strong> está ocurriendo.
-          </p>
-        </div>
-        <p class="base-dos-texto">
-          Accede al histórico completo, compara fuentes, transforma series, analiza
-          indicadores propios y trabaja directamente con los datos que sustentan
-          nuestros análisis. Lo que se ve en el Atlas seguirá siendo público y
-          actualizado.
+      <div class="bp-cierre" data-reveal>
+        <p class="bp-cierre-frase">De consultar datos <em>a entender la economía</em>.</p>
+        <p class="bp-cierre-pie">
+          Información oficial, series armonizadas y análisis propio en un mismo entorno.
         </p>
       </div>
     </div>
@@ -182,82 +194,121 @@ import { covers } from '../../site.config';
 
 <style>
   /* --- la base profesional ----------------------------------------------
-     La sección es una página de producto dentro del Atlas: primero qué te
-     llevas, después cómo está hecho. Por eso el orden tipográfico es
-     titular, claim, promesa concreta y solo al final la explicación. */
-  .base-title { margin-top: 14px; max-width: 20ch; }
+     Un bloque, no dos avisos. El texto lleva el peso a la izquierda y la
+     comparación de niveles, en oscuro, ancla la derecha: sin ella la mitad
+     de la sección quedaba vacía y el argumento de venta se leía como una
+     nota al pie. */
+  .bp {
+    display: grid;
+    gap: clamp(32px, 4vw, 60px);
+  }
+  @media (min-width: 940px) {
+    /* La tarjeta iguala el alto de la columna de texto y reparte su
+       contenido: recortada arriba dejaba un socavón a la derecha. */
+    .bp { grid-template-columns: minmax(0, 1.02fr) minmax(0, 0.98fr); align-items: stretch; }
+    .bp-niveles { display: flex; flex-direction: column; justify-content: space-between; }
+  }
+
+  .bp-eyebrow { color: var(--color-teal-600); }
+  .bp-titulo { margin-top: 14px; max-width: 17ch; }
 
   /* El claim de marca se queda, pero de acompañante: decía bonito y no
-     decía qué se llevaba el que entra. */
-  .base-claim {
-    margin-top: 14px;
-    font-size: 12px;
+     decía qué se lleva quien entra. */
+  .bp-claim {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-top: 18px;
+    font-size: 11.5px;
     font-weight: 700;
-    letter-spacing: 0.14em;
+    letter-spacing: 0.15em;
     text-transform: uppercase;
     color: var(--color-teal-600);
   }
+  .bp-regla { width: 30px; height: 1px; background: currentColor; opacity: 0.55; }
 
-  .base-lede {
-    margin-top: 22px;
-    font-size: clamp(16px, 1.5vw, 18px);
-    line-height: 1.6;
-    max-width: 46ch;
+  .bp-lede {
+    margin-top: 24px;
+    font-size: clamp(16px, 1.55vw, 19px);
+    line-height: 1.58;
+    max-width: 42ch;
   }
-  .base-text { margin-top: 18px; font-size: 14.5px; line-height: 1.72; color: var(--muted); max-width: 58ch; }
-  .base-acciones { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 28px; }
-
-  .base-remate {
-    margin-top: 26px;
-    padding-top: 18px;
-    border-top: 1px solid var(--line, var(--line-light));
-    font-size: 13.5px;
-    line-height: 1.7;
+  .bp-texto {
+    margin-top: 16px;
+    font-size: 14px;
+    line-height: 1.75;
+    color: var(--muted);
     max-width: 54ch;
   }
-  .base-remate strong { display: block; color: var(--color-ink); font-weight: 600; }
+  .bp-acciones { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 30px; }
 
-  /* Sobre plomo el dorado gritaba. El acento pasa al verde del centro, que
-     es el color con el que se lee todo lo demás del Atlas. */
-  .base-eyebrow { color: var(--color-teal-600); }
-  /* --- gratuito y profesional --- */
-  .base-dos {
-    margin-top: clamp(40px, 5vw, 68px);
-    padding-top: clamp(28px, 3vw, 40px);
+  /* --- los dos niveles --- */
+  .bp-niveles {
+    padding: clamp(24px, 2.6vw, 34px);
+    border-radius: 16px;
+    box-shadow: 0 36px 70px -50px rgb(3 26 36 / 0.75);
+  }
+  .bp-niveles-tit {
+    font-family: var(--font-display);
+    font-size: clamp(20px, 2.1vw, 26px);
+    line-height: 1.22;
+    letter-spacing: -0.025em;
+    max-width: 20ch;
+  }
+
+  .bp-nivel {
+    margin-top: clamp(22px, 2.4vw, 30px);
+    padding-left: 16px;
+    border-left: 2px solid var(--color-teal-300);
+  }
+  .bp-nivel.es-pro { border-left-color: var(--color-gold); }
+
+  .bp-nivel-etq {
+    display: block;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.13em;
+    text-transform: uppercase;
+    color: var(--color-teal-300);
+  }
+  .bp-nivel.es-pro .bp-nivel-etq { color: var(--color-gold); }
+
+  .bp-nivel-frase { margin-top: 9px; font-size: clamp(15px, 1.4vw, 17px); font-weight: 600; }
+  .bp-nivel-frase strong { font-weight: 700; }
+  .bp-nivel-texto { margin-top: 9px; font-size: 13px; line-height: 1.68; color: var(--muted); }
+
+  /* --- el cierre ---
+     Ocupa las dos columnas: la frase sostiene la izquierda y el apoyo se
+     alinea bajo la tarjeta, que si no dejaba medio ancho en blanco. */
+  .bp-cierre {
+    display: grid;
+    gap: 16px;
+    margin-top: clamp(38px, 4.5vw, 64px);
+    padding-top: clamp(24px, 2.8vw, 36px);
     border-top: 1px solid var(--line, var(--line-light));
   }
-  .base-dos-titulo { max-width: 22ch; }
-  .base-dos-grid {
-    display: grid;
-    gap: 14px;
-    margin-top: 26px;
+  @media (min-width: 940px) {
+    .bp-cierre {
+      grid-template-columns: minmax(0, 1.02fr) minmax(0, 0.98fr);
+      gap: clamp(32px, 4vw, 60px);
+      align-items: end;
+    }
   }
-  @media (min-width: 800px) { .base-dos-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 26px; } }
-  .base-dos-item {
-    padding-left: 16px;
-    border-left: 2px solid var(--color-teal);
-    font-size: 14.5px;
+  .bp-cierre-frase {
+    font-family: var(--font-display);
+    font-size: clamp(22px, 3.2vw, 38px);
+    line-height: 1.18;
+    letter-spacing: -0.03em;
+    max-width: 20ch;
+  }
+  .bp-cierre-frase em { font-style: normal; color: var(--color-teal-600); }
+  .bp-cierre-pie {
+    font-size: 13px;
     line-height: 1.65;
-  }
-  .base-dos-item:last-child { border-left-color: var(--color-gold); }
-  .base-dos-etq {
-    display: block;
-    font-size: 11px;
-    font-weight: 700;
-    letter-spacing: 0.11em;
-    text-transform: uppercase;
-    color: var(--color-teal-600);
-    margin-bottom: 4px;
-  }
-  .base-dos-pro { color: var(--color-gold); }
-  .base-dos-item strong { color: var(--color-ink); font-weight: 600; }
-  .base-dos-texto {
-    margin-top: 26px;
-    font-size: 13.5px;
-    line-height: 1.7;
     color: var(--muted);
-    max-width: 76ch;
+    max-width: 44ch;
   }
+  @media (min-width: 940px) { .bp-cierre-pie { padding-bottom: 8px; } }
 
   /* --- cabecera del Atlas ---------------------------------------------- */
   .atlas-acciones {
