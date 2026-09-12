@@ -3,8 +3,8 @@ import { withBase, withBaseSrcset } from '../../lib/url';
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import PageHero from '../../components/PageHero.astro';
 import Newsletter from '../../components/Newsletter.astro';
-import { categories, featured, indicators, lastUpdated } from '../../lib/indicators';
-import { shortDate, num } from '../../lib/format';
+import { indicators } from '../../lib/indicators';
+import { num } from '../../lib/format';
 import Tableros from '../../components/Tableros.astro';
 import LeyendaSellos from '../../components/LeyendaSellos.astro';
 import { atajos, categories as todasCategorias, SECTORES, higherIsBetter } from '../../lib/indicators';
@@ -35,23 +35,6 @@ const sectores = SECTORES.map((id) => todasCategorias.find((c) => c.id === id)).
 );
 import { covers } from '../../site.config';
 
-const panorama = featured();
-const updated = shortDate(lastUpdated());
-
-const sections = categories
-  .filter((c) => c.id !== 'panorama')
-  .map((c) => ({ ...c, items: indicators.filter((i) => i.category === c.id) }))
-  .filter((c) => c.items.length > 0);
-
-const frequencies = [...new Set(indicators.map((i) => i.frequency))].sort();
-const sources = [...new Set(indicators.map((i) => i.source))].sort();
-
-const facts = [
-  { label: 'Indicadores', value: String(indicators.length) },
-  { label: 'Categorías', value: String(sections.length) },
-  { label: 'Propios del centro', value: String(indicators.filter((i) => i.own).length) },
-  { label: 'Actualizado', value: updated },
-];
 ---
 
 <BaseLayout
@@ -129,18 +112,29 @@ const facts = [
     </div>
   </section>
 
-  <!-- HACIA LA BASE DE DATOS ------------------------------------------------ -->
-  <section class="surface-mist section edge-tr" aria-labelledby="mas-alla">
+  <!-- LA BASE DE DATOS PROFESIONAL ----------------------------------------
+       El Atlas es la puerta; esto es el producto. La sección abre diciendo
+       qué se lleva quien entra, y solo después explica cómo está hecho. -->
+  <section class="surface-mist section edge-tr" aria-labelledby="base-titulo">
     <div class="wrap">
-      <div class="base-grid">
-        <div>
-          <p class="eyebrow base-eyebrow" data-reveal>Base de Datos Profesional</p>
-          <h2 id="mas-alla" class="display-2 base-title" data-reveal>Más allá del dato visible</h2>
+      <div class="base-copy">
+          <p class="eyebrow base-eyebrow" data-reveal>Base de datos económica</p>
+          <h2 id="base-titulo" class="display-2 base-title" data-reveal>
+            Datos para entender, comparar y anticipar la economía
+          </h2>
+          <p class="base-claim" data-reveal>Más allá del dato visible</p>
+
+          <p class="base-lede" data-reveal>
+            Explora series históricas, compara indicadores y accede a estimaciones
+            que no encontrarás directamente en las fuentes tradicionales.
+          </p>
+
           <p class="base-text" data-reveal>
-            El centro desarrolla y mantiene una base de datos económica que integra
-            estadísticas oficiales, series históricas, indicadores derivados,
-            estimaciones propias, proyecciones y resultados construidos a partir de
-            nuestras investigaciones.
+            Integramos información de organismos oficiales y fuentes especializadas
+            en una base económica estructurada por sectores. Consulta datos
+            históricos, transforma y compara series, descarga información y accede a
+            indicadores exclusivos desarrollados por el Centro, incluyendo
+            estimaciones, proyecciones y variables no observables.
           </p>
 
           <div class="base-acciones no-print" data-reveal>
@@ -150,34 +144,36 @@ const facts = [
                 <path d="M2 8h11M9 4l4 4-4 4" stroke-linecap="round" stroke-linejoin="round" />
               </svg>
             </a>
-            <a href={withBase('/base#proximo')} class="btn btn-outline">Qué abre la cuenta</a>
+            <a href={withBase('/base#proximo')} class="btn btn-outline">Ver qué incluye</a>
           </div>
-        </div>
 
-        <div>
-          <h3 class="eyebrow muted base-h" data-reveal>Qué incluye</h3>
-          <ul class="base-lista" data-reveal-group data-reveal-stagger="0.04">
-            {
-              [
-                'Histórico completo y series armonizadas',
-                'Mayor frecuencia, hasta datos diarios',
-                'Indicadores propios y variables no observables',
-                'Proyecciones con intervalos de confianza',
-                'Historial de versiones de cada estimación',
-                'Descarga en CSV y XLSX, y acceso por API',
-                'Comparación y transformación entre series',
-                'Metadatos y metodología completos',
-              ].map((t) => <li data-reveal>{t}</li>)
-            }
-          </ul>
-        </div>
+          <p class="base-remate" data-reveal>
+            <strong>De consultar datos a entender la economía.</strong>
+            Información oficial, series armonizadas y análisis propio en un mismo
+            entorno.
+          </p>
       </div>
 
-      <p class="base-nota muted" data-reveal>
-        El Atlas sirve para <strong>descubrir, visualizar y entender</strong>. La base
-        profesional, para <strong>investigar, comparar, transformar y modelar</strong>.
-        Lo que se ve aquí seguirá siendo público y actualizado.
-      </p>
+      <!-- GRATUITO Y PROFESIONAL -->
+      <div class="base-dos" data-reveal>
+        <h3 class="display-3 base-dos-titulo">Dos niveles de profundidad, una misma economía</h3>
+        <div class="base-dos-grid">
+          <p class="base-dos-item">
+            <span class="base-dos-etq">Atlas Económico</span>
+            te permite descubrir <strong>qué</strong> está ocurriendo.
+          </p>
+          <p class="base-dos-item">
+            <span class="base-dos-etq base-dos-pro">Base de Datos Profesional</span>
+            te permite investigar <strong>por qué</strong> está ocurriendo.
+          </p>
+        </div>
+        <p class="base-dos-texto">
+          Accede al histórico completo, compara fuentes, transforma series, analiza
+          indicadores propios y trabaja directamente con los datos que sustentan
+          nuestros análisis. Lo que se ve en el Atlas seguirá siendo público y
+          actualizado.
+        </p>
+      </div>
     </div>
   </section>
 
@@ -185,46 +181,83 @@ const facts = [
 </BaseLayout>
 
 <style>
-  /* --- hacia la base profesional ---------------------------------------- */
-  .base-grid {
-    display: grid;
-    gap: clamp(30px, 4vw, 64px);
+  /* --- la base profesional ----------------------------------------------
+     La sección es una página de producto dentro del Atlas: primero qué te
+     llevas, después cómo está hecho. Por eso el orden tipográfico es
+     titular, claim, promesa concreta y solo al final la explicación. */
+  .base-title { margin-top: 14px; max-width: 20ch; }
+
+  /* El claim de marca se queda, pero de acompañante: decía bonito y no
+     decía qué se llevaba el que entra. */
+  .base-claim {
+    margin-top: 14px;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--color-teal-600);
   }
-  @media (min-width: 900px) {
-    .base-grid { grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); align-items: start; }
+
+  .base-lede {
+    margin-top: 22px;
+    font-size: clamp(16px, 1.5vw, 18px);
+    line-height: 1.6;
+    max-width: 46ch;
   }
-  .base-title { margin-top: 14px; max-width: 16ch; }
-  .base-text { margin-top: 20px; font-size: 15px; line-height: 1.72; }
+  .base-text { margin-top: 18px; font-size: 14.5px; line-height: 1.72; color: var(--muted); max-width: 58ch; }
   .base-acciones { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 28px; }
+
+  .base-remate {
+    margin-top: 26px;
+    padding-top: 18px;
+    border-top: 1px solid var(--line, var(--line-light));
+    font-size: 13.5px;
+    line-height: 1.7;
+    max-width: 54ch;
+  }
+  .base-remate strong { display: block; color: var(--color-ink); font-weight: 600; }
 
   /* Sobre plomo el dorado gritaba. El acento pasa al verde del centro, que
      es el color con el que se lee todo lo demás del Atlas. */
   .base-eyebrow { color: var(--color-teal-600); }
-  .base-h { display: block; margin-bottom: 16px; }
-  .base-lista { list-style: none; margin: 0; padding: 0; }
-  .base-lista li {
-    position: relative;
-    padding: 11px 0 11px 22px;
-    border-top: 1px solid var(--line, var(--line-dark));
+  /* --- gratuito y profesional --- */
+  .base-dos {
+    margin-top: clamp(40px, 5vw, 68px);
+    padding-top: clamp(28px, 3vw, 40px);
+    border-top: 1px solid var(--line, var(--line-light));
+  }
+  .base-dos-titulo { max-width: 22ch; }
+  .base-dos-grid {
+    display: grid;
+    gap: 14px;
+    margin-top: 26px;
+  }
+  @media (min-width: 800px) { .base-dos-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 26px; } }
+  .base-dos-item {
+    padding-left: 16px;
+    border-left: 2px solid var(--color-teal);
+    font-size: 14.5px;
+    line-height: 1.65;
+  }
+  .base-dos-item:last-child { border-left-color: var(--color-gold); }
+  .base-dos-etq {
+    display: block;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.11em;
+    text-transform: uppercase;
+    color: var(--color-teal-600);
+    margin-bottom: 4px;
+  }
+  .base-dos-pro { color: var(--color-gold); }
+  .base-dos-item strong { color: var(--color-ink); font-weight: 600; }
+  .base-dos-texto {
+    margin-top: 26px;
     font-size: 13.5px;
-  }
-  .base-lista li:last-child { border-bottom: 1px solid var(--line, var(--line-dark)); }
-  .base-lista li::before {
-    content: '';
-    position: absolute;
-    left: 0;
-    top: 1.35em;
-    width: 8px;
-    height: 1px;
-    background: var(--color-teal);
-  }
-
-  .base-nota {
-    margin-top: clamp(28px, 3.5vw, 46px);
-    font-size: 13px;
+    line-height: 1.7;
+    color: var(--muted);
     max-width: 76ch;
   }
-  .base-nota strong { color: var(--color-teal-600); font-weight: 600; }
 
   /* --- cabecera del Atlas ---------------------------------------------- */
   .atlas-acciones {
