@@ -1,0 +1,11 @@
+indicador,fecha,valor_literal,limite_inferior,limite_superior,preliminar,archivo,hoja,celda
+pobreza-extrema,2016-01-01,19.164999999999999,,,false,ine/pobreza/07.3060102-rev25.xlsx,3.06.01.02,C7
+pobreza-extrema,2017-01-01,18.79,,,false,ine/pobreza/07.3060102-rev25.xlsx,3.06.01.02,D7
+pobreza-extrema,2018-01-01,15.786,,,false,ine/pobreza/07.3060102-rev25.xlsx,3.06.01.02,E7
+pobreza-extrema,2019-01-01,13.234,,,false,ine/pobreza/07.3060102-rev25.xlsx,3.06.01.02,F7
+pobreza-extrema,2020-01-01,13.86,,,false,ine/pobreza/07.3060102-rev25.xlsx,3.06.01.02,G7
+pobreza-extrema,2021-01-01,11.195,,,false,ine/pobreza/07.3060102-rev25.xlsx,3.06.01.02,H7
+pobreza-extrema,2022-01-01,12.711,,,false,ine/pobreza/07.3060102-rev25.xlsx,3.06.01.02,I7
+pobreza-extrema,2023-01-01,12.116,,,false,ine/pobreza/07.3060102-rev25.xlsx,3.06.01.02,J7
+pobreza-extrema,2024-01-01,13.260999999999999,,,false,ine/pobreza/07.3060102-rev25.xlsx,3.06.01.02,K7
+pobreza-extrema,2025-01-01,16.704999999999998,,,false,ine/pobreza/07.3060102-rev25.xlsx,3.06.01.02,L7

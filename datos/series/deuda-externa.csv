@@ -1,0 +1,11 @@
+indicador,fecha,valor_literal,limite_inferior,limite_superior,preliminar,archivo,hoja,celda
+deuda-externa,2017-01-01,19.771951040037759,,,false,bcb/deuda-externa/Coeficientes de endeudamiento externo publico a mediano y largo plazo.xlsx,Coefientes de endeudamiento,D32
+deuda-externa,2018-01-01,20.324677801438938,,,false,bcb/deuda-externa/Coeficientes de endeudamiento externo publico a mediano y largo plazo.xlsx,Coefientes de endeudamiento,E32
+deuda-externa,2019-01-01,22.275856955898945,,,false,bcb/deuda-externa/Coeficientes de endeudamiento externo publico a mediano y largo plazo.xlsx,Coefientes de endeudamiento,F32
+deuda-externa,2020-01-01,27.922113019346138,,,false,bcb/deuda-externa/Coeficientes de endeudamiento externo publico a mediano y largo plazo.xlsx,Coefientes de endeudamiento,G32
+deuda-externa,2021-01-01,26.329062301456606,,,false,bcb/deuda-externa/Coeficientes de endeudamiento externo publico a mediano y largo plazo.xlsx,Coefientes de endeudamiento,H32
+deuda-externa,2022-01-01,25.911162558575512,,,true,bcb/deuda-externa/Coeficientes de endeudamiento externo publico a mediano y largo plazo.xlsx,Coefientes de endeudamiento,I32
+deuda-externa,2023-01-01,25.773798946369826,,,true,bcb/deuda-externa/Coeficientes de endeudamiento externo publico a mediano y largo plazo.xlsx,Coefientes de endeudamiento,J32
+deuda-externa,2024-01-01,24.140910247442299,,,true,bcb/deuda-externa/Coeficientes de endeudamiento externo publico a mediano y largo plazo.xlsx,Coefientes de endeudamiento,K32
+deuda-externa,2025-01-01,21.710677378388571,,,true,bcb/deuda-externa/Coeficientes de endeudamiento externo publico a mediano y largo plazo.xlsx,Coefientes de endeudamiento,L32
+deuda-externa,2026-01-01,31.875041395020126,,,true,bcb/deuda-externa/Coeficientes de endeudamiento externo publico a mediano y largo plazo.xlsx,Coefientes de endeudamiento,M32

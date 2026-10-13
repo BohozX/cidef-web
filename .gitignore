@@ -7,3 +7,5 @@ dist/
 *.log
 .env
 .env.production
+datos/originales/
+__pycache__/

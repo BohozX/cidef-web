@@ -1,0 +1,11 @@
+indicador,fecha,valor_literal,limite_inferior,limite_superior,preliminar,archivo,hoja,celda
+pobreza,2016-01-01,43.304000000000002,,,false,ine/pobreza/09.3060101-rev25.xlsx,3.06.01.01,C7
+pobreza,2017-01-01,42.783999999999999,,,false,ine/pobreza/09.3060101-rev25.xlsx,3.06.01.01,D7
+pobreza,2018-01-01,40.524999999999999,,,false,ine/pobreza/09.3060101-rev25.xlsx,3.06.01.01,E7
+pobreza,2019-01-01,37.71,,,false,ine/pobreza/09.3060101-rev25.xlsx,3.06.01.01,F7
+pobreza,2020-01-01,39.338000000000001,,,false,ine/pobreza/09.3060101-rev25.xlsx,3.06.01.01,G7
+pobreza,2021-01-01,36.558,,,false,ine/pobreza/09.3060101-rev25.xlsx,3.06.01.01,H7
+pobreza,2022-01-01,37.704000000000001,,,false,ine/pobreza/09.3060101-rev25.xlsx,3.06.01.01,I7
+pobreza,2023-01-01,37.326000000000001,,,false,ine/pobreza/09.3060101-rev25.xlsx,3.06.01.01,J7
+pobreza,2024-01-01,38.088999999999999,,,false,ine/pobreza/09.3060101-rev25.xlsx,3.06.01.01,K7
+pobreza,2025-01-01,44.715000000000003,,,false,ine/pobreza/09.3060101-rev25.xlsx,3.06.01.01,L7
