@@ -28,7 +28,6 @@ const PAGINAS = {
   indicador: '/atlas/nowcast-pib',
   analisis: '/analisis',
   publicacion: '/analisis/wp-001-usdt-incertidumbre',
-  archivo: '/archivo',
   formacion: '/formacion',
   programa: '/formacion/diplomado-modelacion-econometrica',
   agenda: '/agenda',

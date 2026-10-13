@@ -9,3 +9,4 @@ dist/
 .env.production
 datos/originales/
 __pycache__/
+.design/sectores/

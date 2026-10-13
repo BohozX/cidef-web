@@ -38,13 +38,6 @@ const related = all
   .slice(0, 3)
   .map((r) => r.p);
 
-const facts = [
-  { label: 'Tipo', value: d.type },
-  { label: 'Publicación', value: longDate(iso) },
-  ...(d.serial ? [{ label: 'Serie', value: d.serial }] : []),
-  ...(d.pages ? [{ label: 'Extensión', value: `${d.pages} pp.` }] : []),
-];
-
 const jsonLd = {
   '@context': 'https://schema.org',
   '@type': 'ScholarlyArticle',
@@ -124,12 +117,6 @@ const jsonLd = {
             <div class="is-wide">
               <dt>Palabras clave</dt>
               <dd>{d.keywords.join(' · ')}</dd>
-            </div>
-          )}
-          {d.pages && (
-            <div>
-              <dt>Extensión</dt>
-              <dd class="tnum">{d.pages} páginas</dd>
             </div>
           )}
           {d.doi && (
@@ -277,17 +264,19 @@ const jsonLd = {
   .doc-serial { color: var(--muted); font-variant-numeric: tabular-nums; }
   .doc-demo { color: var(--color-gold-300); }
 
+  /* El título llega al mismo borde que el resumen y los datos. Iba cortado a
+     veintidós caracteres, así que rompía a media frase muy antes que todo lo
+     que tiene debajo y dejaba un escalón en el margen derecho; de paso, un
+     título largo se comía tres renglones donde le bastan dos. */
   .doc-titulo {
     margin-top: 16px;
     font-size: clamp(1.9rem, 3.4vw, 2.9rem);
     font-weight: 600;
     line-height: 1.1;
     letter-spacing: -0.032em;
-    max-width: 22ch;
   }
   .doc-titulo.is-long {
     font-size: clamp(1.6rem, 2.7vw, 2.3rem);
-    max-width: 28ch;
   }
 
   .doc-autoria {
@@ -303,8 +292,11 @@ const jsonLd = {
     /* Hasta el margen de la página: la columna ya marca la medida y una
        anchura fija dejaba una franja muerta a la derecha. */
     max-width: none;
-    font-size: 14.5px;
-    line-height: 1.72;
+    /* Más pequeño que el cuerpo normal: es el dato que más varía de un
+       documento a otro —siete renglones en uno, tres en otro— y con él se
+       estiraba la cabecera entera. */
+    font-size: 13.5px;
+    line-height: 1.65;
     color: color-mix(in srgb, #f5f3ed 80%, transparent);
     text-align: justify;
     hyphens: auto;

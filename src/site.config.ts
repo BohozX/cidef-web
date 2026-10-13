@@ -4,6 +4,7 @@
  */
 
 import { withBase } from './lib/url';
+import medidasSector from './data/sectores-imagenes.json';
 
 export const site = {
   name: 'CIDEF',
@@ -52,7 +53,7 @@ export const site = {
   } as Record<string, string | null>,
 
   contact: {
-    email: 'contacto@cidef.bo',
+    email: 'cidef.bol@gmail.com',
     phones: ['68781621', '67152566', '75293589', '79545011'],
     address: 'Calle Batallón Colorados, Edificio El Cóndor, Piso 7',
     addressCity: 'La Paz — Bolivia',
@@ -103,6 +104,13 @@ export const nav: NavItem[] = [
 export type Cover = {
   src: string;
   alt: string;
+  /**
+   * Punto de la imagen que se mantiene a la vista al recortar, en la forma de
+   * `object-position`. Sin él manda el valor por defecto de la cabecera, que
+   * tira hacia arriba. Es un ajuste por fotografía: dónde está lo que hay que
+   * ver no lo decide una regla general.
+   */
+  position?: string;
   /** Medidas del archivo mayor: reservan el hueco antes de que cargue. */
   width: number;
   height: number;
@@ -123,6 +131,69 @@ const cover = (nombre: string, alt: string, alto: number): Cover => {
     alt,
     width: 2400,
     height: alto,
+    srcset: { avif: lista('avif'), webp: lista('webp'), jpg: lista('jpg') },
+  };
+};
+
+/**
+ * Portadas de sector.
+ *
+ * Las genera `tools/sectores.mjs` en `/media/sectores/` a 1800 × 1200, con la
+ * mayor sin sufijo. Sirven para dos cosas a la vez —la tarjeta del mapa y la
+ * cabecera de la página del sector—, y por eso las medidas viven aquí y no en
+ * cada componente: si mañana el generador produce otros anchos, se cambia en
+ * un sitio.
+ */
+type MedidaSector = { ancho: number; alto: number; anchos: number[] };
+const MEDIDAS_SECTOR = medidasSector as Record<string, MedidaSector>;
+
+/* Si una imagen todavía no pasó por el generador, se supone la medida que
+   este produce por defecto: es preferible un srcset optimista a una página
+   rota. */
+const POR_DEFECTO: MedidaSector = { ancho: 1800, alto: 1200, anchos: [400, 800, 1200, 1800] };
+
+/* Qué se ve en cada una. No es adorno: quien no puede ver la imagen tiene
+   derecho a saber qué hay en ella, y «imagen del sector» no dice nada. */
+const ALT_SECTOR: Record<string, string> = {
+  actividad: 'La ciudad de La Paz con el Illimani al fondo, galpones, una obra en construcción y un mercado',
+  precios: 'Pasillo de un supermercado con un carro de compras lleno',
+  monetario: 'Bóveda de un banco abierta, con lingotes apilados en su interior',
+  cambiario: 'Trazo de una serie cambiaria sobre fondo oscuro',
+  externo: 'Terminal de contenedores con camiones de carga',
+  fiscal: 'Escritorio con libros contables y una calculadora, y la sede de gobierno al otro lado de la ventana',
+  laboral: 'Escritorio doméstico con libros abiertos, un estetoscopio y las llaves de una vivienda',
+  internacional: 'Puerto de carga con barriles, sacos de grano y lingotes junto a un buque portacontenedores',
+  centro: 'Código fuente en la pantalla de un ordenador',
+};
+
+export const textoSector = (id: string): string => ALT_SECTOR[id] ?? 'Imagen del sector';
+
+/* El encuadre de las que lo necesitan. La cabecera recorta una franja ancha y,
+   por defecto, la toma de la parte alta: vale para las ocho fotografías cuyo
+   asunto está en el horizonte, y no para las dos en que está en otro sitio.
+   En la del escritorio doméstico lo que cuenta está sobre la mesa, más abajo;
+   en la del despacho público es el edificio de gobierno del fondo, que asoma
+   por la ventana y queda todavía más arriba que el encuadre normal. */
+const FOCO_SECTOR: Record<string, string> = {
+  laboral: '50% 58%',
+  fiscal: '50% 14%',
+};
+
+export const sectorCover = (id: string): Cover => {
+  const m = MEDIDAS_SECTOR[id] ?? POR_DEFECTO;
+  const mayor = m.anchos[m.anchos.length - 1] ?? m.ancho;
+
+  const lista = (ext: string): string =>
+    m.anchos
+      .map((w) => `${withBase(`/media/sectores/${id}${w === mayor ? '' : `-${w}`}.${ext}`)} ${w}w`)
+      .join(', ');
+
+  return {
+    src: withBase(`/media/sectores/${id}.jpg`),
+    alt: textoSector(id),
+    position: FOCO_SECTOR[id],
+    width: m.ancho,
+    height: m.alto,
     srcset: { avif: lista('avif'), webp: lista('webp'), jpg: lista('jpg') },
   };
 };

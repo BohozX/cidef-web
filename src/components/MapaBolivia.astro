@@ -1,0 +1,40 @@
+---
+/**
+ * La silueta de Bolivia.
+ *
+ * El contorno no está dibujado a mano ni calcado de una imagen: sale de
+ * Natural Earth 1:50m (`ne_50m_admin_0_countries`, dominio público), que es
+ * la escala de referencia para un país entero —la 1:110m redondea la
+ * frontera hasta deformarla y la 1:10m pesa diez veces más sin que se note a
+ * este tamaño—. Del archivo se toma el polígono de `ADM0_A3 = BOL`, se
+ * proyecta en equirectangular con el paralelo estándar en el centro del país
+ * —a esta latitud y para una sola silueta, la distorsión es inapreciable— y
+ * se reduce con Douglas-Peucker de 418 vértices a 111, que es donde el
+ * contorno deja de cambiar a la vista.
+ *
+ * Es un elemento decorativo: va sin título y oculto a los lectores de
+ * pantalla, porque no aporta ningún dato que no esté escrito al lado.
+ *
+ * Fuente: Natural Earth — naturalearthdata.com (dominio público).
+ */
+export interface Props {
+  class?: string;
+}
+
+const { class: className = '' } = Astro.props;
+---
+
+<svg
+  class:list={['mapa-bo', className]}
+  viewBox="0 0 884 1000"
+  preserveAspectRatio="xMidYMid meet"
+  fill="none"
+  aria-hidden="true"
+  focusable="false"
+>
+  <path d="M8.3 591.5 L0.0 568.3 L44.0 525.9 L43.1 513.3 L57.0 502.8 L29.7 488.5 L14.9 449.9 L33.0 419.2 L18.2 398.5 L19.3 385.7 L54.9 338.3 L40.1 301.3 L46.7 287.2 L47.1 240.4 L63.1 225.8 L68.4 211.7 L3.4 94.1 L56.6 98.6 L65.4 107.0 L73.0 106.0 L95.7 95.8 L113.1 75.2 L138.6 73.7 L160.8 51.4 L183.1 42.2 L222.1 14.2 L269.5 5.5 L296.2 6.5 L308.0 0.0 L314.3 12.2 L315.1 33.0 L304.3 60.3 L313.3 99.6 L308.5 116.4 L323.3 154.6 L330.3 154.0 L337.4 171.7 L372.3 192.7 L379.1 207.0 L414.2 213.8 L432.4 209.9 L457.3 225.2 L477.6 224.4 L481.5 234.7 L499.6 249.3 L546.8 261.6 L570.7 289.4 L622.6 286.7 L664.2 309.4 L671.6 326.9 L666.5 339.4 L679.3 372.3 L681.2 408.0 L658.6 408.7 L683.4 437.7 L688.3 497.6 L821.6 498.8 L821.2 514.4 L811.9 530.3 L817.9 570.8 L847.4 592.0 L859.0 591.9 L883.5 645.2 L862.6 698.3 L867.4 708.2 L861.3 711.0 L837.2 761.4 L856.9 779.2 L839.9 792.2 L835.1 793.2 L833.6 766.9 L767.3 726.6 L700.5 727.4 L573.1 753.8 L561.4 784.9 L535.3 823.4 L535.2 861.6 L508.0 950.3 L494.0 932.3 L415.4 934.7 L390.3 978.3 L386.0 995.3 L365.6 949.9 L337.4 940.8 L280.7 940.1 L248.0 917.5 L237.4 941.2 L212.2 948.9 L205.7 963.6 L188.8 974.4 L177.0 994.9 L139.7 1000.0 L127.1 995.0 L127.0 970.0 L104.8 903.6 L104.0 879.4 L86.6 852.7 L77.7 849.2 L77.3 835.4 L83.1 828.4 L63.0 812.3 L68.2 804.3 L63.3 787.6 L77.5 778.2 L67.5 759.6 L84.1 736.0 L47.8 702.4 L34.9 639.9 L38.7 632.8 L22.7 624.6 L8.3 591.5 Z" fill="currentColor" />
+</svg>
+
+<style>
+  .mapa-bo { width: 100%; height: 100%; display: block; }
+</style>

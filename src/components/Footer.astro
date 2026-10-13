@@ -8,28 +8,31 @@ const year = new Date().getFullYear();
 const columns = [
   {
     title: 'Investigación',
+    href: '/publicaciones',
     links: [
       { label: 'Publicaciones', href: '/publicaciones' },
-      { label: 'Atlas Económico', href: '/atlas' },
-      { label: 'Indicadores del Centro', href: '/atlas?cat=centro' },
-      { label: 'Archivo Vivo', href: '/archivo' },
+      { label: 'Líneas de investigación', href: '/nosotros#lineas' },
+      { label: 'Principios de independencia', href: '/nosotros#principios' },
     ],
   },
   {
-    title: 'Institucional',
+    title: 'Formación y agenda',
+    href: '/formacion',
     links: [
-      { label: 'Nosotros', href: '/nosotros' },
+      { label: 'Oferta académica', href: '/formacion#programas' },
+      { label: 'Mentorías', href: '/nosotros#formacion' },
+      { label: 'Próximos eventos', href: '/agenda#proximas' },
+      { label: 'Eventos realizados', href: '/agenda#pasadas' },
+    ],
+  },
+  {
+    title: 'Nosotros',
+    href: '/nosotros',
+    links: [
+      { label: 'Quiénes somos', href: '/nosotros#quienes' },
+      { label: 'Misión y visión', href: '/nosotros#mision' },
       { label: 'Equipo', href: '/nosotros#equipo' },
       { label: 'Alianzas', href: '/nosotros#alianzas' },
-      { label: 'Contacto', href: '/nosotros#contacto' },
-    ],
-  },
-  {
-    title: 'Formación',
-    links: [
-      { label: 'Diplomados', href: '/formacion' },
-      { label: 'Agenda', href: '/agenda' },
-      { label: 'Convocatorias', href: '/agenda' },
     ],
   },
 ];
@@ -37,32 +40,18 @@ const columns = [
 
 <footer class="surface-dark no-print">
   <div class="wrap">
-
     <div class="foot-top">
       <div class="foot-brand">
         <Logo variant="light" layout="horizontal" height={56} class="foot-logo" />
+        <p class="foot-lema">Investigamos la economía boliviana desde los datos</p>
         <p class="foot-legal">{site.legalName}</p>
-        <p class="foot-desc muted">{site.shortDescription}</p>
-
-        <div class="foot-contact">
-          <div>
-            <span class="eyebrow muted">Dirección</span>
-            <p>{site.contact.address}</p>
-            <p>{site.contact.addressCity}</p>
-          </div>
-          <div>
-            <span class="eyebrow muted">Contacto</span>
-            <p><a href={`mailto:${site.contact.email}`} class="link-underline">{site.contact.email}</a></p>
-            <p class="tnum">{site.contact.phones.join(' · ')}</p>
-          </div>
-        </div>
       </div>
 
-      <div class="foot-cols">
+      <nav class="foot-cols" aria-label="Mapa del sitio">
         {
           columns.map((col) => (
             <div>
-              <span class="eyebrow eyebrow-gold">{col.title}</span>
+              <a href={withBase(col.href)} class="foot-col-titulo">{col.title}</a>
               <ul>
                 {col.links.map((l) => (
                   <li>
@@ -75,60 +64,155 @@ const columns = [
             </div>
           ))
         }
-      </div>
+      </nav>
     </div>
 
-
     <div class="foot-bottom">
-      <p class="muted">© {year} {site.name}. La Paz, Bolivia.</p>
+      <p class="foot-copy">© {year} {site.name}. La Paz, Bolivia.</p>
+      <ul class="foot-contacto">
+        <li>
+          <svg class="foot-icono" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="5.5" width="18" height="13" rx="2" />
+            <path d="m3.5 7 8.5 6.5L20.5 7" />
+          </svg>
+          <a href={`mailto:${site.contact.email}`} class="link-underline">{site.contact.email}</a>
+        </li>
+        <li>
+          <svg class="foot-icono" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M6.6 3.5h3l1.5 4.5-2.1 1.3a11 11 0 0 0 5.7 5.7l1.3-2.1 4.5 1.5v3a2 2 0 0 1-2.2 2A16.5 16.5 0 0 1 4.5 5.7a2 2 0 0 1 2.1-2.2z" />
+          </svg>
+          <span class="foot-telefonos tnum">
+            {site.contact.phones.map((t, i) => (
+              <>
+                {i > 0 && <span class="foot-sep" aria-hidden="true">·</span>}
+                <a href={`tel:+591${t}`} class="link-underline">{t}</a>
+              </>
+            ))}
+          </span>
+        </li>
+        <li>
+          <svg class="foot-icono" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 21s-6.5-5.6-6.5-11a6.5 6.5 0 0 1 13 0c0 5.4-6.5 11-6.5 11z" />
+            <circle cx="12" cy="10" r="2.4" />
+          </svg>
+          <span>{site.contact.address}, {site.contact.addressCity}</span>
+        </li>
+      </ul>
     </div>
   </div>
 </footer>
 
 <style>
-  footer { padding-top: clamp(20px, 2.2vw, 32px); }
+  footer { padding-top: clamp(48px, 5vw, 72px); }
+  footer p { text-align: left; }
 
   .foot-top {
     display: grid;
-    gap: 40px;
-    padding-block: clamp(24px, 2.8vw, 38px);
+    gap: 44px;
   }
-  @media (min-width: 900px) {
-    .foot-top { grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); gap: 64px; }
+  @media (min-width: 1280px) {
+    .foot-top { grid-template-columns: minmax(0, 3.6fr) minmax(0, 8.4fr); gap: clamp(48px, 5vw, 88px); }
+  }
+  .foot-col-titulo {
+    display: block;
+    white-space: nowrap;
+    text-align: center;
   }
 
   .foot-logo { width: auto; }
 
-  .foot-legal {
-    margin-top: 12px;
-    font-size: 13px;
+  .foot-lema {
+    margin-top: 22px;
+    max-width: 22ch;
+    font-family: var(--font-display);
+    font-size: clamp(1.3rem, 1.9vw, 1.6rem);
     font-weight: 600;
-    letter-spacing: 0.02em;
-    max-width: 34ch;
+    line-height: 1.22;
+    letter-spacing: -0.02em;
+    color: var(--color-paper);
   }
-  .foot-desc { margin-top: 10px; font-size: 13.5px; max-width: 46ch; }
-
-  .foot-contact {
-    display: grid;
-    gap: 24px;
-    margin-top: 30px;
+  .foot-legal {
+    margin-top: 14px;
+    max-width: 36ch;
     font-size: 13px;
+    line-height: 1.55;
+    color: var(--muted);
   }
-  @media (min-width: 560px) { .foot-contact { grid-template-columns: 1fr 1fr; } }
-  .foot-contact .eyebrow { display: block; margin-bottom: 8px; }
-  .foot-contact p + p { margin-top: 2px; }
 
   .foot-cols {
     display: grid;
-    gap: 32px;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 36px 24px;
   }
-  @media (min-width: 520px) { .foot-cols { grid-template-columns: repeat(3, 1fr); } }
-  .foot-cols ul { list-style: none; margin: 14px 0 0; padding: 0; }
-  .foot-cols li + li { margin-top: 9px; }
-  .foot-cols a { font-size: 13.5px; }
+  @media (min-width: 760px) { .foot-cols { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+  .foot-col-titulo {
+    display: block;
+    padding-bottom: 12px;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--color-gold);
+    transition: color 200ms ease;
+  }
+  .foot-col-titulo:hover { color: var(--color-gold-300); }
+  .foot-cols ul {
+    list-style: none;
+    margin: 0;
+    padding: 14px 0 0;
+    border-top: 1px solid var(--line);
+    text-align: center;
+  }
+  .foot-cols li + li { margin-top: 10px; }
+  .foot-cols a.link-underline {
+    font-size: 13.5px;
+    line-height: 1.4;
+    color: color-mix(in srgb, #f5f3ed 84%, transparent);
+    transition: color 200ms ease, background-size 260ms cubic-bezier(0.22, 0.61, 0.36, 1);
+  }
+  .foot-cols a.link-underline:hover { color: var(--color-paper); }
 
   .foot-bottom {
-    padding-block: 22px 34px;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px 40px;
+    margin-top: clamp(40px, 4.5vw, 56px);
+    padding-block: 24px 34px;
+    border-top: 1px solid var(--line);
     font-size: 12.5px;
+    color: var(--muted);
   }
+  .foot-contacto {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px 32px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  .foot-contacto li {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 13px;
+    color: color-mix(in srgb, #f5f3ed 84%, transparent);
+  }
+  .foot-icono {
+    flex: none;
+    color: var(--color-gold);
+  }
+  .foot-contacto a.link-underline {
+    color: inherit;
+    transition: color 200ms ease, background-size 260ms cubic-bezier(0.22, 0.61, 0.36, 1);
+  }
+  .foot-contacto a.link-underline:hover { color: var(--color-paper); }
+  .foot-telefonos {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px 8px;
+  }
+  .foot-sep { color: var(--muted); }
 </style>

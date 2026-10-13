@@ -1,0 +1,153 @@
+---
+import { withBase } from '../lib/url';
+import { sectorCover } from '../site.config';
+import type { Category } from '../lib/indicators';
+
+/**
+ * La tarjeta de un sector: su imagen, y encima el nombre.
+ *
+ * Se usa en dos sitios y por eso vive aparte: en el mapa de la base, donde es
+ * la puerta de entrada a cada sector, y al pie de la página de un sector,
+ * para saltar a otro sin volver al índice. La misma tarjeta en los dos, que
+ * es lo que hace que se reconozca como la misma cosa.
+ *
+ * Dentro no va nada más que el sector. La pregunta, la cuenta de series y la
+ * llamada a entrar se retiraron: la tarjeta entera es el enlace, y con nueve
+ * seguidas cada rótulo de más era una línea que había que leer para no usarla.
+ */
+
+export interface Props {
+  sector: Category;
+  /** Número de orden, si la tarjeta va en una lista numerada. */
+  numero?: string;
+  /** Versión baja, para la tira del pie de un sector. */
+  compacta?: boolean;
+  /** Ancho que ocupará la tarjeta, para que el navegador elija la medida. */
+  medidas?: string;
+}
+
+const {
+  sector,
+  numero,
+  compacta = false,
+  medidas = '(min-width: 1100px) 34vw, (min-width: 680px) 50vw, 94vw',
+} = Astro.props;
+
+/* La misma imagen que abre la página del sector, en pequeño: las medidas y
+   el `srcset` los da el generador, no este componente. */
+const img = sectorCover(sector.id);
+---
+
+<a class:list={['tsec', compacta && 'es-compacta']} href={withBase(`/base/${sector.id}`)}>
+  {/* Decorativa: el nombre del sector va escrito justo encima, así que
+      describirla otra vez en el alt sería repetirse. */}
+  <span class="tsec-foto" aria-hidden="true">
+    <picture>
+      <source type="image/avif" srcset={img.srcset.avif} sizes={medidas} />
+      <source type="image/webp" srcset={img.srcset.webp} sizes={medidas} />
+      <img
+        class="tsec-img"
+        style={img.position ? `object-position:${img.position}` : undefined}
+        src={img.src}
+        srcset={img.srcset.jpg}
+        sizes={medidas}
+        alt=""
+        loading="lazy"
+        decoding="async"
+        width={img.width}
+        height={img.height}
+      />
+    </picture>
+    <span class="tsec-velo" />
+  </span>
+
+  <span class="tsec-cuerpo">
+    {numero && <span class="tsec-num tnum">{numero}</span>}
+    <h3 class="tsec-nombre">{sector.name}</h3>
+  </span>
+</a>
+
+<style>
+  /* La tarjeta es la imagen. El texto se apoya encima, sobre un velo que sube
+     desde abajo: así se lee igual con una fotografía clara y con una oscura. */
+  .tsec {
+    position: relative;
+    display: block;
+    height: 100%;
+    min-height: clamp(250px, 21vw, 300px);
+    overflow: hidden;
+    border-radius: 22px;
+    isolation: isolate;
+    color: var(--color-paper);
+    background: var(--color-ink);
+    transition: transform 320ms cubic-bezier(0.22, 0.61, 0.36, 1), box-shadow 320ms ease;
+  }
+  .tsec.es-compacta { min-height: clamp(150px, 13vw, 180px); border-radius: 16px; }
+
+  .tsec:hover,
+  .tsec:focus-visible {
+    transform: translateY(-4px);
+    box-shadow: 0 24px 46px -30px rgb(3 26 36 / 0.6);
+  }
+
+  .tsec-foto {
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+  }
+  .tsec-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 520ms cubic-bezier(0.22, 0.61, 0.36, 1);
+  }
+  .tsec:hover .tsec-img { transform: scale(1.045); }
+
+  .tsec-velo {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+      to top,
+      rgb(2 20 28 / 0.94) 0%,
+      rgb(2 20 28 / 0.74) 42%,
+      rgb(2 20 28 / 0.28) 78%,
+      rgb(2 20 28 / 0.16) 100%
+    );
+  }
+
+  .tsec-cuerpo {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    height: 100%;
+    min-height: inherit;
+    padding: 20px 22px 18px;
+    gap: 22px;
+  }
+  .tsec.es-compacta .tsec-cuerpo { justify-content: flex-end; padding: 16px 18px 15px; }
+
+  .tsec-num {
+    font-family: var(--font-display);
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    color: color-mix(in srgb, var(--color-paper) 58%, transparent);
+    transition: color 240ms ease;
+  }
+  .tsec:hover .tsec-num { color: var(--color-gold); }
+
+  .tsec-nombre {
+    font-family: var(--font-display);
+    font-size: clamp(1.18rem, 1.5vw, 1.34rem);
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    line-height: 1.16;
+  }
+  .tsec.es-compacta .tsec-nombre { font-size: clamp(0.98rem, 1.1vw, 1.08rem); }
+
+  @media (prefers-reduced-motion: reduce) {
+    .tsec:hover, .tsec:focus-visible { transform: none; }
+    .tsec:hover .tsec-img { transform: none; }
+  }
+</style>

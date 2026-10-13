@@ -1,0 +1,129 @@
+---
+/**
+ * El icono de cada sector del Atlas.
+ *
+ * En la barra de sectores el color iba solo en un punto: servía para
+ * anticipar de qué color venía el tablero, pero no decía nada de qué había
+ * dentro. El icono dice las dos cosas —lleva el color del sector y dibuja su
+ * materia— y el nombre sigue al lado, así que nunca es el único canal.
+ *
+ * Son trazos, no siluetas rellenas: a 15 px una figura maciza se emborrona y
+ * compite con el texto. El de «Indicadores del Centro» es la lupa de la marca
+ * institucional; es lo que produce el propio CIDEF y se reconoce como suyo.
+ */
+export interface Props {
+  id: string;
+  size?: number;
+  class?: string;
+}
+
+const { id, size = 15, class: className = '' } = Astro.props;
+---
+
+<svg
+  class:list={['ico-sector', className]}
+  viewBox="0 0 24 24"
+  width={size}
+  height={size}
+  fill="none"
+  stroke="currentColor"
+  stroke-width="1.7"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+  aria-hidden="true"
+  focusable="false"
+>
+  {/* Panorama: la vista de conjunto, cuatro paneles a la vez. */}
+  {id === 'panorama' && (
+    <>
+      <rect x="3" y="3" width="7.6" height="7.6" rx="1.4" />
+      <rect x="13.4" y="3" width="7.6" height="7.6" rx="1.4" />
+      <rect x="3" y="13.4" width="7.6" height="7.6" rx="1.4" />
+      <rect x="13.4" y="13.4" width="7.6" height="7.6" rx="1.4" />
+    </>
+  )}
+
+  {/* Actividad económica: lo que se produce. */}
+  {id === 'actividad' && (
+    <>
+      <path d="M3 20.5V9.6l5 3.4V9.6l5 3.4V4.6h3.2V13H21v7.5z" />
+      <path d="M7.4 17.4h1.4M12.4 17.4h1.4M17.2 17.4h1.4" />
+    </>
+  )}
+
+  {/* Precios: la etiqueta de precio. */}
+  {id === 'precios' && (
+    <>
+      <path d="M3.6 10.6 10.6 3.6a2 2 0 0 1 1.5-.6l5.3.4a2 2 0 0 1 1.8 1.8l.4 5.3a2 2 0 0 1-.6 1.5l-7 7a2 2 0 0 1-2.8 0l-5.6-5.6a2 2 0 0 1 0-2.8Z" />
+      <circle cx="15.5" cy="8.5" r="1.5" />
+    </>
+  )}
+
+  {/* Monetario y financiero: el billete. */}
+  {id === 'monetario' && (
+    <>
+      <rect x="2.5" y="6" width="19" height="12" rx="2" />
+      <circle cx="12" cy="12" r="2.7" />
+      <path d="M6 9.6v4.8M18 9.6v4.8" />
+    </>
+  )}
+
+  {/* Mercado cambiario: una moneda por otra. */}
+  {id === 'cambiario' && (
+    <>
+      <path d="M3.5 8.8h13.8M13.9 5.4l3.4 3.4-3.4 3.4" />
+      <path d="M20.5 15.2H6.7m3.4-3.4-3.4 3.4 3.4 3.4" />
+    </>
+  )}
+
+  {/* Sector externo: lo que entra y sale por el puerto. */}
+  {id === 'externo' && (
+    <>
+      <path d="M2.6 16.9h18.8l-2.3 4.1H4.9z" />
+      <path d="M5.6 16.9V11.6h12.8v5.3" />
+      <path d="M10.2 11.6V7.8h3.9v3.8" />
+    </>
+  )}
+
+  {/* Sector fiscal: el Estado. */}
+  {id === 'fiscal' && (
+    <>
+      <path d="M3 9.6 12 4.2l9 5.4" />
+      <path d="M5.6 9.9v7.2M9.9 9.9v7.2M14.1 9.9v7.2M18.4 9.9v7.2" />
+      <path d="M4 17.4h16M2.8 20.6h18.4" />
+    </>
+  )}
+
+  {/* Estadisticas sociales: las personas. El maletin que llevaba antes solo
+      hablaba del trabajo, y el sector mide tambien como se vive. */}
+  {id === 'laboral' && (
+    <>
+      <circle cx="9.2" cy="8.2" r="3.3" />
+      <path d="M3 20.4c0-3.4 2.8-5.6 6.2-5.6s6.2 2.2 6.2 5.6" />
+      <path d="M16.4 5.4a3.3 3.3 0 0 1 0 5.9" />
+      <path d="M17.6 15.2c2.1.7 3.4 2.6 3.4 5.2" />
+    </>
+  )}
+
+  {/* Economía internacional: lo que llega de afuera. */}
+  {id === 'internacional' && (
+    <>
+      <circle cx="12" cy="12" r="9" />
+      <path d="M3.2 12h17.6" />
+      <path d="M12 3a13.5 13.5 0 0 1 0 18 13.5 13.5 0 0 1 0-18Z" />
+    </>
+  )}
+
+  {/* Indicadores del Centro: la lupa de la marca. */}
+  {id === 'centro' && (
+    <>
+      <circle cx="10.6" cy="10.6" r="6.7" />
+      <path d="M15.5 15.5 21 21" />
+      <path d="M7.4 12.1 9.6 9.6l1.9 1.6 2.4-3.2" />
+    </>
+  )}
+</svg>
+
+<style>
+  .ico-sector { flex: 0 0 auto; }
+</style>

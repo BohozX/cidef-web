@@ -164,7 +164,15 @@ function init(): void {
         );
       }
 
-      /* Reveal individual y en grupo. */
+      /* Reveal individual y en grupo.
+
+         `clearProps` no es opcional: al acabar, GSAP deja escrito en el
+         elemento un `transform: translate(0px, 0px)` que no hace nada pero
+         que, por ser estilo en línea, gana a cualquier regla de la hoja. Eso
+         desactivaba en silencio el `transform` de todos los `:hover` de las
+         tarjetas —las del tablero incluidas—, que se quedaban quietas al
+         pasar el ratón. La entrada es de una sola vez: cuando termina no
+         tiene por qué dejar rastro. */
       gsap.utils.toArray<HTMLElement>('[data-reveal]').forEach((el) => {
         if (el.closest('[data-reveal-group]') && !el.hasAttribute('data-reveal-group')) return;
         gsap.fromTo(
@@ -175,6 +183,7 @@ function init(): void {
             y: 0,
             duration: 0.62,
             ease: EASE,
+            clearProps: 'transform',
             scrollTrigger: { trigger: el, start: 'top 88%', once: true },
           },
         );
@@ -192,6 +201,7 @@ function init(): void {
             duration: 0.6,
             ease: EASE,
             stagger: Number(group.dataset.revealStagger ?? '0.07'),
+            clearProps: 'transform',
             scrollTrigger: { trigger: group, start: 'top 85%', once: true },
           },
         );

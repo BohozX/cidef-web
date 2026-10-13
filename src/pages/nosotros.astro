@@ -1,231 +1,406 @@
 ---
-import { withBase, withBaseSrcset } from '../lib/url';
+import { withBase } from '../lib/url';
 import { getCollection } from 'astro:content';
 import BaseLayout from '../layouts/BaseLayout.astro';
 import PageHero from '../components/PageHero.astro';
 import { covers } from '../site.config';
 import ResearcherCard from '../components/ResearcherCard.astro';
+import IconoNosotros from '../components/IconoNosotros.astro';
 import Newsletter from '../components/Newsletter.astro';
 import { site } from '../site.config';
 
-const [investigadores, publicaciones, formacion] = await Promise.all([
-  getCollection('investigadores'),
-  getCollection('publicaciones'),
-  getCollection('formacion'),
-]);
+const investigadores = await getCollection('investigadores');
 
 const equipo = investigadores.sort((a, b) => a.data.order - b.data.order);
 
-const areas = [
+const productos = [
+  { icono: 'investigacion', texto: 'Investigaciones' },
+  { icono: 'documento', texto: 'Documentos de trabajo' },
+  { icono: 'coyuntura', texto: 'Informes de coyuntura' },
+  { icono: 'indicadores', texto: 'Indicadores' },
+  { icono: 'herramientas', texto: 'Herramientas de análisis' },
+  { icono: 'formacion', texto: 'Formación especializada' },
+];
+
+const lineas = [
   {
-    name: 'Macroeconomía',
-    text: 'Crecimiento, ciclo económico, precios y política monetaria y fiscal.',
+    icono: 'macro',
+    name: 'Macroeconomía y Política Económica',
+    text: 'Análisis del crecimiento económico, inflación, ciclos económicos, política monetaria y fiscal, coordinación de políticas, sostenibilidad macroeconómica, expectativas y mecanismos de transmisión.',
   },
   {
-    name: 'Sector externo',
-    text: 'Balanza de pagos, reservas, régimen cambiario y competitividad.',
+    icono: 'monetaria',
+    name: 'Economía Monetaria, Financiera y Bancaria',
+    text: 'Investigación sobre mercados financieros, crédito, tasas de interés, liquidez, estabilidad financiera, inclusión financiera, regulación y vínculos entre el sistema financiero y la economía real.',
   },
   {
-    name: 'Finanzas',
-    text: 'Sistema financiero, crédito, riesgo y econometría financiera aplicada.',
+    icono: 'internacional',
+    name: 'Economía Internacional y Sector Externo',
+    text: 'Estudio del comercio internacional, balanza de pagos, reservas internacionales, términos de intercambio, flujos de capital, competitividad, tipos de cambio y procesos de integración económica.',
   },
   {
-    name: 'Mercado laboral',
-    text: 'Empleo, informalidad, ingresos y calidad del trabajo.',
+    icono: 'desarrollo',
+    name: 'Desarrollo Económico y Políticas Públicas',
+    text: 'Investigación sobre crecimiento y desarrollo, productividad, inversión, empleo, desigualdad, pobreza, informalidad, capital humano y evaluación de políticas públicas.',
   },
   {
-    name: 'Desarrollo',
-    text: 'Productividad, sectores estratégicos y desigualdad territorial.',
+    icono: 'ambiental',
+    name: 'Economía Ambiental, Recursos Naturales y Sostenibilidad',
+    text: 'Análisis de las relaciones entre actividad económica, cambio climático, recursos naturales, energía y medio ambiente, incluyendo sus efectos sobre inflación, producción, bienestar y desarrollo sostenible.',
   },
   {
-    name: 'Política pública',
-    text: 'Evaluación de impacto, diseño de política y análisis normativo.',
+    icono: 'econometria',
+    name: 'Econometría, Ciencia de Datos e Inteligencia Económica',
+    text: 'Desarrollo y aplicación de modelos econométricos, series de tiempo, métodos de evaluación causal, aprendizaje automático e inteligencia artificial para el análisis, pronóstico y monitoreo de fenómenos económicos y financieros.',
   },
   {
-    name: 'Economía digital',
-    text: 'Datos alternativos, activos digitales y medición de alta frecuencia.',
+    icono: 'radar',
+    name: 'Coyuntura e Inteligencia Económica',
+    text: 'Monitoreo sistemático de la economía mediante indicadores de alta frecuencia, construcción de indicadores propios, nowcasting, análisis de riesgos y generación de información oportuna para la toma de decisiones.',
   },
 ];
 
-const secciones = [
-  { n: '01', id: 'quienes', label: 'Quiénes somos' },
-  { n: '02', id: 'mision', label: 'Misión' },
-  { n: '03', id: 'areas', label: 'Áreas de trabajo' },
-  { n: '04', id: 'equipo', label: 'Equipo e investigadores' },
-  { n: '05', id: 'formacion', label: 'Formación' },
-  { n: '06', id: 'alianzas', label: 'Alianzas' },
-  { n: '07', id: 'contacto', label: 'Contacto' },
+const principios = [
+  {
+    icono: 'independencia',
+    name: 'Independencia',
+    text: 'CIDEF desarrolla sus investigaciones y análisis con autonomía técnica e intelectual. Sus conclusiones no responden a intereses políticos, partidarios, empresariales o institucionales.',
+  },
+  {
+    icono: 'rigor',
+    name: 'Rigor y evidencia',
+    text: 'Las investigaciones, indicadores y análisis se fundamentan en información verificable, metodologías explícitas y herramientas reconocidas por la literatura económica y científica.',
+  },
+  {
+    icono: 'pluralismo',
+    name: 'Pluralismo',
+    text: 'Reconocemos que los problemas económicos pueden admitir diferentes aproximaciones teóricas y metodológicas. Promovemos la discusión fundamentada y el contraste de ideas y evidencia.',
+  },
+  {
+    icono: 'transparencia',
+    name: 'Transparencia',
+    text: 'Procuramos identificar las fuentes de información, metodologías, supuestos y limitaciones relevantes de nuestros análisis, diferenciando claramente los datos provenientes de fuentes oficiales de las estimaciones elaboradas por CIDEF.',
+  },
+  {
+    icono: 'integridad',
+    name: 'Integridad académica',
+    text: 'Promovemos buenas prácticas de investigación, reconocimiento adecuado de fuentes, reproducibilidad cuando sea posible y respeto por los principios éticos de la producción científica.',
+  },
+  {
+    icono: 'responsabilidad',
+    name: 'Responsabilidad institucional',
+    text: 'Las opiniones expresadas en documentos firmados corresponden a sus autores y no representan necesariamente la posición de CIDEF, de sus aliados ni de las instituciones con las que sus investigadores mantengan vínculos profesionales o académicos.',
+  },
+  {
+    icono: 'interes',
+    name: 'Interés público',
+    text: 'Buscamos que el conocimiento generado contribuya a mejorar la comprensión de la economía, elevar la calidad del debate público y fortalecer la toma de decisiones basada en evidencia.',
+  },
 ];
 
-const facts = [
-  { label: 'Áreas de trabajo', value: String(areas.length) },
-  { label: 'Publicaciones', value: String(publicaciones.length) },
-  { label: 'Programas', value: String(formacion.length) },
-  { label: 'Sede', value: 'La Paz, Bolivia' },
+const tiposAlianza = [
+  { icono: 'academica', texto: 'Alianzas académicas' },
+  { icono: 'institucional', texto: 'Alianzas institucionales' },
+  { icono: 'colaboracion', texto: 'Colaboraciones específicas' },
 ];
+
+const iconoAliado = (role: string): string =>
+  /académica/i.test(role) ? 'academica' : /certificación/i.test(role) ? 'diploma' : 'institucional';
+
 ---
 
 <BaseLayout
   title="Nosotros"
-  description="El Centro de Inteligencia en Desarrollo Económico y Financiero produce investigación económica aplicada, datos propios y formación de posgrado en Bolivia."
+  description="CIDEF, Centro de Inteligencia en Desarrollo Económico y Financiero, es un centro independiente de investigación, análisis y formación especializado en economía, finanzas y desarrollo."
   bleed
 >
   <PageHero
     eyebrow="Nosotros"
-    title="Un centro de investigación económica en Bolivia"
-    lede="Producimos investigación aplicada, construimos y publicamos datos propios, y formamos profesionales en análisis económico cuantitativo."
-    facts={facts}
+    title="Investigamos la economía boliviana desde los datos"
+    lede="Somos nuevos, pero lo que publicamos es real."
     cover={covers.nosotros}
   />
 
-  <section class="surface-light section">
+  <section id="quienes" class="nos-sec surface-light" aria-labelledby="h-quienes">
     <div class="wrap">
-      <div class="about-layout">
-        <!-- Índice ----------------------------------------------------- -->
-        <nav class="about-index no-print" aria-label="Contenido de la página">
-          <ol>
+      <div class="nos-dos">
+        <header class="nos-cab">
+          <p class="nos-kicker"><span class="index-num">01</span><span class="eyebrow">Quiénes somos</span></p>
+          <h2 id="h-quienes" class="nos-titulo" data-reveal>
+            Un centro independiente de investigación, análisis y formación
+          </h2>
+          <p class="nos-lead" data-reveal>
+            CIDEF, Centro de Inteligencia en Desarrollo Económico y Financiero, es un centro
+            independiente de investigación, análisis y formación especializado en economía,
+            finanzas y desarrollo.
+          </p>
+        </header>
+
+        <div class="nos-texto" data-reveal>
+          <p>
+            Nace con el propósito de generar conocimiento riguroso y aplicado sobre los
+            principales desafíos económicos y financieros de Bolivia, combinando teoría
+            económica, métodos cuantitativos, econometría, ciencia de datos y análisis de
+            políticas públicas.
+          </p>
+          <p>
+            Nuestro trabajo busca reducir la distancia entre la investigación académica y la
+            toma de decisiones. Para ello, desarrollamos investigaciones, documentos de
+            trabajo, informes de coyuntura, indicadores, herramientas de análisis y espacios de
+            formación especializada dirigidos a investigadores, profesionales, instituciones
+            públicas y privadas, estudiantes y responsables de política económica.
+          </p>
+          <p>
+            CIDEF concibe los datos como un instrumento para comprender la realidad y la
+            investigación como un medio para contribuir al debate público. Por ello,
+            promovemos un análisis económico plural, técnicamente fundamentado y basado en
+            evidencia.
+          </p>
+        </div>
+      </div>
+
+      <ul class="productos" data-reveal-group data-reveal-stagger="0.05">
+        {
+          productos.map((p) => (
+            <li data-reveal>
+              <span class="productos-icono"><IconoNosotros id={p.icono} size={26} /></span>
+              <span class="productos-texto">{p.texto}</span>
+            </li>
+          ))
+        }
+      </ul>
+    </div>
+  </section>
+
+  <section id="mision" class="nos-sec surface-tint edge-tr edge-bl" aria-labelledby="h-mision">
+    <div class="wrap">
+      <header class="nos-cab nos-cab-centro">
+        <p class="nos-kicker"><span class="index-num">02</span><span class="eyebrow">Misión y visión</span></p>
+        <h2 id="h-mision" class="nos-titulo" data-reveal>
+          Conocimiento riguroso, independiente y basado en evidencia
+        </h2>
+      </header>
+
+      <div class="mv" data-reveal-group data-reveal-stagger="0.08">
+        <article class="mv-card" data-reveal>
+          <div class="mv-cabeza">
+            <span class="mv-icono"><IconoNosotros id="mision" size={28} /></span>
+            <h3 class="mv-rotulo">Misión</h3>
+          </div>
+          <p class="mv-lead">
+            Generar conocimiento económico y financiero riguroso, independiente y basado en
+            evidencia, mediante la investigación aplicada, el análisis de datos y el desarrollo
+            de herramientas cuantitativas que contribuyan a comprender los desafíos económicos
+            y sociales de Bolivia.
+          </p>
+          <p class="mv-texto">
+            CIDEF busca vincular la investigación académica con la toma de decisiones,
+            promoviendo el debate informado, la formación especializada y la generación de
+            propuestas que aporten al diseño y evaluación de políticas públicas y estrategias
+            para el desarrollo económico y financiero.
+          </p>
+        </article>
+
+        <article class="mv-card" data-reveal>
+          <div class="mv-cabeza">
+            <span class="mv-icono"><IconoNosotros id="vision" size={28} /></span>
+            <h3 class="mv-rotulo">Visión</h3>
+          </div>
+          <p class="mv-lead">
+            Consolidarse como un centro de referencia en Bolivia y la región en investigación
+            económica y financiera, reconocido por la rigurosidad técnica, independencia y
+            calidad de sus análisis, así como por su capacidad para transformar datos y
+            evidencia en conocimiento útil para la toma de decisiones.
+          </p>
+          <p class="mv-texto">
+            CIDEF aspira a constituirse en un espacio de encuentro entre la academia, el sector
+            público, el sector privado y la sociedad, contribuyendo al debate económico y a la
+            construcción de políticas y estrategias orientadas a un desarrollo sostenible,
+            inclusivo y basado en evidencia.
+          </p>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <section id="lineas" class="nos-sec surface-light" aria-labelledby="h-lineas">
+    <div class="wrap">
+      <ol class="lineas" data-reveal-group data-reveal-stagger="0.05">
+        <li class="lineas-intro" data-reveal>
+          <p class="nos-kicker"><span class="index-num">03</span><span class="eyebrow">Líneas de investigación</span></p>
+          <h2 id="h-lineas" class="nos-titulo">Siete líneas de investigación</h2>
+          <p class="lineas-intro-texto">
+            Las líneas de investigación de CIDEF articulan el análisis económico, financiero y
+            del desarrollo con herramientas cuantitativas y evidencia aplicada, con especial
+            atención a Bolivia y las economías de América Latina.
+          </p>
+        </li>
+        {
+          lineas.map((l, i) => (
+            <li class="linea" data-reveal>
+              <div class="linea-cabeza">
+                <span class="linea-icono"><IconoNosotros id={l.icono} size={26} /></span>
+                <span class="linea-num">{String(i + 1).padStart(2, '0')}</span>
+              </div>
+              <h3 class="linea-nombre">{l.name}</h3>
+              <p class="linea-texto">{l.text}</p>
+            </li>
+          ))
+        }
+      </ol>
+    </div>
+  </section>
+
+  <section id="principios" class="nos-sec surface-deep edge-tl edge-br" aria-labelledby="h-principios">
+    <div class="wrap">
+      <div class="nos-dos">
+        <header class="nos-cab">
+          <p class="nos-kicker"><span class="index-num">04</span><span class="eyebrow">Principios de independencia</span></p>
+          <h2 id="h-principios" class="nos-titulo" data-reveal>
+            Independencia, rigor técnico y transparencia
+          </h2>
+        </header>
+        <div class="nos-texto nos-texto-centro" data-reveal>
+          <p>
+            La credibilidad de CIDEF se sustenta en la independencia, el rigor técnico y la
+            transparencia. Nuestra producción académica y nuestros análisis se desarrollan bajo
+            los siguientes principios:
+          </p>
+        </div>
+      </div>
+
+      <div class="principios" data-reveal-group data-reveal-stagger="0.05">
+        {
+          principios.map((p) => (
+            <article class="principio" data-reveal>
+              <span class="principio-icono"><IconoNosotros id={p.icono} size={26} /></span>
+              <h3 class="principio-nombre">{p.name}</h3>
+              <p class="principio-texto">{p.text}</p>
+            </article>
+          ))
+        }
+        <blockquote class="aviso" data-reveal>
+          <span class="aviso-icono"><IconoNosotros id="cita" size={30} /></span>
+          <p>
+            CIDEF es un centro independiente de investigación y formación. Las opiniones
+            expresadas en sus publicaciones corresponden a sus autores y no representan
+            necesariamente a las instituciones con las que mantienen vínculos profesionales o
+            académicos.
+          </p>
+        </blockquote>
+      </div>
+    </div>
+  </section>
+
+  <section id="equipo" class="nos-sec surface-light" aria-labelledby="h-equipo">
+    <div class="wrap">
+      <div class="nos-dos">
+        <header class="nos-cab">
+          <p class="nos-kicker"><span class="index-num">05</span><span class="eyebrow">Equipo e investigadores</span></p>
+          <h2 id="h-equipo" class="nos-titulo" data-reveal>Quiénes firman la investigación</h2>
+        </header>
+        <p class="nos-nota" data-reveal>
+          Cada investigador publica bajo su nombre, con sus identificadores académicos y el
+          listado de sus trabajos dentro del centro.
+        </p>
+      </div>
+
+      <div class="team" data-reveal-group data-reveal-stagger="0.07">
+        {equipo.map((item) => <ResearcherCard item={item} />)}
+      </div>
+    </div>
+  </section>
+
+  <section id="formacion" class="nos-sec surface-tint edge-tr edge-bl" aria-labelledby="h-formacion">
+    <div class="wrap">
+      <header class="nos-cab nos-cab-centro">
+        <p class="nos-kicker"><span class="index-num">06</span><span class="eyebrow">Formación y mentorías</span></p>
+        <h2 id="h-formacion" class="nos-titulo" data-reveal>Formación especializada</h2>
+      </header>
+
+      <div class="formacion" data-reveal-group data-reveal-stagger="0.08">
+        <article class="tarjeta" data-reveal>
+          <span class="tarjeta-icono"><IconoNosotros id="diploma" size={28} /></span>
+          <h3 class="tarjeta-titulo">Diplomados de posgrado con certificación universitaria</h3>
+          <p class="tarjeta-texto">
+            El centro dicta programas de posgrado junto al Colegio de Economistas de La Paz y
+            la Escuela de Postgrado MSC, con diploma emitido por la Universidad Franz Tamayo.
+            Los docentes provienen de la banca central, la regulación sectorial y la academia.
+          </p>
+          <a href={withBase('/formacion')} class="link-arrow tarjeta-enlace">
+            Ver la oferta académica
+            <svg class="arw" viewBox="0 0 16 16" width="13" height="13" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.7">
+              <path d="M2 8h11M9 4l4 4-4 4" stroke-linecap="round" stroke-linejoin="round" />
+            </svg>
+          </a>
+        </article>
+
+        <article class="tarjeta" data-reveal>
+          <span class="tarjeta-icono"><IconoNosotros id="mentoria" size={28} /></span>
+          <h3 class="tarjeta-titulo">Mentorías</h3>
+          <p class="tarjeta-texto">En esencia, asesoría de tesis.</p>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <section id="alianzas" class="nos-sec surface-light" aria-labelledby="h-alianzas">
+    <div class="wrap">
+      <div class="nos-dos">
+        <header class="nos-cab">
+          <p class="nos-kicker"><span class="index-num">07</span><span class="eyebrow">Alianzas</span></p>
+          <h2 id="h-alianzas" class="nos-titulo" data-reveal>Con quiénes trabajamos</h2>
+          <p class="nos-lead" data-reveal>
+            CIDEF promueve la cooperación con universidades, centros de investigación, colegios
+            profesionales, instituciones públicas y privadas, organismos nacionales e
+            internacionales y otras organizaciones vinculadas con la investigación, la
+            formación y el desarrollo económico.
+          </p>
+        </header>
+
+        <div class="nos-texto" data-reveal>
+          <p>
+            Las alianzas tienen como objetivo impulsar proyectos de investigación conjuntos,
+            intercambio de conocimiento y datos, organización de seminarios y espacios de
+            discusión, formación especializada, publicaciones, asistencia técnica y otras
+            iniciativas de interés académico e institucional.
+          </p>
+          <p>
+            CIDEF distingue entre alianzas académicas, alianzas institucionales y
+            colaboraciones específicas, de acuerdo con la naturaleza y alcance de cada
+            relación.
+          </p>
+          <ul class="tipos">
             {
-              secciones.map((s) => (
+              tiposAlianza.map((t) => (
                 <li>
-                  <a href={`#${s.id}`}>
-                    <span class="index-num">{s.n}</span>
-                    <span>{s.label}</span>
-                  </a>
+                  <IconoNosotros id={t.icono} size={20} />
+                  <span>{t.texto}</span>
                 </li>
               ))
             }
-          </ol>
-        </nav>
-
-        <!-- Contenido -------------------------------------------------- -->
-        <div class="about-body">
-          <section id="quienes" class="about-sec" aria-labelledby="h-quienes">
-            <p class="about-kicker"><span class="index-num">01</span><span class="eyebrow">Quiénes somos</span></p>
-            <h2 id="h-quienes" class="display-3 about-title" data-reveal>
-              Investigación económica producida en Bolivia, sobre Bolivia
-            </h2>
-            <div class="about-text" data-reveal>
-              <p>
-                El {site.legalName} ({site.name}) es un centro dedicado al
-                análisis económico aplicado. Trabajamos sobre tres frentes que se
-                alimentan entre sí: investigación con estándar académico,
-                construcción de datos propios y formación de posgrado.
-              </p>
-              <p>
-                Publicamos documentos con su metodología abierta, sus datos y su
-                código, de modo que cualquier resultado pueda replicarse. Cuando
-                una estimación se revisa, la versión anterior no se borra: queda
-                archivada y sigue siendo citable.
-              </p>
-            </div>
-          </section>
-
-          <section id="mision" class="about-sec" aria-labelledby="h-mision">
-            <p class="about-kicker"><span class="index-num">02</span><span class="eyebrow">Misión</span></p>
-            <h2 id="h-mision" class="display-3 about-title" data-reveal>
-              Convertir información en evidencia útil para decidir
-            </h2>
-            <div class="about-text" data-reveal>
-              <p>
-                Buscamos que las decisiones económicas —públicas y privadas— se
-                apoyen en evidencia verificable. Eso implica medir bien, declarar
-                los supuestos, mostrar la incertidumbre de las estimaciones y
-                comunicar los resultados con precisión, sin exagerar lo que los
-                datos permiten afirmar.
-              </p>
-            </div>
-          </section>
-
-          <section id="areas" class="about-sec" aria-labelledby="h-areas">
-            <p class="about-kicker"><span class="index-num">03</span><span class="eyebrow">Áreas de trabajo</span></p>
-            <h2 id="h-areas" class="display-3 about-title" data-reveal>Siete líneas de investigación</h2>
-
-            <ol class="areas" data-reveal-group data-reveal-stagger="0.05">
-              {
-                areas.map((a, i) => (
-                  <li data-reveal>
-                    <span class="index-num">{String(i + 1).padStart(2, '0')}</span>
-                    <span class="area-name">{a.name}</span>
-                    <span class="area-text muted">{a.text}</span>
-                  </li>
-                ))
-              }
-            </ol>
-          </section>
-
-          <section id="equipo" class="about-sec" aria-labelledby="h-equipo">
-            <p class="about-kicker"><span class="index-num">04</span><span class="eyebrow">Equipo e investigadores</span></p>
-            <h2 id="h-equipo" class="display-3 about-title" data-reveal>Quiénes firman la investigación</h2>
-            <p class="about-note muted" data-reveal>
-              Cada investigador publica bajo su nombre, con sus identificadores
-              académicos y el listado de sus trabajos dentro del centro.
-            </p>
-
-            <div class="team" data-reveal-group data-reveal-stagger="0.07">
-              {equipo.map((item) => <ResearcherCard item={item} />)}
-            </div>
-          </section>
-
-          <section id="formacion" class="about-sec" aria-labelledby="h-formacion">
-            <p class="about-kicker"><span class="index-num">05</span><span class="eyebrow">Formación</span></p>
-            <h2 id="h-formacion" class="display-3 about-title" data-reveal>
-              Diplomados de posgrado con certificación universitaria
-            </h2>
-            <div class="about-text" data-reveal>
-              <p>
-                El centro dicta programas de posgrado junto al Colegio de
-                Economistas de La Paz y la Escuela de Postgrado MSC, con diploma
-                emitido por la Universidad Franz Tamayo. Los docentes provienen
-                de la banca central, la regulación sectorial y la academia.
-              </p>
-            </div>
-            <p data-reveal>
-              <a href={withBase('/formacion')} class="link-arrow">
-                Ver la oferta académica
-                <svg class="arw" viewBox="0 0 16 16" width="13" height="13" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.7">
-                  <path d="M2 8h11M9 4l4 4-4 4" stroke-linecap="round" stroke-linejoin="round" />
-                </svg>
-              </a>
-            </p>
-          </section>
-
-          <section id="alianzas" class="about-sec" aria-labelledby="h-alianzas">
-            <p class="about-kicker"><span class="index-num">06</span><span class="eyebrow">Alianzas</span></p>
-            <h2 id="h-alianzas" class="display-3 about-title" data-reveal>Con quiénes trabajamos</h2>
-
-            <ul class="allies" data-reveal-group data-reveal-stagger="0.06">
-              {
-                site.partners.map((p) => (
-                  <li data-reveal>
-                    <span class="ally-name">{p.name}</span>
-                    <span class="ally-role muted">{p.role}</span>
-                  </li>
-                ))
-              }
-            </ul>
-          </section>
-
-          <section id="contacto" class="about-sec" aria-labelledby="h-contacto">
-            <p class="about-kicker"><span class="index-num">07</span><span class="eyebrow">Contacto</span></p>
-            <h2 id="h-contacto" class="display-3 about-title" data-reveal>Escríbenos</h2>
-
-            <dl class="contact-dl" data-reveal>
-              <div>
-                <dt class="eyebrow muted">Correo</dt>
-                <dd><a href={`mailto:${site.contact.email}`} class="link-underline">{site.contact.email}</a></dd>
-              </div>
-              <div>
-                <dt class="eyebrow muted">Teléfono / WhatsApp</dt>
-                <dd class="tnum">{site.contact.phones.join(' · ')}</dd>
-              </div>
-              <div>
-                <dt class="eyebrow muted">Dirección</dt>
-                <dd>{site.contact.address}<br />{site.contact.addressCity}</dd>
-              </div>
-            </dl>
-          </section>
+          </ul>
         </div>
       </div>
+
+      <ul class="aliados" data-reveal-group data-reveal-stagger="0.06">
+        {
+          site.partners.map((p) => (
+            <li class="aliado" data-reveal>
+              <span class="aliado-icono"><IconoNosotros id={iconoAliado(p.role)} size={24} /></span>
+              <span class="aliado-nombre">{p.name}</span>
+              <span class="aliado-rol">{p.role}</span>
+            </li>
+          ))
+        }
+      </ul>
+
+      <p class="nos-nota nos-nota-ancha" data-reveal>
+        La existencia de una alianza o colaboración no implica adhesión de las instituciones
+        participantes a las opiniones, investigaciones o recomendaciones elaboradas por CIDEF
+        o por sus investigadores. Del mismo modo, las alianzas no condicionan la independencia
+        técnica ni editorial del Centro.
+      </p>
     </div>
   </section>
 
@@ -233,116 +408,394 @@ const facts = [
 </BaseLayout>
 
 <style>
-  .about-layout { display: grid; gap: 40px; }
-  @media (min-width: 1040px) {
-    .about-layout { grid-template-columns: 232px minmax(0, 1fr); gap: 72px; align-items: start; }
+  .nos-sec {
+    padding-block: clamp(64px, 8vw, 116px);
+    scroll-margin-top: 96px;
   }
 
-  .about-index { display: none; }
-  @media (min-width: 1040px) {
-    .about-index { display: block; position: sticky; top: 104px; }
-  }
-  .about-index ol { list-style: none; margin: 0; padding: 0; }
-  .about-index li { border-top: 1px solid var(--line-light); }
-  .about-index li:last-child { border-bottom: 1px solid var(--line-light); }
-  .about-index a {
-    display: grid;
-    grid-template-columns: 30px minmax(0, 1fr);
-    gap: 8px;
-    padding-block: 12px;
-    font-size: 13px;
-    transition: color 200ms ease, transform 200ms cubic-bezier(0.22, 0.61, 0.36, 1);
-  }
-  .about-index a:hover { color: var(--color-teal-600); transform: translateX(3px); }
-
-  .about-sec { padding-bottom: clamp(52px, 7vw, 92px); scroll-margin-top: 96px; }
-
-  .about-kicker {
+  .nos-kicker {
     display: flex;
     align-items: baseline;
     gap: 12px;
-    padding-top: 26px;
-    margin-bottom: 16px;
+    margin-bottom: 18px;
+    text-align: left;
   }
-  .about-title { max-width: 24ch; }
-
-  /* Hasta el margen de la página: la columna del índice ya marca la medida y
-     el tope de 62 caracteres dejaba una franja muerta a la derecha. */
-  .about-text {
-    margin-top: 20px;
-    font-size: 15px;
-    line-height: 1.72;
-    text-align: justify;
-    hyphens: auto;
-    -webkit-hyphens: auto;
+  .nos-titulo {
+    font-size: clamp(1.75rem, 3vw, 2.6rem);
+    font-weight: 600;
+    line-height: 1.1;
+    letter-spacing: -0.03em;
+    max-width: 22ch;
   }
-  .about-text p + p { margin-top: 1.1em; }
+  .nos-cab-centro {
+    display: grid;
+    justify-items: center;
+    text-align: center;
+  }
+  .nos-cab-centro .nos-titulo { max-width: 28ch; }
 
-  /* La primera línea del bloque, en el tono del centro: rompe el gris sin
-     recurrir a un recuadro. */
-  .about-text > p:first-child::first-line {
+  .nos-dos {
+    display: grid;
+    gap: 32px;
+  }
+  @media (min-width: 980px) {
+    .nos-dos {
+      grid-template-columns: minmax(0, 5fr) minmax(0, 6fr);
+      gap: clamp(48px, 6vw, 96px);
+      align-items: start;
+    }
+  }
+
+  .nos-lead {
+    margin-top: 24px;
+    font-family: var(--font-display);
+    font-size: clamp(1.1rem, 1.5vw, 1.3rem);
+    line-height: 1.55;
     color: var(--color-teal-600);
-    font-weight: 500;
   }
+  .surface-deep .nos-lead { color: var(--color-teal-300); }
 
-  .about-note {
-    margin-top: 18px;
-    padding-left: 16px;
+  .nos-texto {
+    font-size: 15px;
+    line-height: 1.78;
+  }
+  .nos-texto p + p { margin-top: 1.15em; }
+  @media (min-width: 980px) {
+    .nos-texto { padding-top: 46px; }
+    .nos-texto-centro { padding-top: 40px; }
+  }
+  .surface-deep .nos-texto { color: color-mix(in srgb, #f5f3ed 82%, transparent); }
+
+  .nos-nota {
+    padding-left: 18px;
     border-left: 2px solid color-mix(in srgb, #d29a28 60%, transparent);
     font-size: 14px;
+    line-height: 1.7;
+    color: var(--muted);
+  }
+  @media (min-width: 980px) {
+    .nos-dos > .nos-nota { margin-top: 46px; }
+  }
+  .nos-nota-ancha { margin-top: 36px; max-width: 90ch; }
+
+  .productos {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+    margin: clamp(48px, 5vw, 72px) 0 0;
+    padding: 0;
+    list-style: none;
+  }
+  @media (min-width: 760px) { .productos { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+  @media (min-width: 1180px) { .productos { grid-template-columns: repeat(6, minmax(0, 1fr)); } }
+  .productos li {
+    display: grid;
+    justify-items: center;
+    gap: 14px;
+    padding: 26px 16px 22px;
+    border: 1px solid var(--line-light);
+    border-radius: var(--radius-md);
+    background: color-mix(in srgb, #ffffff 45%, transparent);
+    text-align: center;
+    transition: transform 240ms cubic-bezier(0.22, 0.61, 0.36, 1), border-color 240ms ease;
+  }
+  .productos li:hover { transform: translateY(-3px); border-color: color-mix(in srgb, #008c85 45%, transparent); }
+  .productos-icono {
+    display: grid;
+    place-items: center;
+    width: 54px;
+    height: 54px;
+    border-radius: 50%;
+    background: color-mix(in srgb, #008c85 10%, transparent);
+    color: var(--color-teal-600);
+  }
+  .productos-texto {
+    font-size: 13.5px;
+    font-weight: 600;
+    line-height: 1.35;
+  }
+
+  .mv {
+    display: grid;
+    gap: 20px;
+    margin-top: clamp(36px, 4vw, 56px);
+  }
+  @media (min-width: 900px) { .mv { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  .mv-card {
+    padding: clamp(28px, 3.4vw, 48px);
+    border-radius: 4px 26px 4px 4px;
+    background:
+      radial-gradient(120% 70% at 100% 0%, rgb(79 179 172 / 0.12), transparent 60%),
+      linear-gradient(160deg, var(--color-ink-700) 0%, var(--color-ink) 100%);
+    color: var(--color-paper);
+  }
+  .mv-cabeza {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+  .mv-icono {
+    display: grid;
+    place-items: center;
+    width: 56px;
+    height: 56px;
+    border: 1px solid color-mix(in srgb, #d29a28 55%, transparent);
+    border-radius: 50%;
+    color: var(--color-gold);
+  }
+  .mv-rotulo {
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--color-gold);
+  }
+  .mv-lead {
+    margin-top: 26px;
+    font-family: var(--font-display);
+    font-size: clamp(1.1rem, 1.55vw, 1.3rem);
+    line-height: 1.58;
+  }
+  .mv-texto {
+    margin-top: 22px;
+    padding-top: 20px;
+    border-top: 1px solid rgb(245 243 237 / 0.14);
+    font-size: 14.5px;
+    line-height: 1.72;
+    color: color-mix(in srgb, #f5f3ed 72%, transparent);
+  }
+
+  .lineas {
+    display: grid;
+    gap: 16px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  @media (min-width: 700px) { .lineas { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  @media (min-width: 1180px) { .lineas { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+  .lineas-intro {
+    display: flex;
+    flex-direction: column;
+    padding: 8px 8px 8px 0;
+  }
+  .lineas-intro .nos-titulo { font-size: clamp(1.6rem, 2.4vw, 2.15rem); }
+  .lineas-intro-texto {
+    margin-top: 18px;
+    font-size: 14.5px;
+    line-height: 1.7;
+    color: var(--muted);
+  }
+  .linea {
+    display: flex;
+    flex-direction: column;
+    padding: 26px 24px 28px;
+    border: 1px solid var(--line-light);
+    border-radius: var(--radius-md);
+    background: color-mix(in srgb, #ffffff 45%, transparent);
+    transition: transform 240ms cubic-bezier(0.22, 0.61, 0.36, 1), border-color 240ms ease, box-shadow 240ms ease;
+  }
+  .linea:hover {
+    transform: translateY(-3px);
+    border-color: color-mix(in srgb, #008c85 45%, transparent);
+    box-shadow: 0 14px 30px -18px rgb(3 26 36 / 0.35);
+  }
+  .linea-cabeza {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+  }
+  .linea-icono {
+    display: grid;
+    place-items: center;
+    width: 52px;
+    height: 52px;
+    border-radius: 50%;
+    background: color-mix(in srgb, #008c85 10%, transparent);
+    color: var(--color-teal-600);
+  }
+  .linea-num {
+    font-family: var(--font-display);
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: color-mix(in srgb, #d29a28 80%, transparent);
+    font-variant-numeric: tabular-nums;
+  }
+  .linea-nombre {
+    margin-top: 22px;
+    font-size: 16px;
+    font-weight: 600;
+    line-height: 1.32;
+    color: var(--color-ink);
+  }
+  .linea-texto {
+    margin-top: 12px;
+    font-size: 13.5px;
+    line-height: 1.66;
     color: var(--muted);
   }
 
-  .areas { list-style: none; margin: 30px 0 0; padding: 0; }
-  .areas li {
+  .principios {
     display: grid;
-    grid-template-columns: 34px minmax(0, 200px) minmax(0, 1fr);
-    gap: 6px 16px;
-    padding-block: 16px;
-    border-top: 1px solid var(--line-light);
-    align-items: baseline;
+    gap: 1px;
+    margin-top: clamp(40px, 5vw, 64px);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-md);
+    overflow: hidden;
+    background: var(--line);
   }
-  .areas li:last-child { border-bottom: 1px solid var(--line-light); }
-  .area-name {
-    font-size: 15px;
+  @media (min-width: 720px) { .principios { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  @media (min-width: 1100px) { .principios { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+  .principio {
+    padding: 30px 26px 32px;
+    background: color-mix(in srgb, #031a24 55%, #04313a);
+    transition: background-color 240ms ease;
+  }
+  .principio:hover { background: color-mix(in srgb, #031a24 35%, #04313a); }
+  .principio-icono {
+    display: grid;
+    place-items: center;
+    width: 52px;
+    height: 52px;
+    border: 1px solid color-mix(in srgb, #d29a28 55%, transparent);
+    border-radius: 50%;
+    color: var(--color-gold);
+  }
+  .principio-nombre {
+    margin-top: 22px;
+    font-size: 16px;
     font-weight: 600;
-    color: var(--color-teal-600);
+    color: var(--color-paper);
   }
-  .area-text { font-size: 13.5px; line-height: 1.55; }
-  @media (max-width: 700px) {
-    .areas li { grid-template-columns: 30px minmax(0, 1fr); }
-    .area-text { grid-column: 2; }
+  .principio-texto {
+    margin-top: 12px;
+    font-size: 13.5px;
+    line-height: 1.68;
+    color: color-mix(in srgb, #f5f3ed 70%, transparent);
+  }
+  .aviso {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 18px;
+    margin: 0;
+    padding: 32px 30px;
+    background:
+      linear-gradient(160deg, rgb(210 154 40 / 0.16), rgb(210 154 40 / 0.06)),
+      color-mix(in srgb, #031a24 55%, #04313a);
+  }
+  .aviso-icono { color: var(--color-gold); }
+  .aviso p {
+    font-family: var(--font-display);
+    font-size: 14.5px;
+    line-height: 1.6;
+    color: var(--color-paper);
   }
 
   .team {
     display: grid;
     gap: 32px 20px;
-    margin-top: 34px;
+    margin-top: clamp(40px, 4.5vw, 60px);
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
   @media (min-width: 860px) { .team { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
 
-  .allies { list-style: none; margin: 28px 0 0; padding: 0; }
-  .allies li {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: baseline;
-    justify-content: space-between;
-    gap: 8px 20px;
-    padding-block: 16px;
-    border-top: 1px solid var(--line-light);
+  .formacion {
+    display: grid;
+    gap: 20px;
+    margin-top: clamp(36px, 4vw, 56px);
   }
-  .allies li:last-child { border-bottom: 1px solid var(--line-light); }
-  .ally-name { font-size: 15px; font-weight: 500; }
-  .ally-role {
-    font-size: 11px;
+  @media (min-width: 900px) { .formacion { grid-template-columns: minmax(0, 3fr) minmax(0, 2fr); } }
+
+  .tarjeta {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    padding: clamp(26px, 3vw, 40px);
+    border: 1px solid var(--line-light);
+    border-radius: var(--radius-md);
+    background: var(--color-paper);
+  }
+  .tarjeta-icono {
+    display: grid;
+    place-items: center;
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    background: color-mix(in srgb, #008c85 10%, transparent);
+    color: var(--color-teal-600);
+  }
+  .tarjeta-titulo {
+    margin-top: 22px;
+    font-size: clamp(1.15rem, 1.6vw, 1.35rem);
+    font-weight: 600;
+    line-height: 1.25;
+    letter-spacing: -0.015em;
+  }
+  .tarjeta-texto {
+    margin-top: 14px;
+    font-size: 15px;
+    line-height: 1.72;
+  }
+  .tarjeta-enlace { margin-top: auto; padding-top: 24px; }
+
+  .tipos {
+    display: grid;
+    gap: 10px;
+    margin: 26px 0 0;
+    padding: 0;
+    list-style: none;
+  }
+  @media (min-width: 640px) { .tipos { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+  .tipos li {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 14px 16px;
+    border: 1px solid var(--line-light);
+    border-radius: var(--radius-md);
+    font-size: 13.5px;
+    font-weight: 600;
+    line-height: 1.3;
+    color: var(--color-teal-600);
+  }
+
+  .aliados {
+    display: grid;
+    gap: 16px;
+    margin: clamp(40px, 4.5vw, 60px) 0 0;
+    padding: 0;
+    list-style: none;
+  }
+  @media (min-width: 760px) { .aliados { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+  .aliado {
+    display: grid;
+    grid-template-columns: 52px minmax(0, 1fr);
+    grid-template-rows: auto auto;
+    column-gap: 16px;
+    row-gap: 4px;
+    align-items: center;
+    padding: 22px 24px;
+    border: 1px solid var(--line-light);
+    border-radius: var(--radius-md);
+    background: color-mix(in srgb, #ffffff 45%, transparent);
+  }
+  .aliado-icono {
+    grid-row: span 2;
+    display: grid;
+    place-items: center;
+    width: 52px;
+    height: 52px;
+    border-radius: 50%;
+    background: color-mix(in srgb, #d29a28 12%, transparent);
+    color: #a8761a;
+  }
+  .aliado-nombre { font-size: 15px; font-weight: 600; line-height: 1.3; }
+  .aliado-rol {
+    font-size: 10.5px;
     font-weight: 700;
     letter-spacing: 0.12em;
     text-transform: uppercase;
+    color: var(--muted);
   }
-
-  .contact-dl { display: grid; gap: 20px; margin-top: 28px; font-size: 14.5px; }
-  @media (min-width: 720px) { .contact-dl { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
-  .contact-dl dt { margin-bottom: 8px; }
-  .contact-dl dd { margin: 0; line-height: 1.6; }
 </style>

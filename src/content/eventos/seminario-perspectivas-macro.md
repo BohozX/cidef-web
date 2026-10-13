@@ -16,4 +16,4 @@ demo: true
 ---
 
 Sesión abierta con inscripción previa. Se transmite en vivo y la grabación queda
-disponible en el Archivo Vivo.
+disponible en esta ficha.

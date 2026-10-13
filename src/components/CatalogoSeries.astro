@@ -1,22 +1,29 @@
 ---
 import { withBase } from '../lib/url';
 import { indicators, categories, SECTORES, ETIQUETA } from '../lib/indicators';
-import { num, periodoRef, shortDate } from '../lib/format';
 
 /**
- * El catálogo de la base profesional: todas las series disponibles, agrupadas
- * por sector.
+ * El catálogo de la base profesional: las series disponibles, por su nombre.
  *
- * No es el tablero. El tablero enseña una selección y la enseña dibujada; esto
- * es el índice completo, en filas, con lo que hace falta para decidir si una
- * serie sirve: qué es el dato, cada cuánto se publica, cuántas observaciones
- * tiene, cuál es la última y de qué período. El gráfico está a un clic, en la
- * ficha de cada serie.
+ * No es el tablero ni la ficha: es el índice. Llevaba seis columnas —tipo de
+ * dato, frecuencia, observaciones, último valor, período— y con tres o cuatro
+ * series por sector eso era una hoja de cálculo para decir tres nombres. Todo
+ * eso vive en la ficha de la serie, que es donde además está el gráfico y el
+ * histórico; aquí solo hay que elegir cuál se abre.
+ *
+ * Con `sector` lista solo ese sector y se apoya en el título de la página que
+ * lo contiene; sin él los lista todos, agrupados, que es como abría la base
+ * antes de repartirse en una página por sector.
  */
 
-const FRECUENCIAS = [...new Set(indicators.map((i) => i.frequency))].sort();
+export interface Props {
+  sector?: string;
+}
+
+const { sector } = Astro.props;
 
 const grupos = SECTORES.filter((id) => id !== 'panorama')
+  .filter((id) => !sector || id === sector)
   .map((id) => {
     const cat = categories.find((c) => c.id === id);
     const series = indicators
@@ -29,6 +36,11 @@ const grupos = SECTORES.filter((id) => id !== 'panorama')
 const total = grupos.reduce((s, g) => s + g.series.length, 0);
 ---
 
+{/* Solo el buscador. Los dos desplegables —tipo de dato y frecuencia— se
+    retiraron: dentro de un sector hay tres o cuatro series y filtrarlas por
+    frecuencia es elegir entre dos opciones para descartar una fila. Con el
+    catálogo entero delante tenían sentido; aquí eran dos cajas que pesaban
+    más que la tabla que ordenaban. */}
 <div class="cat-filtros no-print" data-reveal>
   <div class="cat-buscar">
     <svg viewBox="0 0 20 20" width="15" height="15" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.7">
@@ -38,26 +50,10 @@ const total = grupos.reduce((s, g) => s + g.series.length, 0);
     <input
       type="search"
       class="cat-input"
-      placeholder="Buscar una serie, una fuente, un sector"
+      placeholder={sector ? 'Buscar una serie o una fuente' : 'Buscar una serie, una fuente, un sector'}
       aria-label="Buscar en el catálogo"
       data-cat-buscar
     />
-  </div>
-
-  <div class="cat-selects">
-    <label class="sr-only" for="cat-tipo">Tipo de dato</label>
-    <select id="cat-tipo" class="field" data-cat-tipo>
-      <option value="">Todo tipo de dato</option>
-      <option value="oficial">Oficial</option>
-      <option value="estimacion">Estimación del Centro</option>
-      <option value="proyeccion">Proyección del Centro</option>
-    </select>
-
-    <label class="sr-only" for="cat-frecuencia">Frecuencia</label>
-    <select id="cat-frecuencia" class="field" data-cat-frecuencia>
-      <option value="">Cualquier frecuencia</option>
-      {FRECUENCIAS.map((f) => <option value={f}>{f}</option>)}
-    </select>
   </div>
 </div>
 
@@ -66,44 +62,44 @@ const total = grupos.reduce((s, g) => s + g.series.length, 0);
 <div class="cat-grupos">
   {
     grupos.map((g) => (
-      <section class="cat-grupo" id={`seccion-${g.id}`} data-grupo aria-labelledby={`t-${g.id}`}>
-        <header class="cat-grupo-head">
-          <h3 id={`t-${g.id}`} class="cat-grupo-nombre">{g.cat!.name}</h3>
-          <p class="cat-grupo-desc muted">{g.cat!.description}</p>
-        </header>
+      <section
+        class="cat-grupo"
+        id={`seccion-${g.id}`}
+        data-grupo
+        aria-label={sector ? g.cat!.name : undefined}
+        aria-labelledby={sector ? undefined : `t-${g.id}`}
+      >
+        {/* En la página de un sector el encabezado sobra: lo acaba de decir
+            el título de la página, y repetirlo empuja la tabla hacia abajo. */}
+        {!sector && (
+          <header class="cat-grupo-head">
+            <h3 id={`t-${g.id}`} class="cat-grupo-nombre">{g.cat!.name}</h3>
+            <p class="cat-grupo-desc muted">{g.cat!.description}</p>
+          </header>
+        )}
 
         <div class="cat-tabla">
-          <div class="cat-fila cat-cabecera" aria-hidden="true">
-            <span>Serie</span>
-            <span>Tipo de dato</span>
-            <span>Frecuencia</span>
-            <span class="cat-der">Obs.</span>
-            <span class="cat-der">Último dato</span>
-            <span>Período</span>
-            <span />
-          </div>
-
           {g.series.map((i) => (
             <a
               class="cat-fila cat-serie"
               href={withBase(`/atlas/${i.id}`)}
+              target="_blank"
+              rel="noopener"
               data-serie
               data-tipo={i.kind}
               data-frecuencia={i.frequency}
               data-texto={`${i.name} ${i.shortName} ${i.source} ${g.cat!.name}`.toLowerCase()}
             >
-              <span class="cat-nombre">
+              <span class="cat-titulo">
                 {i.name}
-                <span class="cat-fuente muted">{i.source} · actualizado el {shortDate(i.updated)}</span>
+                {/* El sello solo aparece cuando dice algo: en un sector donde
+                    todo es oficial, repetirlo en cada línea era escribir la
+                    misma palabra tres veces y que lo que sí hay que
+                    distinguir —lo que calcula el centro— pasara inadvertido. */}
+                {i.kind !== 'oficial' && (
+                  <span class:list={['cat-sello', `sello-${i.kind}`]}>{ETIQUETA[i.kind]}</span>
+                )}
               </span>
-              <span class:list={['cat-sello', `sello-${i.kind}`]}>{ETIQUETA[i.kind]}</span>
-              <span class="cat-frec muted">{i.frequency}</span>
-              <span class="cat-der cat-obs tnum muted">{i.history.length}</span>
-              <span class="cat-der cat-valor tnum">
-                {num(i.value, i.decimals)}
-                <span class="cat-unidad muted"> {i.unit}</span>
-              </span>
-              <span class="cat-periodo muted">{periodoRef(i.date, i.frequency)}</span>
               <span class="cat-arw" aria-hidden="true">
                 <svg viewBox="0 0 16 16" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.8">
                   <path d="M2 8h11M9 4l4 4-4 4" stroke-linecap="round" stroke-linejoin="round" />
@@ -118,8 +114,8 @@ const total = grupos.reduce((s, g) => s + g.series.length, 0);
 </div>
 
 <p class="cat-vacio" data-cat-vacio hidden>
-  Ninguna serie coincide con esa búsqueda. Prueba con el nombre del indicador,
-  la fuente que lo publica o el sector.
+  Ninguna serie coincide con esa búsqueda. Prueba con el nombre del indicador
+  o con la fuente que lo publica.
 </p>
 
 <script>
@@ -128,8 +124,6 @@ const total = grupos.reduce((s, g) => s + g.series.length, 0);
      todas se oculta entero: dejar el encabezado suelto hace creer que el
      sector está vacío. */
   const buscar = document.querySelector<HTMLInputElement>('[data-cat-buscar]');
-  const selTipo = document.querySelector<HTMLSelectElement>('[data-cat-tipo]');
-  const selFrec = document.querySelector<HTMLSelectElement>('[data-cat-frecuencia]');
   const cuenta = document.querySelector<HTMLElement>('[data-cat-cuenta]');
   const vacio = document.querySelector<HTMLElement>('[data-cat-vacio]');
   const grupos = Array.from(document.querySelectorAll<HTMLElement>('[data-grupo]'));
@@ -139,17 +133,12 @@ const total = grupos.reduce((s, g) => s + g.series.length, 0);
 
   const filtrar = () => {
     const q = normal(buscar?.value.trim() ?? '');
-    const tipo = selTipo?.value ?? '';
-    const frec = selFrec?.value ?? '';
     let visibles = 0;
 
     grupos.forEach((g) => {
       let enGrupo = 0;
       g.querySelectorAll<HTMLElement>('[data-serie]').forEach((fila) => {
-        const ok =
-          (!q || normal(fila.dataset.texto ?? '').includes(q)) &&
-          (!tipo || fila.dataset.tipo === tipo) &&
-          (!frec || fila.dataset.frecuencia === frec);
+        const ok = !q || normal(fila.dataset.texto ?? '').includes(q);
         fila.hidden = !ok;
         if (ok) enGrupo += 1;
       });
@@ -162,30 +151,24 @@ const total = grupos.reduce((s, g) => s + g.series.length, 0);
   };
 
   buscar?.addEventListener('input', filtrar);
-  selTipo?.addEventListener('change', filtrar);
-  selFrec?.addEventListener('change', filtrar);
 </script>
 
 <style>
-  /* --- filtros ----------------------------------------------------------- */
-  .cat-filtros {
-    display: grid;
-    gap: 16px;
-    padding-bottom: clamp(26px, 3vw, 38px);
-  }
-  @media (min-width: 900px) {
-    .cat-filtros { grid-template-columns: minmax(0, 1fr) auto; align-items: end; gap: 28px; }
-  }
-
-  /* La búsqueda, discreta: una línea, no una caja. */
+  /* --- el buscador --------------------------------------------------------
+     Una línea corta y a la izquierda. Ocupando el ancho entero parecía el
+     asunto principal de la página, y el asunto es la tabla que hay debajo. */
+  .cat-filtros { padding-bottom: clamp(22px, 2.6vw, 32px); }
   .cat-buscar {
     display: flex;
     align-items: center;
-    gap: 11px;
+    gap: 10px;
+    max-width: 360px;
     border-bottom: 1px solid var(--line, var(--line-light));
-    padding-bottom: 9px;
+    padding-bottom: 8px;
     color: var(--muted);
+    transition: border-color 200ms ease;
   }
+  .cat-buscar:focus-within { border-bottom-color: color-mix(in srgb, var(--color-ink) 45%, transparent); }
   .cat-input {
     flex: 1;
     min-width: 0;
@@ -193,7 +176,7 @@ const total = grupos.reduce((s, g) => s + g.series.length, 0);
     border: 0;
     color: inherit;
     font-family: inherit;
-    font-size: 14px;
+    font-size: 13px;
     padding: 0;
   }
   .cat-input:focus { outline: none; }
@@ -226,36 +209,20 @@ const total = grupos.reduce((s, g) => s + g.series.length, 0);
   }
   .cat-grupo-desc { font-size: 12.5px; text-align: left; }
 
-  /* --- filas ------------------------------------------------------------- */
+  /* --- las líneas ---------------------------------------------------------
+     Una línea por serie: el nombre, y el sello cuando lo lleva. La cabecera
+     de columnas se fue con las columnas. */
   .cat-fila {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr);
-    gap: 4px 18px;
-    padding: 13px 10px 13px 12px;
-    border-top: 1px solid var(--line, var(--line-light));
+    display: flex;
     align-items: center;
-  }
-  @media (min-width: 900px) {
-    .cat-fila {
-      grid-template-columns:
-        minmax(0, 1fr) 148px 96px 58px 152px 138px 16px;
-    }
+    justify-content: space-between;
+    gap: 16px;
+    padding: 15px 10px 15px 12px;
+    border-top: 1px solid var(--line, var(--line-light));
   }
 
-  .cat-cabecera {
-    display: none;
-    font-size: 9px;
-    font-weight: 700;
-    letter-spacing: 0.12em;
-    text-transform: uppercase;
-    color: var(--muted);
-    border-top: 0;
-    padding-bottom: 8px;
-  }
-  @media (min-width: 900px) { .cat-cabecera { display: grid; } }
-
-  /* La fila entera es el enlace: el nombre no basta como blanco cuando hay
-     treinta filas seguidas. */
+  /* La línea entera es el enlace: el nombre no basta como blanco cuando hay
+     treinta seguidas. */
   .cat-serie {
     transition: background-color 200ms ease, padding-left 240ms cubic-bezier(0.22, 0.61, 0.36, 1);
   }
@@ -266,16 +233,16 @@ const total = grupos.reduce((s, g) => s + g.series.length, 0);
   }
   .cat-serie:last-child { border-bottom: 1px solid var(--line, var(--line-light)); }
 
-  .cat-nombre {
-    display: grid;
-    gap: 3px;
-    font-size: 13.5px;
-    font-weight: 500;
+  /* El sello va pegado al nombre, no en una columna propia: así solo ocupa
+     sitio en las líneas que lo llevan. */
+  .cat-titulo {
+    display: flex;
+    align-items: baseline;
+    flex-wrap: wrap;
+    gap: 4px 10px;
     min-width: 0;
-  }
-  .cat-fuente {
-    font-size: 10.5px;
-    font-weight: 400;
+    font-size: 14px;
+    font-weight: 500;
   }
 
   .cat-sello {
@@ -284,26 +251,15 @@ const total = grupos.reduce((s, g) => s + g.series.length, 0);
     letter-spacing: 0.11em;
     text-transform: uppercase;
   }
-  .sello-oficial { color: var(--muted); }
   .sello-estimacion { color: var(--color-teal-600); }
   .sello-proyeccion { color: var(--color-gold); }
-
-  .cat-frec, .cat-periodo { font-size: 11.5px; }
-  .cat-obs { font-size: 11.5px; }
-  .cat-der { text-align: right; }
-  .cat-valor { font-size: 14px; font-weight: 600; letter-spacing: -0.01em; }
-  .cat-unidad { font-size: 10px; font-weight: 400; }
 
   .cat-arw { color: var(--color-teal-600); opacity: 0; transition: opacity 200ms ease, transform 220ms cubic-bezier(0.22, 0.61, 0.36, 1); }
   .cat-serie:hover .cat-arw, .cat-serie:focus-visible .cat-arw { opacity: 1; transform: translateX(3px); }
 
-  /* En pantalla estrecha la fila se vuelve ficha: el nombre arriba y el resto
-     en una línea de datos, sin barra de desplazamiento horizontal. */
   @media (max-width: 899px) {
-    .cat-sello, .cat-frec, .cat-obs, .cat-periodo { font-size: 10.5px; }
-    .cat-valor { text-align: left; margin-top: 4px; }
-    .cat-der { text-align: left; }
-    .cat-obs { display: none; }
+    .cat-titulo { font-size: 13.5px; }
+    .cat-sello { font-size: 8px; }
     .cat-arw { display: none; }
   }
 

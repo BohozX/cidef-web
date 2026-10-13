@@ -10,11 +10,10 @@ import { withBase } from '../lib/url';
 
 type Entry = { t: string; u: string; k: string; d: string };
 
-const [publicaciones, eventos, formacion, archivo] = await Promise.all([
+const [publicaciones, eventos, formacion] = await Promise.all([
   getCollection('publicaciones'),
   getCollection('eventos'),
   getCollection('formacion'),
-  getCollection('archivo'),
 ]);
 
 const indexRaw: Entry[] = [
@@ -36,12 +35,6 @@ const indexRaw: Entry[] = [
     k: f.data.kind,
     d: `${f.data.weeks} semanas · ${f.data.modality}`,
   })),
-  ...archivo.map((a) => ({
-    t: a.data.title,
-    u: a.data.href ?? '/archivo',
-    k: a.data.kind,
-    d: a.data.author ?? '',
-  })),
   ...indicators.map((i) => ({
     t: i.name,
     u: `/atlas/${i.id}`,
@@ -50,7 +43,6 @@ const indexRaw: Entry[] = [
   })),
   { t: 'Atlas Económico', u: '/atlas', k: 'Sección', d: 'Indicadores de la economía boliviana' },
   { t: 'Publicaciones', u: '/publicaciones', k: 'Sección', d: 'Informes, reportes, working papers, notas y memorias' },
-  { t: 'Archivo Vivo', u: '/archivo', k: 'Sección', d: 'Repositorio abierto' },
   { t: 'Formación', u: '/formacion', k: 'Sección', d: 'Diplomados y oferta académica' },
   { t: 'Agenda', u: '/agenda', k: 'Sección', d: 'Seminarios y convocatorias' },
   { t: 'Nosotros', u: '/nosotros', k: 'Sección', d: 'Quiénes somos y equipo' },
@@ -84,7 +76,7 @@ const index: Entry[] = indexRaw.map((e) => ({ ...e, u: withBase(e.u) }));
     <div class="rule" style="margin-top: 14px"></div>
     <p class="search-hint muted" data-search-hint>
       Escribe al menos dos caracteres. Se buscan publicaciones, indicadores del
-      Atlas, eventos, programas y recursos del Archivo Vivo.
+      Atlas, eventos y programas.
     </p>
     <ul class="search-results" data-search-results role="listbox" aria-label="Resultados"></ul>
   </div>

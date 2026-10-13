@@ -300,18 +300,6 @@ check(
   'hay publicaciones relacionadas',
 );
 
-/* --- archivo vivo -------------------------------------------------------- */
-console.log('Archivo Vivo');
-await ir('/archivo');
-const antesArchivo = await pagina.locator('.archive-item:not([hidden])').count();
-await pagina.selectOption('[data-archive-kind]', 'Base de datos');
-await esperar(250);
-const despuesArchivo = await pagina.locator('.archive-item:not([hidden])').count();
-check(
-  despuesArchivo > 0 && despuesArchivo < antesArchivo,
-  `filtro por tipo funciona (${antesArchivo} → ${despuesArchivo})`,
-);
-
 /* --- 404 ----------------------------------------------------------------- */
 // La navegación a una ruta inexistente produce un 404 esperado: se limpia el
 // registro para no confundirlo con un error real.

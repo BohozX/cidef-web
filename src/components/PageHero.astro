@@ -15,7 +15,8 @@ import { withBase } from '../lib/url';
  */
 
 export interface Props {
-  eyebrow: string;
+  /** Antetítulo. Se puede omitir cuando el título se basta solo. */
+  eyebrow?: string;
   title: string;
   lede?: string;
   /** Migas de pan opcionales. */
@@ -58,6 +59,7 @@ const { eyebrow, title, lede, parent, facts = [], cover, curve = true } = Astro.
             sizes="100vw"
             alt={cover.alt}
             class="cover-img"
+            style={cover.position ? `object-position:${cover.position}` : undefined}
             fetchpriority="high"
             decoding="async"
             width={cover.width}
@@ -83,8 +85,9 @@ const { eyebrow, title, lede, parent, facts = [], cover, curve = true } = Astro.
       )
     }
 
-    <p class="eyebrow eyebrow-gold page-eyebrow" data-hero-item>{eyebrow}</p>
-    <h1 class:list={['display-1', 'page-title', title.length > 58 && 'is-long']} data-hero-item>{title}</h1>
+    {eyebrow && <p class="eyebrow eyebrow-gold page-eyebrow" data-hero-item>{eyebrow}</p>}
+
+    <h1 class:list={['display-1', 'page-title', title.length > 58 ? 'is-long' : title.length > 44 && 'is-medio']} data-hero-item>{title}</h1>
     {lede && <p class="lede page-lede" data-hero-item>{lede}</p>}
 
     <slot name="actions" />
@@ -120,6 +123,9 @@ const { eyebrow, title, lede, parent, facts = [], cover, curve = true } = Astro.
   }
   /* Los titulos largos (publicaciones academicas) bajan de escala para no
      dominar la pagina ni romper el ritmo de lectura. */
+  .page-title.is-medio {
+    font-size: clamp(2.3rem, 5vw, 4rem);
+  }
   .page-title.is-long {
     font-size: clamp(2.1rem, 4.2vw, 3.4rem);
     line-height: 1.08;

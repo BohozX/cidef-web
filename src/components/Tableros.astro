@@ -1,6 +1,7 @@
 ---
 import PanelIndicador from './PanelIndicador.astro';
 import PanelDona from './PanelDona.astro';
+import IconoSector from './IconoSector.astro';
 import { byId, categories, SECTORES, type Indicator } from '../lib/indicators';
 
 /**
@@ -108,24 +109,22 @@ const TABLEROS: Tablero[] = [
     dona: 'resultado-fiscal',
   },
   {
+    /* Empleo y pobreza en un solo tablero. El trabajo abre —es la variable
+       que se mueve cada trimestre— y las condiciones de vida cierran, que se
+       miden una vez al año y se leen mirando atrás.
+
+       Sin dona: las seis series llenan tres filas exactas y la composición
+       habría abierto una cuarta a medias. */
     id: 'laboral',
-    nombre: 'Empleo e ingresos',
+    nombre: 'Estadísticas sociales',
     piezas: [
       { id: 'desocupacion', size: 'grande' },
       { id: 'informalidad', size: 'medio' },
       { id: 'salario-minimo', size: 'medio' },
-    ],
-    dona: 'desocupacion',
-  },
-  {
-    id: 'social',
-    nombre: 'Indicadores sociales',
-    piezas: [
-      { id: 'pobreza', size: 'grande' },
+      { id: 'pobreza', size: 'medio' },
       { id: 'pobreza-extrema', size: 'medio' },
-      { id: 'gini', size: 'medio' },
+      { id: 'gini', size: 'ancho' },
     ],
-    dona: 'pobreza',
   },
   {
     id: 'internacional',
@@ -159,7 +158,14 @@ const orden = (id: string): number => {
 const descripcion = (id: string): string | undefined =>
   categories.find((c) => c.id === id)?.description;
 
+export interface Props {
+  solo?: string;
+}
+
+const { solo } = Astro.props;
+
 const tableros = [...TABLEROS]
+  .filter((t) => !solo || t.id === solo)
   .sort((a, b) => orden(a.id) - orden(b.id))
   .map((t) => ({
     ...t,
@@ -168,10 +174,41 @@ const tableros = [...TABLEROS]
       .map((p) => ({ ...p, item: byId(p.id) }))
       .filter((p): p is Pieza & { item: Indicator } => Boolean(p.item)),
   }));
+
+/* --- como se reparte la barra de sectores -------------------------------
+   Los once sectores no caben en un renglon. Antes la barra se desplazaba en
+   horizontal y los ultimos quedaban fuera de la vista: habia que arrastrar
+   para descubrir que existian, y el borde cortado hacia parecer que la barra
+   estaba mal cuadrada.
+
+   Ahora se parte en dos renglones y se ven todos a la vez. El corte no cae
+   donde quepa: se reparte a la mitad --seis arriba, cinco abajo-- y cada
+   renglon se justifica de extremo a extremo repartiendo un mismo numero de
+   columnas entre sus pestanas. Por eso la rejilla lleva el minimo comun
+   multiplo de las dos cuentas: es el unico ancho de columna con el que las
+   dos filas terminan exactamente en el mismo punto. */
+const n = tableros.length;
+const fila1 = Math.ceil(n / 2);
+const fila2 = n - fila1;
+const mcd = (a: number, b: number): number => (b === 0 ? a : mcd(b, a % b));
+const columnas = fila2 > 0 ? (fila1 * fila2) / mcd(fila1, fila2) : fila1;
+const columnasDe = (i: number): number => (i < fila1 ? columnas / fila1 : columnas / fila2);
+
 ---
 
-<div id="tableros" class="sector-rail no-print" data-reveal>
-  <div class="tab-sectores" role="tablist" aria-label="Sectores del Atlas">
+{!solo && (
+<>
+<div id="tableros" class="sector-rail no-print">
+  {/* Entran una tras otra, en el orden en que se recorren: el carril
+      completo apareciendo de golpe no decía que fueran once cosas. */}
+  <div
+    class="tab-sectores"
+    role="tablist"
+    aria-label="Sectores del Atlas"
+    style={`--cols:${columnas}`}
+    data-reveal-group
+    data-reveal-stagger="0.035"
+  >
     {
       tableros.map((t, i) => (
         <button
@@ -184,9 +221,11 @@ const tableros = [...TABLEROS]
           aria-selected={i === 0 ? 'true' : 'false'}
           aria-controls={`panel-${t.id}`}
           tabindex={i === 0 ? 0 : -1}
+          style={`--span:${columnasDe(i)}`}
+          data-reveal
         >
-          <span class="tab-punto" aria-hidden="true" />
-          {t.nombre}
+          <IconoSector id={t.id} class="tab-ico" />
+          <span class="tab-nombre">{t.nombre}</span>
         </button>
       ))
     }
@@ -196,33 +235,40 @@ const tableros = [...TABLEROS]
 {/* Una sola fila de controles encima de los tableros, no uno por tarjeta:
     lo que se elige aquí vale para todas las piezas, y así las cifras de un
     mismo tablero siempre se leen a la misma distancia. */}
-<div class="tablero-barra no-print" data-reveal>
-  <span class="tb-etq">Variación respecto a</span>
-  <div class="tb-grupo" role="group" aria-label="Período contra el que se compara la variación">
-    <button type="button" class="tb-op is-on" data-horizonte="mes" aria-pressed="true">
-      Un mes
-    </button>
-    <button type="button" class="tb-op" data-horizonte="trimestre" aria-pressed="false">
-      Un trimestre
-    </button>
-    <button type="button" class="tb-op" data-horizonte="anio" aria-pressed="false">
-      Un año
-    </button>
+<div class="tablero-barra no-print" data-reveal-group data-reveal-stagger="0.05">
+  <div class="tb-mando">
+    {/* Sin rótulo delante: las cuatro opciones se leen solas —«un mes», «un
+        año»— y el nombre del control solo repetía en mayúsculas lo que la
+        propia tarjeta ya escribe debajo de cada cifra. Para quien navega con
+        lector de pantalla el grupo sigue teniendo nombre. */}
+    {/* Los nombres de la frecuencia con que se mide la variación, que es
+        como se la nombra en cualquier informe: la variación mensual, la
+        trimestral y la interanual. «Un mes» describía una distancia en el
+        calendario, no la medida. */}
+    <div class="tb-grupo" role="group" aria-label="Frecuencia con la que se mide la variación">
+      <button type="button" class="tb-op is-on" data-horizonte="mes" aria-pressed="true" data-reveal>
+        Mensual
+      </button>
+      <button type="button" class="tb-op" data-horizonte="trimestre" aria-pressed="false" data-reveal>
+        Trimestral
+      </button>
+      <button type="button" class="tb-op" data-horizonte="anio" aria-pressed="false" data-reveal>
+        Anual
+      </button>
+    </div>
   </div>
-  <p class="tb-nota muted">
-    Cada tarjeta escribe el período exacto con el que compara. Donde la serie no
-    llega a esa distancia, se compara con el dato anterior.
-  </p>
 </div>
+</>
+)}
 
 {
   tableros.map((t, i) => (
     <div
       class="tab-panel"
-      role="tabpanel"
+      role={solo ? undefined : 'tabpanel'}
       id={`panel-${t.id}`}
-      aria-labelledby={`tab-${t.id}`}
-      tabindex="0"
+      aria-labelledby={solo ? undefined : `tab-${t.id}`}
+      tabindex={solo ? undefined : '0'}
       data-panel={t.id}
       hidden={i !== 0}
     >
@@ -293,13 +339,35 @@ const tableros = [...TABLEROS]
     }),
   );
 
-  /* --- a qué distancia se mide la variación -----------------------------
-     Las tres lecturas ya vienen escritas en cada tarjeta; cambiar de
-     horizonte es leer otro atributo, no recalcular ni pedir nada. */
+  /* --- con qué frecuencia se mide la variación ---------------------------
+     Las tres lecturas ya vienen escritas en cada tarjeta: elegir una es leer
+     otro atributo, no recalcular ni pedir nada. */
   const opciones = Array.from(document.querySelectorAll<HTMLButtonElement>('[data-horizonte]'));
   const variaciones = Array.from(document.querySelectorAll<HTMLElement>('[data-pi-var]'));
   const SIGNOS = ['es-bueno', 'es-malo', 'es-plano'];
   const clave = (h: string) => `h${h.charAt(0).toUpperCase()}${h.slice(1)}`;
+
+  type Lectura = { flecha: string; texto: string; contra: string; clase: string };
+
+  const escribir = (v: HTMLElement, l: Lectura) => {
+    const puesto = (sel: string, txt: string | undefined) => {
+      const el = v.querySelector(sel);
+      if (el && txt !== undefined) el.textContent = txt;
+    };
+    puesto('.pi-flecha', l.flecha);
+    puesto('.pi-delta', l.texto);
+    puesto('.pi-contra', l.contra);
+    v.classList.remove(...SIGNOS);
+    if (l.clase) v.classList.add(l.clase);
+  };
+
+  const marcar = (horizonte: string) => {
+    opciones.forEach((o) => {
+      const activo = o.dataset.horizonte === horizonte;
+      o.classList.toggle('is-on', activo);
+      o.setAttribute('aria-pressed', String(activo));
+    });
+  };
 
   const medirDesde = (horizonte: string) => {
     variaciones.forEach((v) => {
@@ -309,27 +377,17 @@ const tableros = [...TABLEROS]
       const crudo = v.dataset[clave(horizonte)] ?? v.dataset.hDef;
       if (!crudo) return;
       const [flecha, texto, contra, clase] = crudo.split('|');
-      const puesto = (sel: string, txt: string | undefined) => {
-        const el = v.querySelector(sel);
-        if (el && txt !== undefined) el.textContent = txt;
-      };
-      puesto('.pi-flecha', flecha);
-      puesto('.pi-delta', texto);
-      puesto('.pi-contra', contra);
-      v.classList.remove(...SIGNOS);
-      if (clase) v.classList.add(clase);
+      escribir(v, {
+        flecha: flecha ?? '',
+        texto: texto ?? '',
+        contra: contra ?? '',
+        clase: clase ?? '',
+      });
     });
-
-    opciones.forEach((o) => {
-      const activo = o.dataset.horizonte === horizonte;
-      o.classList.toggle('is-on', activo);
-      o.setAttribute('aria-pressed', String(activo));
-    });
+    marcar(horizonte);
   };
 
-  opciones.forEach((o) =>
-    o.addEventListener('click', () => medirDesde(o.dataset.horizonte!)),
-  );
+  opciones.forEach((o) => o.addEventListener('click', () => medirDesde(o.dataset.horizonte!)));
 
   /* Un enlace externo puede apuntar a un sector concreto: /atlas#sector-fiscal. */
   const desdeElHash = () => {
@@ -353,28 +411,34 @@ const tableros = [...TABLEROS]
      en el trazo y en la línea, que es donde significa algo. */
   .sector-rail {
     position: relative;
-    margin-bottom: 24px;
+    margin-bottom: 8px;
     border-bottom: 1px solid var(--line, var(--line-light));
     scroll-margin-top: 96px;
   }
 
+  /* Las once pestañas se ven todas a la vez, repartidas en dos renglones.
+     Antes la barra se desplazaba en horizontal: los últimos sectores queda-
+     ban fuera de la vista y el corte a media palabra en el borde derecho
+     hacía parecer que la barra estaba mal cuadrada. El componente reparte
+     las columnas para que los dos renglones terminen en el mismo punto. */
   .tab-sectores {
     display: flex;
-    flex-wrap: nowrap;
-    gap: 2px;
-    overflow-x: auto;
-    scrollbar-width: none;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 0;
     /* El subrayado de la activa se monta sobre la línea del carril. */
     margin-bottom: -1px;
   }
-  .tab-sectores::-webkit-scrollbar { width: 0; height: 0; }
 
   .tab-sector {
+    position: relative;
     display: inline-flex;
     align-items: center;
+    justify-content: center;
     gap: 7px;
-    flex: 0 0 auto;
-    padding: 11px 14px 12px;
+    flex: 0 1 auto;
+    min-width: 0;
+    padding: 10px 13px 11px;
     border: 0;
     border-bottom: 2px solid transparent;
     background: transparent;
@@ -382,95 +446,154 @@ const tableros = [...TABLEROS]
     font: inherit;
     font-size: 12.5px;
     font-weight: 500;
+    line-height: 1.25;
     white-space: nowrap;
     cursor: pointer;
     transition: color 200ms ease, border-color 200ms ease, background-color 200ms ease;
   }
-  .tab-sector:hover { color: inherit; }
+  .tab-nombre { overflow: hidden; text-overflow: ellipsis; }
+
+  /* Desde que caben seis en un renglón, la barra se cuadra: dos filas
+     justificadas de extremo a extremo con el reparto que calcula el
+     componente. Por debajo de ese ancho se envuelve centrada, que es lo que
+     mejor aguanta tres o cuatro renglones. */
+  @media (min-width: 1180px) {
+    .tab-sectores {
+      display: grid;
+      grid-template-columns: repeat(var(--cols, 30), minmax(0, 1fr));
+    }
+    .tab-sector { grid-column: span var(--span, 5); }
+  }
+
+  .tab-sector:hover {
+    color: inherit;
+    background: color-mix(in srgb, var(--color-ink) 4%, transparent);
+  }
   .tab-sector:focus-visible {
     outline: 2px solid var(--serie);
     outline-offset: -3px;
     color: inherit;
   }
-  .tab-sector.is-on {
-    color: inherit;
-    font-weight: 600;
-    border-bottom-color: var(--serie);
-  }
+  .tab-sector.is-on { color: inherit; font-weight: 600; }
 
-  /* El punto lleva el color del sector: encendido en la pestaña abierta,
-     atenuado en las demás. El nombre sigue ahí, así que el color nunca es lo
-     único que distingue una pestaña de otra. */
-  .tab-punto {
-    width: 7px;
-    height: 7px;
-    border-radius: 50%;
-    background: var(--serie);
-    opacity: 0.4;
-    transition: opacity 200ms ease;
+  /* El icono lleva el color del sector y dibuja su materia: encendido en la
+     pestaña abierta, atenuado en las demás. El nombre sigue al lado, así que
+     ni el color ni el dibujo son nunca el único canal. */
+  .tab-sector :global(.tab-ico) {
+    color: var(--serie);
+    opacity: 0.5;
+    transition: opacity 200ms ease, transform 260ms cubic-bezier(0.22, 0.61, 0.36, 1);
   }
-  .tab-sector:hover .tab-punto { opacity: 0.75; }
-  .tab-sector.is-on .tab-punto { opacity: 1; }
+  .tab-sector:hover :global(.tab-ico) { opacity: 0.82; transform: translateY(-1px) scale(1.09); }
+  .tab-sector.is-on :global(.tab-ico) { opacity: 1; }
 
-  /* La barra se desplaza en horizontal cuando no caben los once sectores:
-     un degradado en el borde avisa de que sigue habiendo sectores. */
-  .sector-rail::after {
-    content: '';
-    position: absolute;
-    top: 0;
-    right: 0;
-    bottom: 1px;
-    width: 40px;
-    pointer-events: none;
-    background: linear-gradient(90deg, transparent, var(--color-paper) 80%);
+  @media (max-width: 560px) {
+    .tab-sector { padding: 9px 10px 10px; font-size: 12px; gap: 6px; }
   }
-  @media (min-width: 1240px) { .sector-rail::after { display: none; } }
 
   .tab-panel:focus-visible { outline: none; }
+
+  /* Cambiar de sector no recarga nada: los tableros ya están armados y solo
+     se muestran y se ocultan. Sin transición el cambio era un salto seco de
+     una cuadrícula a otra; con esta entrada se entiende que llegó un tablero
+     nuevo. La animación se reinicia sola cada vez que el panel pasa de
+     oculto a visible, sin una línea de JavaScript. */
+  @keyframes tab-entra {
+    from { opacity: 0; transform: translateY(9px); }
+    to { opacity: 1; transform: none; }
+  }
+  .tab-panel:not([hidden]) {
+    animation: tab-entra 400ms cubic-bezier(0.22, 0.61, 0.36, 1) both;
+  }
+
+  /* El subrayado de la pestaña abierta crece desde el centro en vez de
+     encenderse de golpe. */
+  .tab-sector::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: -2px;
+    height: 2px;
+    background: var(--serie);
+    opacity: 0;
+    transform: scaleX(0.3);
+    transition: transform 280ms cubic-bezier(0.22, 0.61, 0.36, 1), opacity 220ms ease;
+  }
+  /* Al pasar por encima el subrayado se insinúa en el color del sector: se
+     ve de antemano de qué color va a venir el tablero antes de abrirlo. */
+  .tab-sector:hover::after { opacity: 0.4; transform: scaleX(1); }
+  .tab-sector.is-on::after { opacity: 1; transform: scaleX(1); }
+
+  @media (prefers-reduced-motion: reduce) {
+    .tab-panel:not([hidden]) { animation: none; }
+    .tab-sector::after,
+    .tb-op::after,
+    .tab-sector :global(.tab-ico) { transition: none; }
+    .tab-sector:hover :global(.tab-ico) { transform: none; }
+  }
 
   /* --- la barra de herramientas del tablero ------------------------------
      Neutra a propósito: el color de esta página es de las series, y un
      control que se pintara de un sector diría algo que no es cierto. */
+  /* El mando es el segundo piso de la misma barra. Iba en una pastilla con
+     su marco y su relleno, y se leía como un control de otro sitio pegado
+     debajo del tablero; ahora usa la letra, el tamaño y el subrayado de las
+     pestañas de arriba, centrado bajo el carril. Se distingue de ellas por
+     el cuerpo, más pequeño, y por el color del subrayado: el dorado de la
+     casa en vez del tono del sector, porque esto no elige sector. */
   .tablero-barra {
     display: flex;
     align-items: center;
+    justify-content: center;
     flex-wrap: wrap;
-    gap: 10px 16px;
+    gap: 10px 18px;
     margin-bottom: 22px;
   }
-  .tb-etq {
-    font-size: 9.5px;
-    font-weight: 700;
-    letter-spacing: 0.12em;
-    text-transform: uppercase;
-    color: var(--muted);
+  .tb-mando {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 6px 14px;
   }
-  .tb-grupo {
-    display: inline-flex;
-    border: 1px solid var(--line, var(--line-light));
-    border-radius: 7px;
-    overflow: hidden;
-  }
+
+  .tb-grupo { display: inline-flex; align-items: center; gap: 2px; }
   .tb-op {
-    padding: 7px 14px;
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 7px 13px 10px;
     border: 0;
-    border-left: 1px solid var(--line, var(--line-light));
     background: transparent;
     color: var(--muted);
     font: inherit;
-    font-size: 12px;
+    font-size: 11.5px;
+    font-weight: 500;
     white-space: nowrap;
     cursor: pointer;
-    transition: color 180ms ease, background-color 180ms ease;
+    transition: color 180ms ease, border-color 180ms ease;
   }
-  .tb-op:first-child { border-left: 0; }
   .tb-op:hover { color: inherit; }
-  .tb-op.is-on {
-    background: var(--color-ink);
-    color: var(--color-paper);
-    font-weight: 600;
+  .tb-op:focus-visible { outline: 2px solid var(--color-gold); outline-offset: -3px; color: inherit; }
+  .tb-op.is-on { color: inherit; font-weight: 600; }
+  /* El subrayado se insinúa al pasar por encima y se afirma al elegir: el
+     mismo gesto que las pestañas de arriba, con el dorado de la casa. */
+  .tb-op::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: 2px;
+    background: var(--color-gold);
+    opacity: 0;
+    transform: scaleX(0.3);
+    transition: transform 260ms cubic-bezier(0.22, 0.61, 0.36, 1), opacity 200ms ease;
   }
-  .tb-nota { font-size: 11.5px; max-width: 52ch; }
+  .tb-op:hover::after { opacity: 0.4; transform: scaleX(1); }
+  .tb-op.is-on::after { opacity: 1; transform: scaleX(1); }
 
   .tab-desc {
     margin-bottom: 20px;

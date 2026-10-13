@@ -383,12 +383,12 @@ const anchoBanda =
        de la caja, que es lo que el navegador escala junto con el SVG. */
     const altoVB = svg.viewBox.baseVal.height || 1;
 
-    /* En barras la marca es la barra: en vez de una línea se resalta la
-       columna entera, que es lo que el puntero está señalando. */
-    if (banda > 0) {
-      cruz.classList.add('es-banda');
-      cruz.style.width = `${(banda / ancho) * 100}%`;
-    }
+    /* En barras no se resalta nada por detrás. La columna iluminada se leía
+       como una barra fantasma: una segunda barra, más alta y más clara,
+       plantada justo sobre la que el puntero estaba señalando. El globo y el
+       punto ya dicen qué observación es. */
+    const conBanda = banda > 0;
+    if (conBanda) cruz.remove();
 
     let ultimo = -1;
 
@@ -410,7 +410,7 @@ const anchoBanda =
       const izq = (xs[i]! / ancho) * 100;
       const arriba = (ys[i]! / altoVB) * 100;
 
-      cruz.style.left = `${izq}%`;
+      if (!conBanda) cruz.style.left = `${izq}%`;
       marca.style.left = `${izq}%`;
       marca.style.top = `${arriba}%`;
 
@@ -502,7 +502,7 @@ const anchoBanda =
     display: flex;
     align-items: baseline;
     gap: 7px;
-    margin-top: 14px;
+    margin-top: 10px;
     text-align: left;
   }
   .pi-cifra {
@@ -586,14 +586,6 @@ const anchoBanda =
     opacity: 0.34;
     transform: translateX(-0.5px);
   }
-  /* En barras no hay línea que seguir: se ilumina la columna señalada. Va
-     detrás del dibujo, así que puede ser más franca sin tapar el dato. */
-  .pi-cruz.es-banda {
-    opacity: 0.22;
-    transform: translateX(-50%);
-    border-radius: 2px;
-  }
-
   .pi-marca {
     z-index: 2;
     width: 9px;
@@ -611,12 +603,18 @@ const anchoBanda =
     transform: translate(-50%, calc(-100% - 12px));
     display: grid;
     gap: 1px;
+    /* El ancho lo fija el contenido, no el sitio donde cae el globo. Sin
+       esto, un elemento absoluto colocado con `left` se encoge hasta el
+       hueco que le queda hasta el borde derecho de la tarjeta —el
+       desplazamiento del 50 % es posterior y no cuenta para el cálculo—, y
+       cerca del último dato la caja salía más estrecha que su propio texto:
+       la cifra y el mes se escapaban del fondo oscuro. */
+    width: max-content;
     padding: 6px 9px;
     border-radius: 7px;
     background: var(--color-ink);
     color: var(--color-paper);
     white-space: nowrap;
-    box-shadow: 0 12px 26px -14px rgb(3 26 36 / 0.7);
   }
   .pi-tip-val { font-size: 13px; font-weight: 600; letter-spacing: -0.01em; }
   .pi-tip-per { font-size: 10px; opacity: 0.66; }

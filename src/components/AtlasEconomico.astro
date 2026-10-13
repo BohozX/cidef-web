@@ -1,115 +1,26 @@
 ---
-import { withBase } from '../lib/url';
-import IndicatorCard from './IndicatorCard.astro';
-import { featured, lastUpdated } from '../lib/indicators';
-import { shortDate } from '../lib/format';
-
-const items = featured();
-const updated = shortDate(lastUpdated());
+import SectionHeader from './SectionHeader.astro';
+import Tableros from './Tableros.astro';
 ---
 
-<section class="surface-deep section atlas-section edge-tl edge-br" aria-labelledby="atlas-title">
+<section class="surface-mist section atlas-section edge-tl edge-br" aria-label="Atlas Económico">
   <div class="wrap">
+    <p class="eyebrow eyebrow-gold atlas-eyebrow" data-reveal>Atlas Económico</p>
+    <SectionHeader
+      title="¿Qué está pasando en la economía boliviana?"
+      href="/atlas"
+      linkLabel="Abrir el Atlas Económico"
+    />
 
-    <div class="atlas-head">
-      <div>
-        <p class="eyebrow eyebrow-gold" data-reveal>Atlas Económico</p>
-        <h2 id="atlas-title" class="display-2 atlas-title" data-reveal>
-          Una lectura rápida de los principales indicadores de la economía boliviana
-        </h2>
-      </div>
-
-      <div class="atlas-meta">
-        <p class="atlas-updated tnum" data-reveal>
-          <span class="eyebrow muted">Actualizado</span>
-          <span>{updated}</span>
-        </p>
-        <p class="atlas-note muted" data-reveal>
-          Series de demostración. Cada ficha indica su fuente y distingue los
-          datos oficiales de las estimaciones propias del centro.
-        </p>
-      </div>
-    </div>
-
-    <!-- Escritorio: cuadrícula. Móvil: carril horizontal. -->
-    <div class="atlas-grid" data-reveal-group data-reveal-stagger="0.06">
-      {items.map((ind) => <IndicatorCard indicator={ind} />)}
-    </div>
-
-    <div class="atlas-foot">
-      <a href={withBase('/atlas')} class="btn btn-primary">
-        Ver todos los indicadores
-        <svg class="arw" viewBox="0 0 16 16" width="13" height="13" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8">
-          <path d="M2 8h11M9 4l4 4-4 4" stroke-linecap="round" stroke-linejoin="round" />
-        </svg>
-      </a>
-      <a href={withBase('/atlas?cat=centro')} class="link-arrow">
-        Indicadores del Centro
-        <svg class="arw" viewBox="0 0 16 16" width="13" height="13" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.7">
-          <path d="M2 8h11M9 4l4 4-4 4" stroke-linecap="round" stroke-linejoin="round" />
-        </svg>
-      </a>
-    </div>
+    <Tableros solo="panorama" />
   </div>
 </section>
 
 <style>
-  .atlas-head {
-    display: grid;
-    gap: 22px;
-    padding-block: 24px clamp(30px, 4vw, 46px);
+  .atlas-section { padding-block: clamp(56px, 7vw, 104px); }
+  .atlas-eyebrow {
+    margin-bottom: 14px;
+    text-align: center;
   }
-  @media (min-width: 940px) {
-    .atlas-head {
-      grid-template-columns: minmax(0, 1.25fr) minmax(0, 0.75fr);
-      gap: 56px;
-      align-items: end;
-    }
-  }
-  .atlas-title { max-width: 22ch; margin-top: 14px; }
-
-  .atlas-meta { display: grid; gap: 14px; }
-  .atlas-updated {
-    display: flex;
-    align-items: baseline;
-    gap: 10px;
-    font-size: 15px;
-  }
-  .atlas-note { font-size: 13px; max-width: 44ch; }
-
-  .atlas-grid {
-    display: flex;
-    gap: 14px;
-    overflow-x: auto;
-    scroll-snap-type: x mandatory;
-    scrollbar-width: none;
-    padding-inline: 20px;
-    margin-inline: -20px;
-    padding-bottom: 4px;
-  }
-  .atlas-grid::-webkit-scrollbar { display: none; }
-  .atlas-grid > * { scroll-snap-align: start; flex: 0 0 78%; max-width: 300px; }
-
-  @media (min-width: 700px) {
-    .atlas-grid {
-      display: grid;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-      overflow: visible;
-      padding-inline: 0;
-      margin-inline: 0;
-      gap: 16px;
-    }
-    .atlas-grid > * { max-width: none; }
-  }
-  @media (min-width: 1080px) {
-    .atlas-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-  }
-
-  .atlas-foot {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 18px 28px;
-    margin-top: clamp(28px, 3.5vw, 44px);
-  }
+  .atlas-section :global(.sec-title) { max-width: none; }
 </style>

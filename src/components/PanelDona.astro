@@ -127,11 +127,15 @@ const sector = byId(id)?.category;
     text-align: left;
   }
 
+  /* Pegado al titulo y no flotando en medio de la tarjeta: el cuerpo se
+     alinea arriba, asi que el aire que sobra cuando la fila del tablero es
+     mas alta que la dona se va al pie y no se mete entre el rotulo y su
+     propio dato. */
   .pd-cuerpo {
     display: flex;
-    align-items: center;
+    align-items: flex-start;
     gap: 22px;
-    margin-top: 16px;
+    margin-top: 9px;
     flex: 1;
   }
   .pd-svg { flex-shrink: 0; }
@@ -190,7 +194,7 @@ const sector = byId(id)?.category;
   .pd-valor { font-weight: 600; }
 
   .pd-pie {
-    margin-top: 14px;
+    margin-top: 12px;
     font-size: 9.5px;
     font-weight: 700;
     letter-spacing: 0.1em;

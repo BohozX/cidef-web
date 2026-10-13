@@ -1,5 +1,5 @@
 import { defineCollection, z } from 'astro:content';
-import { glob, file } from 'astro/loaders';
+import { glob } from 'astro/loaders';
 
 /**
  * El contenido vive fuera de los componentes.
@@ -142,30 +142,4 @@ const formacion = defineCollection({
   }),
 });
 
-const archivo = defineCollection({
-  loader: file('./src/data/archivo.json'),
-  schema: z.object({
-    id: z.string(),
-    title: z.string(),
-    kind: z.enum([
-      'Publicación',
-      'Base de datos',
-      'Presentación',
-      'Documento histórico',
-      'Metodología',
-      'Libro',
-      'Recurso',
-    ]),
-    year: z.number(),
-    author: z.string().optional(),
-    description: z.string(),
-    href: z.string().optional(),
-    format: z.string().optional(),
-    size: z.string().optional(),
-    views: z.number().default(0),
-    topics: z.array(z.string()).default([]),
-    demo: z.boolean().default(false),
-  }),
-});
-
-export const collections = { publicaciones, eventos, investigadores, formacion, archivo };
+export const collections = { publicaciones, eventos, investigadores, formacion };

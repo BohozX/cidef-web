@@ -1,0 +1,142 @@
+---
+import type { GetStaticPaths } from 'astro';
+
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import PageHero from '../../components/PageHero.astro';
+import CatalogoSeries from '../../components/CatalogoSeries.astro';
+import LeyendaSellos from '../../components/LeyendaSellos.astro';
+import Newsletter from '../../components/Newsletter.astro';
+import TarjetaSector from '../../components/TarjetaSector.astro';
+import { sectorCover } from '../../site.config';
+import { byCategory, sectores, type Category } from '../../lib/indicators';
+
+/**
+ * Un sector de la Base de Datos Profesional.
+ *
+ * Es el escalón del medio. La portada de la base dice qué materias hay; esta
+ * página dice qué series tiene una de ellas, con su buscador y sus filtros ya
+ * acotados; la ficha de cada serie —a un clic desde cualquier fila— tiene el
+ * histórico completo. Antes las tres cosas convivían en una sola página: el
+ * catálogo entero se volcaba debajo del mapa y había que desplazarse por los
+ * diez sectores para llegar al que se buscaba.
+ *
+ * Abre con la imagen del sector, la misma que lleva su tarjeta en el mapa:
+ * entrar tiene que parecerse a lo que se acaba de pulsar.
+ */
+
+type Sector = Category & { series: number };
+
+export const getStaticPaths: GetStaticPaths = () =>
+  sectores().map((s) => ({ params: { sector: s.id }, props: { sector: s } }));
+
+const { sector } = Astro.props as { sector: Sector };
+
+const series = byCategory(sector.id);
+
+/* Qué sellos hay en este sector. Si todas sus series son oficiales no se
+   dibuja ningún sello en la lista, y entonces la leyenda explicaría algo que
+   no está a la vista. */
+const sellos = [...new Set(series.map((i) => i.kind))];
+const conSello = sellos.some((k) => k !== 'oficial');
+
+/* Cuántas series hay, y nada más. Debajo del nombre del sector, en el mismo
+   bloque de datos que usan las demás cabeceras: rótulo pequeño y cifra
+   grande. Las observaciones y el año de inicio se retiraron —son inventario
+   de la ficha, no lo que se viene a saber a la puerta de un sector. */
+const datos = [
+  { label: series.length === 1 ? 'Serie' : 'Series', value: String(series.length) },
+];
+
+const otros = sectores().filter((s) => s.id !== sector.id);
+---
+
+<BaseLayout
+  title={`${sector.name} — Base de Datos Profesional`}
+  description={`Las series de ${sector.name.toLowerCase()} en la base del CIDEF: qué mide cada una, cada cuánto se publica, cuántas observaciones tiene y cuál es su último dato.`}
+  noindex
+  bleed
+>
+  {/* Sobre la imagen va el nombre del sector y nada más. El antetítulo
+      repetía la miga de pan y la pregunta ya abre la sección de abajo: tres
+      renglones para decir una cosa. La miga nombra el sitio al que se vuelve
+      —todos los sectores—, no el título de esa página. */}
+  <PageHero
+    title={sector.name}
+    parent={{ label: 'Todos los sectores', href: '/base' }}
+    facts={datos}
+    cover={sectorCover(sector.id)}
+  />
+
+  <!-- LAS SERIES DEL SECTOR -------------------------------------------------- -->
+  <section class="surface-light section" aria-labelledby="series">
+    <div class="wrap">
+      <div class="sec-head">
+        <h2 id="series" class="display-3 sec-title" data-reveal>Las series del sector</h2>
+        <p class="sec-desc muted" data-reveal>{sector.description}</p>
+      </div>
+
+      <div class="sec-catalogo">
+        <CatalogoSeries sector={sector.id} />
+      </div>
+
+      {conSello && <LeyendaSellos kinds={sellos} />}
+    </div>
+  </section>
+
+  {/* Saltar a otro sector es la misma tarjeta del mapa, en bajo: se reconoce
+      sin tener que leerla, igual que se pasa de un diplomado a otro. */}
+  <section class="surface-light section" aria-labelledby="otros">
+    <div class="wrap">
+      <h2 id="otros" class="eyebrow eyebrow-gold otros-tit" data-reveal>Otros sectores</h2>
+      <ul class="otros-grid" data-reveal-group data-reveal-stagger="0.05">
+        {
+          otros.map((o) => (
+            <li data-reveal>
+              <TarjetaSector
+                sector={o}
+                compacta
+                medidas="(min-width: 1100px) 25vw, (min-width: 680px) 50vw, 94vw"
+              />
+            </li>
+          ))
+        }
+      </ul>
+    </div>
+  </section>
+
+  <Newsletter />
+</BaseLayout>
+
+<style>
+  /* --- cabecera de la sección -------------------------------------------- */
+  .sec-head {
+    display: grid;
+    gap: 14px;
+    padding-bottom: clamp(26px, 3vw, 38px);
+    border-bottom: 1px solid var(--line, var(--line-light));
+  }
+  @media (min-width: 900px) {
+    .sec-head {
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+      gap: 48px;
+      align-items: end;
+    }
+  }
+  .sec-title { max-width: 16ch; }
+  .sec-desc { font-size: 13.5px; max-width: 54ch; text-align: left; }
+
+  .sec-catalogo { padding-top: clamp(30px, 3.4vw, 46px); }
+
+  /* --- saltar a otro sector ------------------------------------------------ */
+  .otros-tit { display: block; margin-bottom: 18px; }
+  .otros-grid {
+    display: grid;
+    gap: 14px;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    grid-template-columns: 1fr;
+  }
+  @media (min-width: 680px) { .otros-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  @media (min-width: 1100px) { .otros-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+</style>

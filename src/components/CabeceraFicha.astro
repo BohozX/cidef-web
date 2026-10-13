@@ -1,0 +1,239 @@
+---
+import { withBase } from '../lib/url';
+
+export interface Props {
+  parent: { label: string; href: string };
+  etiquetas?: { texto: string; tono?: 'tipo' | 'apagada' | 'oro' }[];
+  title: string;
+  linea?: string;
+  dato: {
+    rotulo: string;
+    valor: string;
+    unidad?: string;
+    cambio?: { texto: string; tono: 'es-bueno' | 'es-malo' | 'es-plano'; contra?: string };
+    nota?: string;
+  };
+  cifras?: { rotulo: string; valor: string; unidad?: string; nota?: string; texto?: boolean }[];
+}
+
+const { parent, etiquetas = [], title, linea, dato, cifras = [] } = Astro.props;
+---
+
+<section class="surface-deep fc">
+  <div class="wrap">
+    <nav class="fc-crumb" aria-label="Ruta de navegación">
+      <a href={withBase(parent.href)} class="link-arrow">
+        <svg class="arw" viewBox="0 0 16 16" width="12" height="12" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.7">
+          <path d="M14 8H3M7 4L3 8l4 4" stroke-linecap="round" stroke-linejoin="round" />
+        </svg>
+        {parent.label}
+      </a>
+    </nav>
+
+    <div class="fc-inner">
+      <div class="fc-info">
+        {etiquetas.length > 0 && (
+          <p class="fc-kicker">
+            {etiquetas.map((e) => <span class={`is-${e.tono ?? 'apagada'}`}>{e.texto}</span>)}
+          </p>
+        )}
+
+        <h1 class:list={['fc-titulo', title.length > 26 && 'is-long', title.length > 48 && 'is-muy-largo']}>{title}</h1>
+
+        {linea && <p class="fc-linea tnum">{linea}</p>}
+
+        <slot />
+      </div>
+
+      <div class="fc-dato">
+        <p class="fc-rotulo tnum">{dato.rotulo}</p>
+        <p class="fc-cifra metric">{dato.valor}</p>
+        {dato.unidad && <p class="fc-unidad">{dato.unidad}</p>}
+        {dato.cambio && (
+          <p class="fc-cambio tnum">
+            <span class={dato.cambio.tono}>{dato.cambio.texto}</span>
+            {dato.cambio.contra && <span class="fc-contra">{dato.cambio.contra}</span>}
+          </p>
+        )}
+        {dato.nota && <p class="fc-nota tnum">{dato.nota}</p>}
+      </div>
+    </div>
+
+    {cifras.length > 0 && (
+      <dl class="fc-cifras">
+        {cifras.map((c) => (
+          <div class:list={[c.texto && 'is-texto']}>
+            <dt>{c.rotulo}</dt>
+            <dd class="tnum">{c.valor}{c.unidad && <small> {c.unidad}</small>}</dd>
+            {c.nota && <dd class="fc-cifras-nota tnum">{c.nota}</dd>}
+          </div>
+        ))}
+      </dl>
+    )}
+  </div>
+</section>
+
+<style>
+  .fc {
+    padding-top: clamp(30px, 3.4vh, 46px);
+    padding-bottom: clamp(44px, 5vw, 72px);
+    border-bottom-left-radius: clamp(48px, 11vw, 168px);
+    text-align: center;
+  }
+  .fc p { text-align: center; }
+
+  .fc-crumb {
+    display: flex;
+    justify-content: flex-start;
+    margin-bottom: 34px;
+  }
+  .fc-crumb .arw { transition: transform 240ms cubic-bezier(0.22, 0.61, 0.36, 1); }
+  .fc-crumb a:hover .arw { transform: translateX(-4px); }
+
+  .fc-inner {
+    display: grid;
+    gap: 36px;
+  }
+  @media (min-width: 1000px) {
+    .fc-inner {
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+      gap: 0;
+      align-items: stretch;
+    }
+    .fc-info,
+    .fc-dato {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      padding: 6px clamp(28px, 3.5vw, 56px);
+    }
+  }
+
+  .fc-kicker {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 8px 16px;
+    font-size: 10.5px;
+    font-weight: 700;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+  }
+  .is-tipo { color: var(--color-teal-300); }
+  .is-apagada { color: var(--muted); }
+  .is-oro { color: var(--color-gold); }
+
+  .fc-titulo {
+    margin-top: 18px;
+    font-size: clamp(2.3rem, 4.4vw, 3.7rem);
+    font-weight: 600;
+    line-height: 1.04;
+    letter-spacing: -0.035em;
+  }
+  .fc-titulo.is-long { font-size: clamp(2rem, 3.4vw, 2.9rem); line-height: 1.08; }
+  .fc-titulo.is-muy-largo { font-size: clamp(1.7rem, 2.6vw, 2.35rem); line-height: 1.12; }
+
+  .fc-linea {
+    margin-top: 18px;
+    font-size: 13.5px;
+    font-weight: 500;
+    letter-spacing: 0.02em;
+    color: var(--color-gold);
+  }
+
+  .fc-dato {
+    padding-top: 32px;
+    border-top: 1px solid var(--line);
+  }
+  @media (min-width: 1000px) {
+    .fc-dato {
+      order: -1;
+      border-top: 0;
+      border-right: 1px solid var(--line);
+    }
+  }
+  .fc-rotulo {
+    font-size: 10.5px;
+    font-weight: 700;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--color-teal-300);
+  }
+  .fc-cifra {
+    margin-top: 16px;
+    font-size: clamp(3.6rem, 13vw, 7rem);
+    color: var(--color-gold);
+    white-space: nowrap;
+  }
+  .fc-unidad {
+    margin-top: 12px;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+  .fc-cambio {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 4px 10px;
+    margin-top: 18px;
+    font-size: 15px;
+  }
+  .fc-cambio > span:first-child { font-weight: 600; }
+  .fc-contra { color: var(--muted); }
+  .es-plano { color: var(--muted); }
+  .es-bueno { color: var(--color-teal-300); }
+  .es-malo { color: #e0a06a; }
+  .fc-nota {
+    margin-top: 8px;
+    font-size: 13px;
+    color: var(--muted);
+  }
+
+  .fc-cifras {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 26px 20px;
+    margin: clamp(44px, 5vw, 64px) 0 0;
+    padding-top: 28px;
+    border-top: 1px solid var(--line);
+  }
+  @media (min-width: 760px) {
+    .fc-cifras { grid-template-columns: repeat(auto-fit, minmax(0, 1fr)); grid-auto-flow: column; gap: 0; }
+    .fc-cifras > div { padding: 0 clamp(12px, 1.6vw, 24px); border-left: 1px solid var(--line); }
+    .fc-cifras > div:first-child { border-left: 0; }
+  }
+  .fc-cifras dt {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--color-teal-300);
+  }
+  .fc-cifras dd {
+    margin: 10px 0 0;
+    font-family: var(--font-display);
+    font-size: clamp(1.25rem, 1.8vw, 1.6rem);
+    font-weight: 500;
+    letter-spacing: -0.02em;
+    line-height: 1.1;
+  }
+  .fc-cifras .is-texto dd:not(.fc-cifras-nota) { font-size: clamp(1.05rem, 1.35vw, 1.25rem); padding-top: 4px; }
+  .fc-cifras dd small {
+    font-family: var(--font-sans);
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    color: var(--muted);
+  }
+  .fc-cifras .fc-cifras-nota {
+    margin-top: 6px;
+    font-family: var(--font-sans);
+    font-size: 12.5px;
+    font-weight: 400;
+    letter-spacing: 0;
+    color: var(--muted);
+  }
+</style>

@@ -4,10 +4,20 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
 import PageHero from '../../components/PageHero.astro';
 import Newsletter from '../../components/Newsletter.astro';
 import { indicators } from '../../lib/indicators';
-import { num } from '../../lib/format';
+import { num, periodoCorto } from '../../lib/format';
 import Tableros from '../../components/Tableros.astro';
-import LeyendaSellos from '../../components/LeyendaSellos.astro';
-import { atajos, categories as todasCategorias, SECTORES, higherIsBetter } from '../../lib/indicators';
+import IconoSector from '../../components/IconoSector.astro';
+import MapaBolivia from '../../components/MapaBolivia.astro';
+import { linea } from '../../lib/graficos';
+import {
+  atajos,
+  byId,
+  ETIQUETA,
+  categories as todasCategorias,
+  ownIndicators,
+  SECTORES,
+  higherIsBetter,
+} from '../../lib/indicators';
 
 /* La tira de la cabecera: lo que se mira cada mañana. Cada atajo dice qué
    mide y de cuándo es el dato: «inflación» a secas no informa de nada si no
@@ -33,6 +43,66 @@ const tira = atajos().map((i) => ({ i, periodo: periodo(i.date, i.frequency) }))
 const sectores = SECTORES.map((id) => todasCategorias.find((c) => c.id === id)).filter(
   (c): c is NonNullable<typeof c> => Boolean(c),
 );
+
+/* --- la vista de la derecha --------------------------------------------
+   Dos piezas y ninguna inventada: las dos salen del mismo catálogo que el
+   tablero de arriba. Se eligen las dos que el Centro calcula por su cuenta,
+   que es exactamente lo que la sección dice que se lleva quien entra.
+
+   El gráfico es el nowcast del PIB: la lectura propia sobre el producto,
+   semana a semana, que es el argumento de la sección —un dato que ninguna
+   fuente publica— sin salirse de lo que hay en el catálogo. Debajo, dos
+   cifras: una proyección y una estimación, las dos familias de dato propio.
+
+   No se usa la brecha del producto porque el catálogo no la tiene: habría
+   que estimarla y publicarla como serie propia antes de poder enseñarla, y
+   dibujarla aquí sería inventar el dato. */
+const grafica = byId('nowcast-pib')!;
+const vistaSerie = grafica.history.map((h) => h.v);
+const vistaG = linea(vistaSerie, 600, 150, true);
+const vistaMin = Math.min(...vistaSerie);
+const vistaMax = Math.max(...vistaSerie);
+const vistaDesde = periodoCorto(grafica.history[0]!.d, grafica.frequency);
+const vistaHasta = periodoCorto(grafica.date, grafica.frequency);
+const cifraVista = byId('inflacion-esperada')!;
+
+/* Dónde cae la lectura de hoy dentro de su propia historia.
+
+   Es un histograma de las observaciones del índice de incertidumbre, con la
+   columna del dato actual encendida. No repite lo que hace la ficha de
+   arriba —allí se ve la trayectoria, aquí la frecuencia— y contesta algo que
+   una serie en el tiempo no contesta de un vistazo: si el valor de hoy es
+   corriente o excepcional para esa serie.
+
+   No hay ningún número inventado: los tramos y las alturas se cuentan de la
+   propia serie al compilar. */
+const inc = byId('indice-incertidumbre')!;
+const valoresInc = inc.history.map((h) => h.v);
+const TRAMOS = 18;
+const incMin = Math.min(...valoresInc);
+const incMax = Math.max(...valoresInc);
+const paso = (incMax - incMin) / TRAMOS || 1;
+const tramoDe = (v: number) => Math.min(TRAMOS - 1, Math.max(0, Math.floor((v - incMin) / paso)));
+
+const cuenta = new Array(TRAMOS).fill(0) as number[];
+for (const v of valoresInc) cuenta[tramoDe(v)] += 1;
+const cuentaMax = Math.max(...cuenta) || 1;
+const tramoHoy = tramoDe(inc.value);
+
+/* Cuántas observaciones quedan por debajo del dato de hoy: el percentil, que
+   es la lectura que el histograma deja ver pero no dice. */
+const percentilHoy = Math.round(
+  (valoresInc.filter((v) => v < inc.value).length / valoresInc.length) * 100,
+);
+
+/* Los nombres de las series propias, en prosa y en el orden del catálogo.
+   El volumen P2P queda fuera de esta enumeración por decisión editorial: no
+   se nombra en esta sección. */
+const nombresPropios = ownIndicators()
+  .filter((i) => i.id !== 'volumen-p2p')
+  .map((i) => i.shortName);
+const listaPropios =
+  nombresPropios.slice(0, -1).join(', ') + ' y ' + nombresPropios.at(-1);
 import { covers } from '../../site.config';
 
 ---
@@ -78,113 +148,200 @@ import { covers } from '../../site.config';
   <!-- LOS TABLEROS ---------------------------------------------------------- -->
   <section class="surface-light section" aria-labelledby="panorama">
     <div class="wrap">
+      {/* La sección abre con la pregunta, sin antetítulo ni nota al lado:
+          el tablero que viene debajo es la respuesta y no necesita que se lo
+          presenten dos veces. */}
       <div class="atlas-sec-head">
-        <div>
-          <p class="eyebrow eyebrow-gold" data-reveal>Panorama económico</p>
-          <h2 id="panorama" class="display-3 atlas-sec-title" data-reveal>
-            Qué está pasando en la economía boliviana
-          </h2>
-        </div>
-        <p class="atlas-sec-note muted" data-reveal>
-          Cada pieza usa el gráfico que su dato pide: el crecimiento en barras,
-          el tipo de cambio en línea, las reservas en área y el saldo comercial
-          a ambos lados del cero. Series de demostración.
-        </p>
+        <h2 id="panorama" class="display-3 atlas-sec-title" data-reveal>
+          ¿Qué está pasando en la economía boliviana?
+        </h2>
       </div>
 
       <Tableros />
-
-      <LeyendaSellos />
-
-      <div class="atlas-mas" data-reveal>
-        <p class="atlas-mas-texto">
-          Cada tablero muestra una selección de su sector. El catálogo completo
-          —todas las series, con su frecuencia, su fuente y su histórico— está en
-          la Base de Datos Profesional.
-        </p>
-        <a href={withBase('/base')} class="btn btn-solid">
-          Ver más datos
-          <svg class="arw" viewBox="0 0 16 16" width="13" height="13" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8">
-            <path d="M2 8h11M9 4l4 4-4 4" stroke-linecap="round" stroke-linejoin="round" />
-          </svg>
-        </a>
-      </div>
     </div>
   </section>
 
   <!-- LA BASE DE DATOS PROFESIONAL ----------------------------------------
-       El Atlas es la puerta; esto es el producto. Un solo bloque: a la
-       izquierda qué se lleva quien entra, a la derecha en qué se diferencian
-       el tablero abierto y la base de pago, y debajo la frase que cierra.
-       Iban separados y se leían como dos avisos sueltos. -->
+       El Atlas es la puerta; esto es el producto. La sección se leía como un
+       folleto: dos párrafos largos, una tarjeta con otros tres dentro y un
+       cierre que repetía el titular. El mensaje —hay dos niveles, y el de
+       pago trae lo que nadie más publica— no llegaba hasta el quinto
+       renglón. Ahora llega en el primero, tres cifras del propio catálogo lo
+       sostienen y los dos niveles son la llamada a la acción, en vez de un
+       botón suelto debajo de todo. -->
   <section class="surface-mist section edge-tr" aria-labelledby="base-titulo">
     <div class="wrap">
       <div class="bp">
-        <div class="bp-copy">
-          <p class="eyebrow bp-eyebrow" data-reveal>Base de datos económica</p>
-          <h2 id="base-titulo" class="display-2 bp-titulo" data-reveal>
-            Datos para entender, comparar y anticipar la economía
-          </h2>
-          <p class="bp-claim" data-reveal>
-            <span class="bp-regla" aria-hidden="true"></span>Más allá del dato visible
-          </p>
+        <div class="bp-panel">
+          {/* Lo que se dice, a la izquierda. */}
+          <div class="bp-dicho" data-reveal-group data-reveal-stagger="0.07">
+            <p class="eyebrow bp-eyebrow" data-reveal>
+              Base de datos económica<span class="bp-regla" aria-hidden="true" />
+            </p>
+            <h2 id="base-titulo" class="bp-titulo" data-reveal>
+              Más allá del <em>dato</em> visible
+            </h2>
+            {/* Tres apartados en el orden del argumento: lo que cualquiera
+                consigue en otra parte, lo que solo está aquí, y con qué se
+                mira. Sin cajas: en esta sección ya hay dos, y la lista no
+                necesita marco para leerse como lista. */}
+            <ul class="bp-puntos">
+              <li data-reveal>
+                <span class="bp-punto-ico" aria-hidden="true"><svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+                    <ellipse cx="12" cy="5.6" rx="8" ry="3" />
+                    <path d="M4 5.6v6.2c0 1.7 3.6 3 8 3s8-1.3 8-3V5.6" />
+                    <path d="M4 11.8V18c0 1.7 3.6 3 8 3s8-1.3 8-3v-6.2" />
+                  </svg></span>
+                <div>
+                  <p class="bp-punto-etq">Todas las fuentes</p>
+                  <p class="bp-punto-txt">
+                    INE, BCB, ministerios y organismos internacionales, ordenados
+                    por sector y con el histórico completo de cada serie.
+                  </p>
+                </div>
+              </li>
 
-          <p class="bp-lede" data-reveal>
-            Explora series históricas, compara indicadores y accede a estimaciones
-            que no encontrarás directamente en las fuentes tradicionales.
-          </p>
+              <li class="es-propia" data-reveal>
+                <span class="bp-punto-ico" aria-hidden="true">
+                  <IconoSector id="centro" size={19} />
+                </span>
+                <div>
+                  <p class="bp-punto-etq">Lo que calcula el Centro</p>
+                  <p class="bp-punto-txt">
+                    {listaPropios}. Estimaciones y proyecciones con metodología
+                    propia y su historial de revisiones.
+                  </p>
+                </div>
+              </li>
 
-          <p class="bp-texto" data-reveal>
-            Reunimos la información de organismos oficiales y de fuentes
-            especializadas en una sola base, ordenada por sectores. Ahí puedes ver
-            el histórico completo, comparar y transformar series, descargarlas y
-            consultar los indicadores propios del Centro: estimaciones,
-            proyecciones y variables que no se observan directamente.
-          </p>
+              <li class="es-mirar" data-reveal>
+                <span class="bp-punto-ico" aria-hidden="true"><svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M3.2 3v15.4A2.4 2.4 0 0 0 5.6 20.8H21" />
+                    <path d="M7 16.2l3.9-4.7 3.1 2.6 4.6-6" />
+                    <path d="M18.6 8.1h-3.2m3.2 0v3.2" />
+                  </svg></span>
+                <div>
+                  <p class="bp-punto-etq">Una herramienta para verlos</p>
+                  <p class="bp-punto-txt">
+                    Grafica cualquier serie, compárala con otra o entre fuentes,
+                    transfórmala y descarga el resultado.
+                  </p>
+                </div>
+              </li>
+            </ul>
 
-          <div class="bp-acciones no-print" data-reveal>
-            <a href={withBase('/base')} class="btn btn-solid">
-              Explorar la Base de Datos
-              <svg class="arw" viewBox="0 0 16 16" width="13" height="13" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8">
-                <path d="M2 8h11M9 4l4 4-4 4" stroke-linecap="round" stroke-linejoin="round" />
-              </svg>
+          </div>
+
+          {/* Lo que se enseña, a la derecha: el país de fondo y encima dos
+              piezas reales del catálogo, las dos del propio Centro. */}
+          <div class="bp-vista" data-reveal-group data-reveal-stagger="0.12">
+            <MapaBolivia class="bp-mapa" />
+
+            <figure class="bp-ficha es-grafico" data-reveal>
+              <figcaption class="bp-ficha-head">
+                <span class="bp-ficha-tit">{grafica.name}</span>
+                {/* El sello lo dicta el dato, no la plantilla: una proyección
+                    no puede presentarse nunca como estimación. */}
+                <span class:list={['bp-ficha-sello', `es-${grafica.kind}`]}>
+                  {ETIQUETA[grafica.kind]}
+                </span>
+              </figcaption>
+
+              <p class="bp-ficha-valor">
+                <span class="bp-ficha-cifra tnum">{num(grafica.value, grafica.decimals)}</span>
+                <span class="bp-ficha-unidad">{grafica.unit}</span>
+              </p>
+
+              <div class="bp-ficha-lienzo">
+                <svg viewBox="0 0 600 150" preserveAspectRatio="none" width="100%" height="88" aria-hidden="true">
+                  <defs>
+                    <linearGradient id="bp-relleno" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0" stop-color="currentColor" stop-opacity="0.26" />
+                      <stop offset="1" stop-color="currentColor" stop-opacity="0" />
+                    </linearGradient>
+                  </defs>
+                  <path d={vistaG.area} fill="url(#bp-relleno)" />
+                  {/* `spark-path` es el trazo progresivo que ya usa el sitio:
+                      lo dibuja al entrar en pantalla y se desactiva solo con
+                      `prefers-reduced-motion`. */}
+                  <path
+                    class="spark-path"
+                    d={vistaG.linea}
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2.4"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    vector-effect="non-scaling-stroke"
+                  />
+                  <circle cx={vistaG.ultimoX} cy={vistaG.ultimoY} r="4" fill="currentColor" />
+                </svg>
+              </div>
+
+              <div class="bp-ficha-pie">
+                <span>{vistaDesde}</span>
+                <span class="tnum">
+                  {num(vistaMin, grafica.decimals)} – {num(vistaMax, grafica.decimals)} {grafica.unit}
+                </span>
+                <span>{vistaHasta}</span>
+              </div>
+            </figure>
+
+            {/* Debajo, de qué está hecho el índice —la pregunta que sigue
+                siempre a «lo calcula el Centro»— y una cifra propia más. */}
+            <div class="bp-datos">
+              <figure class="bp-ficha es-hist" data-reveal>
+                <figcaption class="bp-ficha-head">
+                  <span class="bp-ficha-tit">{inc.shortName}</span>
+                  <span class:list={['bp-ficha-sello', `es-${inc.kind}`]}>
+                    {ETIQUETA[inc.kind]}
+                  </span>
+                </figcaption>
+
+                <p class="bp-ficha-valor">
+                  <span class="bp-ficha-cifra tnum">{num(inc.value, inc.decimals)}</span>
+                  <span class="bp-ficha-unidad">{inc.unit}</span>
+                </p>
+
+                {/* Cada columna es un tramo del índice y su alto, cuántos días
+                    cayeron ahí. La encendida es la de hoy. */}
+                <div class="bp-hist" aria-hidden="true">
+                  {cuenta.map((c, i) => (
+                    <span
+                      class:list={['bp-hist-col', i === tramoHoy && 'es-hoy']}
+                      style={`height:${Math.max(6, (c / cuentaMax) * 100)}%`}
+                    />
+                  ))}
+                </div>
+
+                <p class="bp-hist-pie">
+                  Hoy por encima del <strong class="tnum">{percentilHoy}%</strong> de las
+                  {' '}{valoresInc.length} lecturas diarias
+                </p>
+              </figure>
+
+              <div class="bp-ficha es-dato" data-reveal>
+                <span class="bp-ficha-tit">{cifraVista.shortName}</span>
+                <p class="bp-ficha-valor">
+                  <span class="bp-ficha-cifra tnum">{num(cifraVista.value, cifraVista.decimals)}</span>
+                  <span class="bp-ficha-unidad">{cifraVista.unit}</span>
+                </p>
+                <span class:list={['bp-ficha-sello', `es-${cifraVista.kind}`]}>
+                  {ETIQUETA[cifraVista.kind]} · {cifraVista.frequency}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          {/* El botón cierra la sección centrado bajo las dos columnas: es lo
+              único que se pide hacer y no pertenece a ninguna de las dos. */}
+          <div class="bp-cierre" data-reveal>
+            <a href={withBase('/base')} class="btn btn-solid bp-boton">
+              <span class="bp-boton-txt">Explorar la Base de Datos</span>
+              <svg class="arw" viewBox="0 0 16 16" width="14" height="14" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M2 8h11M9 4l4 4-4 4" stroke-linecap="round" stroke-linejoin="round" /></svg>
             </a>
-            <a href={withBase('/base#proximo')} class="btn btn-outline">Ver qué incluye</a>
           </div>
         </div>
-
-        {/* La comparación va en oscuro dentro de la sección clara: es el
-            argumento de venta y tiene que pesar más que el párrafo de al
-            lado. El color vive en el filo de cada nivel, no en el relleno. */}
-        <div class="bp-niveles surface-dark" data-reveal>
-          <h3 class="bp-niveles-tit">Dos niveles de profundidad, una misma economía</h3>
-
-          <div class="bp-nivel">
-            <span class="bp-nivel-etq">Atlas Económico</span>
-            <p class="bp-nivel-frase">Descubre <strong>qué</strong> está ocurriendo.</p>
-            <p class="bp-nivel-texto">
-              El tablero abierto: el último dato de cada serie, su gráfico y su
-              ficha. Seguirá siendo público y actualizado.
-            </p>
-          </div>
-
-          <div class="bp-nivel es-pro">
-            <span class="bp-nivel-etq">Base de Datos Profesional</span>
-            <p class="bp-nivel-frase">Investiga <strong>por qué</strong> está ocurriendo.</p>
-            <p class="bp-nivel-texto">
-              Histórico completo, comparación entre fuentes, transformación de
-              series, indicadores propios y los datos que sustentan nuestros
-              análisis.
-            </p>
-          </div>
-        </div>
-      </div>
-
-      <div class="bp-cierre" data-reveal>
-        <p class="bp-cierre-frase">De consultar datos <em>a entender la economía</em>.</p>
-        <p class="bp-cierre-pie">
-          Información oficial, series armonizadas y análisis propio en un mismo entorno.
-        </p>
       </div>
     </div>
   </section>
@@ -194,126 +351,304 @@ import { covers } from '../../site.config';
 
 <style>
   /* --- la base profesional ----------------------------------------------
-     Un bloque, no dos avisos. El texto lleva el peso a la izquierda y la
-     comparación de niveles, en oscuro, ancla la derecha: sin ella la mitad
-     de la sección quedaba vacía y el argumento de venta se leía como una
-     nota al pie. */
-  .bp {
-    display: grid;
-    gap: clamp(32px, 4vw, 60px);
+     Dos mitades: lo que se dice y lo que se enseña. A la izquierda el
+     argumento; a la derecha el país de fondo y encima dos piezas reales del
+     catálogo, no un decorado. Dos fichas y ninguna más: la sección ya se
+     había llenado antes de tarjetas dentro de tarjetas.
+
+     El dorado es el acento de la sección y el turquesa el del dato propio.
+     Sobre papel el dorado de marca se aclara demasiado para un cuerpo
+     pequeño, así que se hunde hacia la tinta lo justo para leerse sin dejar
+     de ser dorado. */
+  .bp { --oro: color-mix(in srgb, var(--color-gold) 74%, var(--color-ink)); }
+
+  .bp-panel { display: grid; gap: clamp(34px, 4vw, 60px); }
+  @media (min-width: 1040px) {
+    .bp-panel {
+      grid-template-columns: minmax(0, 1.02fr) minmax(0, 0.98fr);
+      align-items: center;
+      /* Ancho entre columnas, corto entre filas: el botón va en una fila
+         propia y con el mismo hueco a los lados quedaba descolgado medio
+         palmo por debajo de todo. */
+      gap: clamp(18px, 2vw, 26px) clamp(36px, 4.2vw, 68px);
+    }
   }
 
-  /* En bandera, no justificado. Aqui las medidas son cortas y las frases
-     tambien: justificarlas abria calles entre las palabras y cada bloque
-     parecia escrito con otra letra que el titulo de al lado. */
-  .bp p,
-  .bp-cierre p { text-align: left; }
-  @media (min-width: 940px) {
-    /* La tarjeta iguala el alto de la columna de texto —recortada arriba
-       dejaba un socavón a la derecha— y su contenido se centra en bloque.
-       Repartido de extremo a extremo abría un vacío justo en medio. */
-    .bp { grid-template-columns: minmax(0, 1.02fr) minmax(0, 0.98fr); align-items: stretch; }
-    .bp-niveles { display: flex; flex-direction: column; justify-content: center; }
-  }
-
-  .bp-eyebrow { color: var(--color-teal-600); }
-  .bp-titulo { margin-top: 14px; max-width: 17ch; }
-
-  /* El claim de marca se queda, pero de acompañante: decía bonito y no
-     decía qué se lleva quien entra. */
-  .bp-claim {
+  /* --- lo que se dice --- */
+  .bp-eyebrow {
     display: flex;
     align-items: center;
-    gap: 12px;
-    margin-top: 16px;
-    font-size: clamp(14px, 1.2vw, 15.5px);
-    font-weight: 500;
+    gap: 14px;
+    color: var(--oro);
+    text-align: left;
+  }
+  .bp-regla { flex: 0 0 40px; height: 1px; background: currentColor; opacity: 0.5; }
+
+  /* El titular se deja correr: acotado a once caracteres se partía en dos
+     renglones cortos aunque hubiera sitio de sobra a la derecha. */
+  .bp-titulo {
+    margin-top: 14px;
+    font-family: var(--font-display);
+    font-size: clamp(30px, 3.6vw, 50px);
+    font-weight: 700;
+    line-height: 1.04;
+    letter-spacing: -0.042em;
+    text-wrap: balance;
+  }
+  /* Una sola palabra en color: la que nombra lo que la sección promete. */
+  .bp-titulo em { font-style: normal; color: var(--color-teal-600); }
+
+  /* --- los tres apartados --- */
+  .bp-puntos {
+    display: grid;
+    gap: 18px;
+    margin: clamp(26px, 3vw, 36px) 0 0;
+    padding: 0;
+    list-style: none;
+  }
+  .bp-puntos li {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    gap: 14px;
+    align-items: start;
     color: var(--color-teal-600);
   }
-  .bp-regla { width: 26px; height: 1px; background: currentColor; opacity: 0.6; }
+  .bp-puntos li.es-propia { color: var(--oro); }
 
-  .bp-lede {
-    margin-top: 24px;
-    font-size: clamp(16px, 1.55vw, 19px);
-    line-height: 1.58;
-    max-width: 42ch;
+  .bp-punto-ico {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 42px;
+    height: 42px;
+    flex: 0 0 auto;
+    border-radius: 50%;
+    background: color-mix(in srgb, currentColor 12%, transparent);
   }
-  .bp-texto {
-    margin-top: 16px;
-    font-size: 14px;
-    line-height: 1.75;
-    color: var(--muted);
-    max-width: 54ch;
-  }
-  .bp-acciones { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 30px; }
-
-  /* --- los dos niveles --- */
-  .bp-niveles {
-    padding: clamp(24px, 2.6vw, 34px);
-    border-radius: 16px;
-    box-shadow: 0 36px 70px -50px rgb(3 26 36 / 0.75);
-  }
-  .bp-niveles-tit {
-    font-size: clamp(20px, 2.1vw, 26px);
-    line-height: 1.22;
-    max-width: 20ch;
-  }
-
-  .bp-nivel {
-    margin-top: clamp(22px, 2.4vw, 30px);
-    padding-left: 16px;
-    border-left: 2px solid var(--color-teal-300);
-  }
-  .bp-nivel.es-pro { border-left-color: var(--color-gold); }
-
-  .bp-nivel-etq {
-    display: block;
-    font-size: 10px;
+  /* Un punto por encima de lo que eran: al lado de un titular de cincuenta
+     píxeles, un rótulo de nueve y medio y un cuerpo de doce y medio se leían
+     como el pie de una tabla, y son el argumento de la sección. */
+  .bp-punto-etq {
+    font-size: 10.5px;
     font-weight: 700;
     letter-spacing: 0.13em;
     text-transform: uppercase;
-    color: var(--color-teal-300);
+    color: currentColor;
+    text-align: left;
   }
-  .bp-nivel.es-pro .bp-nivel-etq { color: var(--color-gold); }
+  .bp-punto-txt {
+    margin-top: 7px;
+    font-size: 13.5px;
+    line-height: 1.62;
+    color: var(--muted);
+    text-align: left;
+    max-width: 52ch;
+  }
 
-  .bp-nivel-frase { margin-top: 9px; font-size: clamp(15px, 1.4vw, 17px); font-weight: 600; }
-  .bp-nivel-frase strong { font-weight: 700; }
-  .bp-nivel-texto { margin-top: 9px; font-size: 13px; line-height: 1.68; color: var(--muted); }
-
-  /* --- el cierre ---
-     Ocupa las dos columnas: la frase sostiene la izquierda y el apoyo se
-     alinea bajo la tarjeta, que si no dejaba medio ancho en blanco. */
+  /* --- el cierre --- */
   .bp-cierre {
+    display: flex;
+    justify-content: center;
+    margin-top: clamp(28px, 3.4vw, 44px);
+  }
+  @media (min-width: 1040px) { .bp-cierre { grid-column: 1 / -1; margin-top: 0; } }
+
+  /* El botón era un rectángulo de esquinas casi rectas, del mismo negro que
+     todo lo demás y sin nada que invitara a pulsarlo. Ahora es una cápsula, y
+     al pasar por encima el dorado de la casa lo recorre de lado a lado y la
+     tinta se invierte: el color del acento entra por donde hay que entrar. */
+  .bp-boton {
+    position: relative;
+    overflow: hidden;
+    isolation: isolate;
+    padding: 14px 30px;
+    border-radius: 999px;
+    box-shadow: 0 12px 26px -16px rgb(3 26 36 / 0.7);
+    transition: transform 300ms cubic-bezier(0.22, 0.61, 0.36, 1),
+      box-shadow 300ms ease, color 240ms ease;
+  }
+  .bp-boton::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    background: var(--color-gold);
+    transform: scaleX(0);
+    transform-origin: left center;
+    transition: transform 420ms cubic-bezier(0.22, 0.61, 0.36, 1);
+  }
+  .bp-boton:hover,
+  .bp-boton:focus-visible {
+    color: var(--color-ink);
+    transform: translateY(-2px);
+    box-shadow: 0 18px 32px -18px color-mix(in srgb, var(--color-gold) 70%, transparent);
+  }
+  .bp-boton:hover::before,
+  .bp-boton:focus-visible::before { transform: scaleX(1); }
+  /* El relleno de `.btn-solid` no puede cambiar al pasar por encima: encima
+     va la mancha dorada y el negro tiene que quedarse quieto detrás. */
+  .bp-boton:hover { background: var(--color-ink); }
+
+  /* --- lo que se enseña --------------------------------------------------
+     El país va detrás, muy por lo bajo y sin rótulo: sitúa la sección sin
+     pedir que se lea. Las fichas no se colocan en absoluto sino en flujo, una
+     pegada a la derecha y otra a la izquierda: así el escalón se mantiene a
+     cualquier ancho sin una sola media query de posición. */
+  .bp-vista {
+    position: relative;
     display: grid;
     gap: 16px;
-    margin-top: clamp(38px, 4.5vw, 64px);
-    padding-top: clamp(24px, 2.8vw, 36px);
-    border-top: 1px solid var(--line, var(--line-light));
+    padding-block: clamp(10px, 2vw, 26px);
   }
-  @media (min-width: 940px) {
-    .bp-cierre {
-      grid-template-columns: minmax(0, 1.02fr) minmax(0, 0.98fr);
-      gap: clamp(32px, 4vw, 60px);
-      align-items: end;
-    }
+  /* El SVG lo pinta otro componente, así que su clase no entra en el ámbito
+     de esta hoja: hay que alcanzarla con :global, acotada por el contenedor
+     para que siga siendo local a esta sección. */
+  .bp-vista :global(.bp-mapa) {
+    position: absolute;
+    /* Sin desbordes: con márgenes negativos la silueta se salía por arriba
+       de la sección y se metía en el filo redondeado de la de al lado. Dentro
+       de la caja, `preserveAspectRatio` la escala sola. */
+    inset: 0 14% 0 0;
+    z-index: 0;
+    color: color-mix(in srgb, var(--color-teal) 16%, transparent);
+    pointer-events: none;
   }
-  .bp-cierre-frase {
-    font-family: var(--font-display);
-    font-size: clamp(22px, 3.2vw, 38px);
-    font-weight: 600;
-    line-height: 1.18;
-    letter-spacing: -0.03em;
-    text-wrap: balance;
-    max-width: 20ch;
+
+  .bp-ficha {
+    position: relative;
+    z-index: 1;
+    margin: 0;
+    padding: 16px 18px 14px;
+    border: 1px solid var(--line, var(--line-light));
+    border-radius: 12px;
+    /* Traslúcidas: el país tiene que verse pasar por debajo, que es lo que
+       las ata al fondo en vez de dejarlas flotando sobre él. El desenfoque
+       mantiene el texto legible por encima de la silueta. */
+    background: color-mix(in srgb, var(--color-paper) 76%, transparent);
+    backdrop-filter: blur(9px);
+    box-shadow: 0 22px 44px -32px rgb(3 26 36 / 0.6);
+    /* El mismo gesto que las piezas del tablero de arriba: en una misma
+       página, dos tarjetas vecinas no pueden responder distinto al ratón. */
+    transition: transform 320ms cubic-bezier(0.22, 0.61, 0.36, 1),
+      box-shadow 320ms ease, border-color 240ms ease;
   }
-  .bp-cierre-frase em { font-style: normal; color: var(--color-teal-600); }
-  .bp-cierre-pie {
-    font-size: 13px;
-    line-height: 1.65;
+  .bp-ficha:hover,
+  .bp-ficha:focus-within {
+    transform: translateY(-4px);
+    border-color: color-mix(in srgb, #008c85 45%, transparent);
+    box-shadow: 0 26px 50px -30px rgb(3 26 36 / 0.5);
+  }
+  .bp-ficha.es-grafico { justify-self: end; width: min(100%, 410px); color: var(--color-teal-600); }
+  .bp-datos {
+    position: relative;
+    z-index: 1;
+    display: grid;
+    grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr);
+    gap: 14px;
+    align-items: start;
+    justify-self: start;
+    width: min(100%, 440px);
+    margin-left: clamp(0px, 3.5vw, 44px);
+  }
+  @media (max-width: 520px) { .bp-datos { grid-template-columns: minmax(0, 1fr); } }
+
+  /* --- el histograma ---
+     Columnas al ras, sin ejes ni rótulos: la forma es el mensaje —dónde se
+     acumulan las lecturas— y el único valor que hay que situar, el de hoy,
+     va encendido y escrito debajo. */
+  .bp-hist {
+    display: flex;
+    align-items: flex-end;
+    gap: 2px;
+    height: 56px;
+    margin-top: 12px;
+  }
+  .bp-hist-col {
+    flex: 1;
+    min-width: 0;
+    border-radius: 2px 2px 0 0;
+    background: color-mix(in srgb, var(--color-teal) 30%, transparent);
+    transition: background-color 220ms ease;
+  }
+  .bp-hist-col.es-hoy { background: var(--color-gold); }
+  .bp-ficha:hover .bp-hist-col { background: color-mix(in srgb, var(--color-teal) 44%, transparent); }
+  .bp-ficha:hover .bp-hist-col.es-hoy { background: var(--color-gold); }
+
+  .bp-hist-pie {
+    margin-top: 9px;
+    font-size: 10px;
+    line-height: 1.45;
     color: var(--muted);
-    max-width: 44ch;
+    text-align: left;
   }
-  @media (min-width: 940px) { .bp-cierre-pie { padding-bottom: 8px; } }
+  .bp-hist-pie strong { font-weight: 700; color: var(--oro); }
+  .bp-ficha.es-dato { padding: 14px 15px 13px; }
+  .bp-ficha.es-dato .bp-ficha-cifra { font-size: 25px; }
+
+  .bp-ficha-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 12px;
+  }
+  .bp-ficha-tit {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--color-ink);
+    text-align: left;
+  }
+  .bp-ficha-sello {
+    display: block;
+    font-size: 8.5px;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    white-space: nowrap;
+    color: var(--color-teal-600);
+  }
+  .bp-ficha-sello.es-proyeccion { color: var(--oro); }
+  .bp-ficha.es-dato .bp-ficha-sello { margin-top: 7px; white-space: normal; line-height: 1.4; }
+
+  .bp-ficha-valor {
+    display: flex;
+    align-items: baseline;
+    gap: 6px;
+    margin-top: 8px;
+    text-align: left;
+  }
+  .bp-ficha-cifra {
+    font-family: var(--font-display);
+    font-size: 30px;
+    font-weight: 600;
+    line-height: 1;
+    letter-spacing: -0.035em;
+    color: var(--color-ink);
+  }
+  .bp-ficha-unidad { font-size: 11px; color: var(--muted); }
+
+  .bp-ficha-lienzo { margin-top: 10px; }
+
+  .bp-ficha-pie {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    margin-top: 8px;
+    padding-top: 8px;
+    border-top: 1px solid var(--line, var(--line-light));
+    font-size: 9.5px;
+    letter-spacing: 0.04em;
+    color: var(--muted);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .bp-boton,
+    .bp-boton::before,
+    .bp-ficha { transition: none; }
+    .bp-boton:hover,
+    .bp-ficha:hover,
+    .bp-ficha:focus-within { transform: none; }
+  }
 
   /* --- cabecera del Atlas ---------------------------------------------- */
   .atlas-acciones {
@@ -406,39 +741,16 @@ import { covers } from '../../site.config';
     .atlas-sector:hover { transform: none; }
   }
 
-  .atlas-sec-head {
-    display: grid;
-    gap: 18px;
-    padding-bottom: 34px;
+  .atlas-sec-head { padding-bottom: clamp(24px, 3vw, 34px); text-align: center; }
+  /* La pregunta abre la seccion a todo el ancho: acotada a 22 caracteres se
+     partia en dos renglones cortos en mitad de una franja vacia, y lo que
+     tenia que ser el titulo de un tablero parecia una nota al margen. */
+  .atlas-sec-title {
+    max-width: none;
+    font-size: clamp(27px, 3.4vw, 46px);
+    line-height: 1.04;
+    letter-spacing: -0.042em;
   }
-  @media (min-width: 900px) {
-    .atlas-sec-head {
-      grid-template-columns: minmax(0, 1.3fr) minmax(0, 0.7fr);
-      gap: 48px;
-      align-items: end;
-    }
-  }
-  .atlas-sec-title { margin-top: 14px; max-width: 20ch; }
-
-  /* La puerta a la base profesional: cierra el tablero y explica por qué hay
-     más al otro lado, en vez de un botón suelto sin motivo. */
-  .atlas-mas {
-    display: grid;
-    gap: 16px;
-    justify-items: start;
-    margin-top: clamp(30px, 3.6vw, 48px);
-    padding-top: clamp(24px, 3vw, 34px);
-    border-top: 1px solid var(--line, var(--line-light));
-  }
-  @media (min-width: 860px) {
-    .atlas-mas {
-      grid-template-columns: minmax(0, 1fr) auto;
-      align-items: center;
-      gap: 34px;
-    }
-  }
-  .atlas-mas-texto { font-size: 13px; max-width: 72ch; }
-  .atlas-sec-note { font-size: 13px; max-width: 42ch; }
 
   .ind-grid {
     display: grid;

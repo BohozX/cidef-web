@@ -112,9 +112,9 @@
   },
   {
     "id": "laboral",
-    "name": "Empleo e ingresos",
-    "pregunta": "¿Quién trabaja, cómo y cuánto gana?",
-    "description": "Ocupación, desempleo, informalidad y la evolución de los ingresos del trabajo.",
+    "name": "Estadísticas sociales",
+    "pregunta": "¿Quién trabaja, cuánto gana y cómo vive?",
+    "description": "Ocupación, desempleo, informalidad e ingresos del trabajo, junto con la pobreza, la desigualdad y las condiciones de vida.",
     "temas": [
       "Desempleo",
       "Ocupación",
@@ -123,15 +123,7 @@
       "Salarios",
       "Ingreso laboral",
       "Salario mínimo",
-      "Empleo por sector"
-    ]
-  },
-  {
-    "id": "social",
-    "name": "Indicadores sociales",
-    "pregunta": "¿Cómo se reparte lo que la economía produce?",
-    "description": "Pobreza, desigualdad y condiciones de vida, separados de lo estrictamente macroeconómico.",
-    "temas": [
+      "Empleo por sector",
       "Pobreza",
       "Pobreza extrema",
       "Desigualdad y Gini",

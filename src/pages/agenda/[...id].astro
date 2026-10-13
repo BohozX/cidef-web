@@ -4,7 +4,7 @@ import type { CollectionEntry } from 'astro:content';
 import type { GetStaticPaths } from 'astro';
 
 import BaseLayout from '../../layouts/BaseLayout.astro';
-import PageHero from '../../components/PageHero.astro';
+import CabeceraFicha from '../../components/CabeceraFicha.astro';
 import AgendaItem from '../../components/AgendaItem.astro';
 import Newsletter from '../../components/Newsletter.astro';
 import { site } from '../../site.config';
@@ -19,7 +19,7 @@ export interface Props {
   entry: CollectionEntry<'eventos'>;
 }
 
-const { entry } = Astro.props;
+const { entry } = Astro.props as { entry: CollectionEntry<'eventos'> };
 const d = entry.data;
 const { Content } = await render(entry);
 
@@ -31,11 +31,36 @@ const otros = (await getCollection('eventos'))
   .sort((a, b) => b.data.date.getTime() - a.data.date.getTime())
   .slice(0, 3);
 
-const facts = [
-  { label: 'Fecha', value: longDate(iso) },
-  ...(d.time ? [{ label: 'Hora', value: d.time }] : []),
-  { label: 'Lugar', value: d.location },
-  { label: 'Modalidad', value: d.modality },
+const DIAS = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
+
+const etiquetas: { texto: string; tono: 'tipo' | 'apagada' }[] = [
+  { texto: d.type, tono: 'tipo' },
+  ...(upcoming ? [] : [{ texto: 'Realizado', tono: 'apagada' as const }]),
+];
+
+const fecha = longDate(iso);
+const dia = new Date(`${iso.slice(0, 10)}T12:00:00Z`);
+
+const dato = {
+  rotulo: `Fecha · ${DIAS[dia.getUTCDay()]}`,
+  valor: String(dia.getUTCDate()),
+  unidad: fecha.split(' de ').slice(1).join(' de '),
+  nota: upcoming ? undefined : 'Actividad realizada',
+};
+
+const cifras = [
+  ...(d.time ? [{ rotulo: 'Hora', valor: d.time, nota: 'Hora de Bolivia' }] : []),
+  ...(d.endDate
+    ? [{ rotulo: 'Cierre', valor: longDate(d.endDate.toISOString()).split(' de ').slice(0, 2).join(' de '), nota: String(d.endDate.getUTCFullYear()) }]
+    : []),
+  ...(d.speakers.length > 0
+    ? [{
+        rotulo: 'Participan',
+        valor: d.speakers.length === 1 ? d.speakers[0]!.name : `${d.speakers.length} ponentes`,
+        nota: d.speakers.length === 1 ? d.speakers[0]!.affiliation : undefined,
+        texto: true,
+      }]
+    : []),
 ];
 
 const jsonLd = {
@@ -57,26 +82,14 @@ const jsonLd = {
 ---
 
 <BaseLayout title={d.title} description={d.summary} ogType="article" jsonLd={jsonLd}>
-  <PageHero
-    eyebrow={`${d.type}${upcoming ? '' : ' · Realizado'}`}
-    title={d.title}
+  <CabeceraFicha
     parent={{ label: 'Agenda', href: '/agenda' }}
-    facts={facts}
-  >
-    <div slot="actions" class="ev-actions" data-hero-item>
-      {
-        upcoming && d.registerUrl && (
-          <a href={d.registerUrl} class="btn btn-primary">
-            Inscribirse
-            <svg class="arw" viewBox="0 0 16 16" width="13" height="13" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8">
-              <path d="M2 8h11M9 4l4 4-4 4" stroke-linecap="round" stroke-linejoin="round" />
-            </svg>
-          </a>
-        )
-      }
-      {d.demo && <span class="chip chip-demo">Evento de ejemplo</span>}
-    </div>
-  </PageHero>
+    etiquetas={etiquetas}
+    title={d.title}
+    linea={`${d.location} · ${d.modality}`}
+    dato={dato}
+    cifras={cifras}
+  />
 
   <section class="surface-light section">
     <div class="wrap">
@@ -151,14 +164,6 @@ const jsonLd = {
 </BaseLayout>
 
 <style>
-  .ev-actions {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 16px;
-    margin-top: 30px;
-  }
-
   .ev-grid { display: grid; gap: 44px; }
   @media (min-width: 1000px) {
     .ev-grid { grid-template-columns: minmax(0, 1fr) 300px; gap: 68px; align-items: start; }

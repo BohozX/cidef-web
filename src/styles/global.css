@@ -175,7 +175,6 @@
   [data-sector='externo']       { --serie-claro: #0b7fa5; --serie-oscuro: #3293b6; }
   [data-sector='fiscal']        { --serie-claro: #6b8a2b; --serie-oscuro: #7ea341; }
   [data-sector='laboral']       { --serie-claro: #9c3f86; --serie-oscuro: #b563a2; }
-  [data-sector='social']        { --serie-claro: #b8763a; --serie-oscuro: #bd8442; }
   [data-sector='internacional'] { --serie-claro: #6a5fc0; --serie-oscuro: #837bcc; }
   [data-sector='centro']        { --serie-claro: #d29a28; --serie-oscuro: #b58d3d; }
 
@@ -201,7 +200,6 @@
   [data-sector='externo'] { --t1: #00506d; --t2: #00688b; --t3: #0d80a6; --t4: #3598bf; --t5: #51b1d9; }
   [data-sector='fiscal'] { --t1: #3a5100; --t2: #4c6900; --t3: #628120; --t4: #79993c; --t5: #91b356; }
   [data-sector='laboral'] { --t1: #761963; --t2: #90347b; --t3: #aa4c93; --t4: #c464ac; --t5: #df7dc5; }
-  [data-sector='social'] { --t1: #6e3700; --t2: #8a4c00; --t3: #a36325; --t4: #bd7b3f; --t5: #d89358; }
   [data-sector='internacional'] { --t1: #443491; --t2: #594cab; --t3: #6f64c5; --t4: #857ce0; --t5: #9d95fc; }
   [data-sector='centro'] { --t1: #604100; --t2: #7c5500; --t3: #996b00; --t4: #b78100; --t5: #d19927; }
 

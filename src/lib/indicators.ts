@@ -1,4 +1,5 @@
 import raw from '../data/indicators.json';
+import reales from '../data/indicadores-reales.json';
 import cats from '../data/categories.json';
 
 /**
@@ -81,7 +82,11 @@ export type Category = {
   temas?: string[];
 };
 
-export const indicators = raw as unknown as Indicator[];
+const datosReales = reales as unknown as Record<string, Partial<Indicator>>;
+
+export const indicators = (raw as unknown as Indicator[]).map((i) =>
+  datosReales[i.id] ? { ...i, ...datosReales[i.id] } : i,
+);
 export const categories = cats as unknown as Category[];
 
 export const byId = (id: string): Indicator | undefined =>
@@ -128,7 +133,10 @@ export const lastUpdated = (): string =>
  * cuesta, de ahí al dinero y al dólar, después a las cuentas con el exterior
  * y con el Estado, y termina en las personas. El comercio exterior no es un
  * bloque aparte: exportar, importar y el saldo son la cara comercial del
- * sector externo.
+ * sector externo. El empleo y las condiciones de vida tampoco van separados:
+ * quien no encuentra trabajo y quien vive bajo la línea de pobreza suelen ser
+ * la misma persona, y partirlo en dos sectores obligaba a mirar dos tableros
+ * para leer una sola realidad.
  */
 export const SECTORES = [
   'panorama',
@@ -139,7 +147,6 @@ export const SECTORES = [
   'externo',
   'fiscal',
   'laboral',
-  'social',
   'internacional',
   'centro',
 ] as const;

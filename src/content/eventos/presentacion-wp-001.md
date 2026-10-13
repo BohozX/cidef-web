@@ -19,5 +19,5 @@ resources:
 demo: true
 ---
 
-Evento realizado. La grabación y los materiales quedan disponibles en el
-Archivo Vivo.
+Evento realizado. La grabación y los materiales quedan disponibles en esta
+ficha.
