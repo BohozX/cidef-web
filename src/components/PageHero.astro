@@ -44,6 +44,7 @@ const { eyebrow, title, lede, parent, facts = [], cover, curve = true } = Astro.
     /* Con migas de pan es una ficha, no una sección: abre más corta para que
        el contenido no quede a una pantalla entera de distancia. */
     cover && parent && 'is-ficha',
+    cover && !parent && facts.length === 0 && !Astro.slots.has('actions') && 'is-solo',
   ]}
   data-parallax-scope={cover ? '' : undefined}
 >
@@ -183,6 +184,7 @@ const { eyebrow, title, lede, parent, facts = [], cover, curve = true } = Astro.
     padding-top: clamp(118px, 10vh, 138px);
     padding-bottom: clamp(44px, 5vh, 72px);
   }
+  .has-cover.is-solo .page-hero-inner { padding-bottom: 128px; }
   .has-cover.is-flush {
     border-bottom-left-radius: 0;
     border-bottom-right-radius: 0;
