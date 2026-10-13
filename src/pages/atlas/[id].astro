@@ -5,7 +5,7 @@ import { getCollection } from 'astro:content';
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import CabeceraFicha from '../../components/CabeceraFicha.astro';
 import IndicatorChart from '../../components/IndicatorChart.astro';
-import IndicatorCard from '../../components/IndicatorCard.astro';
+import PanelIndicador from '../../components/PanelIndicador.astro';
 import Newsletter from '../../components/Newsletter.astro';
 
 import { indicators, byCategory, categoryName, ETIQUETA, higherIsBetter, type Indicator } from '../../lib/indicators';
@@ -146,13 +146,16 @@ const jsonLd = {
   <!-- RELACIONADOS ---------------------------------------------------------- -->
   {
     related.length > 0 && (
-      <section class="surface-deep section" aria-labelledby="relacionados">
+      <section class="surface-mist section rel-seccion edge-tr" aria-labelledby="relacionados">
         <div class="wrap">
-          <h2 id="relacionados" class="display-3 rel-title" data-reveal>
-            Más de {categoryName(ind.category).toLowerCase()}
-          </h2>
+          <div class="rel-cabeza">
+            <p class="eyebrow eyebrow-gold" data-reveal>Atlas Económico</p>
+            <h2 id="relacionados" class="display-3 rel-title" data-reveal>
+              Más de {categoryName(ind.category).toLowerCase()}
+            </h2>
+          </div>
           <div class="rel-grid" data-reveal-group data-reveal-stagger="0.06">
-            {related.map((item) => <IndicatorCard indicator={item} />)}
+            {related.map((item) => <PanelIndicador item={item} size="tercio" />)}
           </div>
         </div>
       </section>
@@ -196,10 +199,18 @@ const jsonLd = {
 
   .block-h { display: block; margin-bottom: 16px; }
 
-  .rel-title { margin: 26px 0 32px; }
+  .rel-seccion { padding-block: clamp(56px, 7vw, 96px); }
+  .rel-cabeza {
+    display: grid;
+    justify-items: center;
+    gap: 12px;
+    margin-bottom: clamp(28px, 3.4vw, 44px);
+    text-align: center;
+  }
+  .rel-title { font-size: clamp(1.7rem, 2.8vw, 2.4rem); }
   .rel-grid {
     display: grid;
-    gap: 16px;
-    grid-template-columns: repeat(auto-fill, minmax(min(100%, 250px), 1fr));
+    gap: 18px;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr));
   }
 </style>
